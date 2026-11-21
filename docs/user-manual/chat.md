@@ -38,6 +38,7 @@ Answers from your documents contain numbers like [1] and [2]. Each number points
 
 - Point at or focus a number to highlight its passage, and the other way round.
 - Select a number, which also opens its document's row, or a passage's title to open the document at that passage. The passage is scrolled into view and briefly highlighted.
+- Under each passage of a document, the thumbs **Mark passage … as helpful** and **Mark passage … as not helpful** tell Knowcelium whether the passage helped you. See [Rate a document or a passage](documents.md#rate-a-document-or-a-passage).
 
 Answers prefer current knowledge. Passages of a document that has been replaced by a newer version you can see, or that is marked deprecated or archived, are left out of the sources, and passages of documents that rate lower, for example because they are old, come after those of better ones. If that check isn't available, the passages are ranked by how well they match your question alone. An administrator can turn it off.
 

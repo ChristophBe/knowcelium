@@ -209,3 +209,52 @@ test("a reported document shows up for its owner, who can dismiss the reports", 
   await expect(bob.getByRole("button", { name: "Report", exact: true })).toBeVisible();
   await bobContext.close();
 });
+
+test("a source of a chat answer can be rated, and the rating shows on the document", async ({
+  page,
+}) => {
+  await page.goto("/");
+  // With earlier conversations the page offers the button twice: in the list and in the empty state.
+  await page.getByRole("button", { name: "New chat" }).first().click();
+  await page
+    .getByPlaceholder("Ask something…")
+    .fill("What do the documents say? [1] [2] [3] [4] [5]");
+  await page.getByRole("button", { name: "Ask", exact: true }).click();
+
+  // Any document may be cited with the fake provider, so the first source is rated.
+  const sources = page.getByRole("list", { name: "Sources" });
+  await sources.getByRole("button", { expanded: false }).first().click();
+  const helpful = sources
+    .getByRole("button", { name: /^Mark passage \d+ of .+ as helpful$/ })
+    .first();
+  const label = (await helpful.getAttribute("aria-label")) ?? "";
+  const title = /^Mark passage \d+ of (.+) as helpful$/.exec(label)?.[1] ?? "";
+  expect(title).not.toBe("");
+  await helpful.click();
+  await expect(page.getByText("Marked as helpful")).toBeVisible();
+  await expect(helpful).toHaveAttribute("aria-pressed", "true");
+  // Rating doesn't move the focus.
+  await expect(helpful).toBeFocused();
+
+  // After loading the page again the rating shown is the user's own.
+  await page.reload();
+  const source = page.getByRole("list", { name: "Sources" });
+  await source.getByRole("button", { name: new RegExp(title.replace(/\./g, "\\.")) }).click();
+  await expect(source.getByRole("button", { name: label })).toHaveAttribute("aria-pressed", "true");
+
+  // The document's page says how it was rated, and has thumbs of its own.
+  await source
+    .getByRole("link", { name: new RegExp(`^${title.replace(/\./g, "\\.")}, passage`) })
+    .first()
+    .click();
+  const group = page.getByRole("group", { name: "Rate this document" });
+  await expect(group).toContainText("1 found it helpful, 0 not");
+  const documentDown = group.getByRole("button", { name: "Mark this document as not helpful" });
+  await documentDown.click();
+  // One vote per user: the latest rating is the one that counts.
+  await expect(group).toContainText("0 found it helpful, 1 not");
+  await documentDown.click();
+  await expect(page.getByText("Rating taken back")).toBeVisible();
+  await expect(documentDown).toHaveAttribute("aria-pressed", "false");
+  await expect(group).toContainText("1 found it helpful, 0 not");
+});
