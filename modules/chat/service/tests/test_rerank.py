@@ -148,13 +148,14 @@ async def test_a_keyword_match_is_kept_below_the_minimum_score() -> None:
 
 
 async def test_rating_is_reported_only_when_passages_are_rated() -> None:
-    rated: list[str] = []
+    rated: list[int] = []
 
     await retriever(FakeDocuments(), FakeLlm()).retrieve(
-        "q", 2, [], on_rating=lambda: rated.append("x")
+        "q", 2, [], on_rating=lambda found: rated.append(len(found))
     )
     await PeerRetriever(FakeDocuments(), FakeLlm()).retrieve(  # type: ignore[arg-type]
-        "q", 2, [], on_rating=lambda: rated.append("y")
+        "q", 2, [], on_rating=lambda found: rated.append(-1)
     )
 
-    assert rated == ["x"]
+    # All four candidates are rated; the retriever without a reranker rates nothing.
+    assert rated == [4]

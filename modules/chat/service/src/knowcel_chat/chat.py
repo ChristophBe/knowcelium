@@ -8,7 +8,7 @@ import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Any, Protocol
+from typing import Any, Protocol, Self
 
 from knowcel.chat.v1 import chat_pb2
 
@@ -61,7 +61,7 @@ class PromptMessage:
 class Retriever(Protocol):
     """Finds the passages most relevant to a question, only in `document_ids`
     and only in documents of `team_ids`, each unless empty. `on_rating` is called
-    when the passages found are about to be rated. Failures are raised as
+    with the passages found when they are about to be rated. Failures are raised as
     PeerError."""
 
     async def retrieve(
@@ -70,7 +70,7 @@ class Retriever(Protocol):
         limit: int,
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
-        on_rating: Callable[[], None] | None = None,
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
     ) -> list[chat_pb2.Citation]: ...
 
 
@@ -106,6 +106,20 @@ class AnswerSaved:
 @dataclass(frozen=True)
 class ProgressChanged:
     stage: chat_pb2.ProgressStage
+    passages: int = 0
+    documents: int = 0
+    manual_sections: int = 0
+
+    @classmethod
+    def of(cls, stage: chat_pb2.ProgressStage, found: Sequence[chat_pb2.Citation] = ()) -> Self:
+        """`stage` with what `found` consists of."""
+        in_documents = [c for c in found if not c.manual_page]
+        return cls(
+            stage,
+            passages=len(in_documents),
+            documents=len({c.document_id for c in in_documents}),
+            manual_sections=len(found) - len(in_documents),
+        )
 
 
 AnswerEvent = ProgressChanged | SourcesFound | AnswerDelta | AnswerFailed | AnswerSaved
@@ -180,7 +194,7 @@ class Chat:
                 yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
                 # The retriever reports the rating from inside its call, so it
                 # runs as a task and its stages are passed on as they come.
-                stages: asyncio.Queue[chat_pb2.ProgressStage | None] = asyncio.Queue()
+                stages: asyncio.Queue[ProgressChanged | None] = asyncio.Queue()
 
                 async def search() -> list[chat_pb2.Citation]:
                     try:
@@ -189,15 +203,17 @@ class Chat:
                             self._settings.rag_top_k,
                             conv.document_ids,
                             _current_teams(conv.team_ids, member_team_ids),
-                            on_rating=lambda: stages.put_nowait(chat_pb2.PROGRESS_STAGE_RATING),
+                            on_rating=lambda found: stages.put_nowait(
+                                ProgressChanged.of(chat_pb2.PROGRESS_STAGE_RATING, found)
+                            ),
                         )
                     finally:
                         stages.put_nowait(None)
 
                 searching = asyncio.create_task(search())
                 try:
-                    while (stage := await stages.get()) is not None:
-                        yield ProgressChanged(stage)
+                    while (progress := await stages.get()) is not None:
+                        yield progress
                     retrieved = await searching
                 finally:
                     searching.cancel()
@@ -218,7 +234,7 @@ class Chat:
             if use_knowledge_base:
                 yield SourcesFound(citations)
 
-            yield ProgressChanged(chat_pb2.PROGRESS_STAGE_WRITING)
+            yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
             prompt = _prompt(
                 system_prompt(citations, context.history),
                 [] if prompts.history_in_prompt else context.history,

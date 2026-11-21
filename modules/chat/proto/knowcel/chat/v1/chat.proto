@@ -68,6 +68,17 @@ enum ProgressStage {
   PROGRESS_STAGE_WRITING = 3;
 }
 
+// What the system is doing while an answer is prepared, with what it has found.
+message Progress {
+  ProgressStage stage = 1;
+  // From RATING on: the passages of documents and the distinct documents they
+  // belong to, and the sections of the user manual. RATING counts what the
+  // search found, WRITING what the prompt contains.
+  int32 passages = 2;
+  int32 documents = 3;
+  int32 manual_sections = 4;
+}
+
 // A source an answer is grounded in: a chunk of a document, or a section of the
 // user manual. Manual citations set manual_page and manual_section instead of
 // document_id and chunk_index; their document_title names the page and section.
@@ -246,7 +257,7 @@ message StreamChatResponse {
     ChatError error = 4;
     // The stage the answer has reached, sent before the first delta. Stages
     // that don't happen are skipped; the last one is always WRITING.
-    ProgressStage progress = 5;
+    Progress progress = 5;
   }
 }
 

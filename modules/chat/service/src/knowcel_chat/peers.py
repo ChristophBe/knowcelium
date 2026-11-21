@@ -157,7 +157,7 @@ class PeerRetriever:
         limit: int,
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
-        on_rating: Callable[[], None] | None = None,
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
         (embedding,) = await self._embedder.embed([query])
         fetch = max(limit, self._candidates) if self._reranker else limit
@@ -232,12 +232,12 @@ class PeerRetriever:
         query: str,
         passages: list[chat_pb2.Citation],
         texts: list[str],
-        on_rating: Callable[[], None] | None,
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None,
     ) -> list[chat_pb2.Citation]:
         if len(passages) < 2 or self._reranker is None:
             return passages
         if on_rating:
-            on_rating()
+            on_rating(passages)
         try:
             scores = await self._reranker.rerank(query, texts)
         except PeerError as err:

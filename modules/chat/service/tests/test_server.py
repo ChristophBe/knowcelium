@@ -1147,8 +1147,12 @@ async def test_stream_chat_reports_progress_before_the_first_word(env: Env) -> N
     ]
 
     kinds = [e.WhichOneof("event") for e in events]
-    assert [e.progress for e in events if e.WhichOneof("event") == "progress"] == [
+    progress = [e.progress for e in events if e.WhichOneof("event") == "progress"]
+    assert [p.stage for p in progress] == [
         chat_pb2.PROGRESS_STAGE_SEARCHING,
         chat_pb2.PROGRESS_STAGE_WRITING,
     ]
+    # The writing stage counts what the streamed sources consist of.
+    cited = next(e for e in events if e.WhichOneof("event") == "citations").citations.items
+    assert (progress[1].passages, progress[1].documents) == (len(cited), 1)
     assert kinds.index("delta") > max(i for i, k in enumerate(kinds) if k == "progress")

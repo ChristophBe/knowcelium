@@ -51,6 +51,18 @@ PROGRESS_STAGE_SEARCHING: ProgressStage
 PROGRESS_STAGE_RATING: ProgressStage
 PROGRESS_STAGE_WRITING: ProgressStage
 
+class Progress(_message.Message):
+    __slots__ = ("stage", "passages", "documents", "manual_sections")
+    STAGE_FIELD_NUMBER: _ClassVar[int]
+    PASSAGES_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENTS_FIELD_NUMBER: _ClassVar[int]
+    MANUAL_SECTIONS_FIELD_NUMBER: _ClassVar[int]
+    stage: ProgressStage
+    passages: int
+    documents: int
+    manual_sections: int
+    def __init__(self, stage: _Optional[_Union[ProgressStage, str]] = ..., passages: _Optional[int] = ..., documents: _Optional[int] = ..., manual_sections: _Optional[int] = ...) -> None: ...
+
 class Citation(_message.Message):
     __slots__ = ("document_id", "document_title", "chunk_index", "snippet", "score", "manual_page", "manual_section")
     DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
@@ -254,8 +266,8 @@ class StreamChatResponse(_message.Message):
     delta: str
     message: ChatMessage
     error: ChatError
-    progress: ProgressStage
-    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[ProgressStage, str]] = ...) -> None: ...
+    progress: Progress
+    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[Progress, _Mapping]] = ...) -> None: ...
 
 class ChatError(_message.Message):
     __slots__ = ("code", "message")

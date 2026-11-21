@@ -9,6 +9,7 @@ import {
   GetConversationResponseSchema,
   MessageRole,
   MessageStatus,
+  ProgressSchema,
   ProgressStage,
   type StreamChatRequest,
   type StreamChatResponse,
@@ -274,7 +275,7 @@ describe("Conversation", () => {
 
   describe("progress", () => {
     /** A stream that sends the given events one by one, as `next` is called. */
-    function steppedStream(steps: StreamChatResponse["event"][]) {
+    function steppedStream(steps: StreamChatResponse["event"][], hang = false) {
       const gates: (() => void)[] = [];
       const stream = async function* (req: StreamChatRequest) {
         saved.push(message(MessageRole.USER, req.content));
@@ -282,6 +283,8 @@ describe("Conversation", () => {
           await new Promise<void>((resolve) => gates.push(resolve));
           yield event(step);
         }
+        // Stays open, as an answer that is still being prepared.
+        if (hang) await new Promise(() => {});
       };
       const next = async () => {
         await act(async () => gates.shift()?.());
@@ -289,17 +292,20 @@ describe("Conversation", () => {
       return { stream, next };
     }
 
-    const stage = (value: ProgressStage): StreamChatResponse["event"] => ({
+    const stage = (
+      value: ProgressStage,
+      counts: { passages?: number; documents?: number; manualSections?: number } = {},
+    ): StreamChatResponse["event"] => ({
       case: "progress",
-      value,
+      value: create(ProgressSchema, { stage: value, ...counts }),
     });
 
     it("shows and announces each stage until the first words arrive", async () => {
       const done = message(MessageRole.ASSISTANT, "Paris.");
       const { stream, next } = steppedStream([
         stage(ProgressStage.SEARCHING),
-        stage(ProgressStage.RATING),
-        stage(ProgressStage.WRITING),
+        stage(ProgressStage.RATING, { passages: 20, documents: 6 }),
+        stage(ProgressStage.WRITING, { passages: 5, documents: 3, manualSections: 2 }),
         { case: "delta", value: "Paris." },
         { case: "message", value: done },
       ]);
@@ -312,12 +318,53 @@ describe("Conversation", () => {
       expect(screen.getAllByText("Searching your documents and the user manual…")).toHaveLength(2);
       await next();
       await next();
-      expect(screen.getAllByText("Choosing the best passages…")).toHaveLength(2);
+      expect(
+        screen.getAllByText("Choosing the best of 20 passages from 6 documents…"),
+      ).toHaveLength(2);
       await next();
-      expect(screen.getAllByText("Writing the answer…")).toHaveLength(2);
+      expect(
+        screen.getAllByText(
+          "Writing the answer from 5 passages of 3 documents and 2 sections of the user manual…",
+        ),
+      ).toHaveLength(2);
       await next();
       expect(screen.getByText("Paris.")).toBeTruthy();
-      expect(screen.queryByText("Writing the answer…")).toBeNull();
+      expect(screen.queryByText(/^Writing the answer/)).toBeNull();
+    });
+
+    it("uses the singular for one passage, document and section", async () => {
+      const { stream, next } = steppedStream(
+        [stage(ProgressStage.WRITING, { passages: 1, documents: 1, manualSections: 1 })],
+        true,
+      );
+      streamChat.mockImplementation(stream);
+      await renderConversation();
+      await ask("Capital?");
+      await next();
+
+      expect(
+        screen.getAllByText(
+          "Writing the answer from 1 passage of 1 document and 1 section of the user manual…",
+        ),
+      ).toHaveLength(2);
+    });
+
+    it("says so when nothing matched", async () => {
+      const { stream, next } = steppedStream(
+        [stage(ProgressStage.SEARCHING), stage(ProgressStage.WRITING)],
+        true,
+      );
+      streamChat.mockImplementation(stream);
+      await renderConversation();
+      await ask("Capital?");
+      await next();
+      await next();
+
+      expect(
+        screen.getAllByText(
+          "Nothing in your documents matched. Writing the answer from the model's knowledge…",
+        ),
+      ).toHaveLength(2);
     });
 
     it("replaces the status line by the failure when the answer fails in a stage", async () => {
@@ -457,6 +504,8 @@ describe("Conversation", () => {
 
     await ask("Hi");
     expect(streamChat.mock.calls[0]?.[0]).toMatchObject({ useKnowledgeBase: false });
+    // Nothing is searched, so there is nothing to report about matches.
+    expect(screen.queryByText(/Nothing in your documents matched/)).toBeNull();
   });
 
   it("answers with the model picked for the conversation", async () => {

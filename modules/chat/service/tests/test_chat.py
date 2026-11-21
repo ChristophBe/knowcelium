@@ -91,21 +91,26 @@ class FakeRetriever:
         limit: int,
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
-        on_rating: Callable[[], None] | None = None,
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
-        if self.rates and on_rating:
-            on_rating()
         self.calls.append((query, limit, list(document_ids)))
         self.team_calls.append(list(team_ids))
         if self.error:
             raise self.error
-        if self.results is not None:
-            return self.results
-        return [
-            chat_pb2.Citation(
-                document_id="d1", document_title="geo.md", chunk_index=2, snippet="Paris", score=0.9
-            )
-        ]
+        found = self.results
+        if found is None:
+            found = [
+                chat_pb2.Citation(
+                    document_id="d1",
+                    document_title="geo.md",
+                    chunk_index=2,
+                    snippet="Paris",
+                    score=0.9,
+                )
+            ]
+        if self.rates and on_rating:
+            on_rating(found)
+        return found
 
 
 class FakeGenerator:
@@ -201,6 +206,37 @@ async def test_progress_follows_searching_rating_and_writing() -> None:
     ]
     first_delta = next(i for i, e in enumerate(events) if isinstance(e, AnswerDelta))
     assert all(i < first_delta for i, e in enumerate(events) if isinstance(e, ProgressChanged))
+
+
+async def test_progress_counts_what_was_found_and_what_the_prompt_holds() -> None:
+    results = [
+        chat_pb2.Citation(document_id="d1", document_title="a.md", chunk_index=0),
+        chat_pb2.Citation(document_id="d1", document_title="a.md", chunk_index=1),
+        chat_pb2.Citation(document_id="d2", document_title="b.md", chunk_index=0),
+        chat_pb2.Citation(document_title="Chat: Stop", manual_page="chat", manual_section="stop"),
+    ]
+    chat, repo, _, _ = make(retriever=FakeRetriever(results=results, rates=True))
+    events = await collect_all(chat, repo)
+
+    searching, rating, writing = (e for e in events if isinstance(e, ProgressChanged))
+    assert searching == ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
+    assert rating == ProgressChanged(
+        chat_pb2.PROGRESS_STAGE_RATING, passages=3, documents=2, manual_sections=1
+    )
+    assert writing == ProgressChanged(
+        chat_pb2.PROGRESS_STAGE_WRITING, passages=3, documents=2, manual_sections=1
+    )
+    found = next(e for e in events if isinstance(e, SourcesFound))
+    assert len(found.citations) == writing.passages + writing.manual_sections
+
+
+async def test_progress_without_matches_counts_nothing() -> None:
+    chat, repo, _, _ = make(retriever=FakeRetriever(results=[]))
+    events = await collect_all(chat, repo)
+
+    assert [e for e in events if isinstance(e, ProgressChanged)][-1] == ProgressChanged(
+        chat_pb2.PROGRESS_STAGE_WRITING
+    )
 
 
 async def test_progress_skips_rating_when_nothing_is_rated() -> None:
@@ -407,7 +443,7 @@ async def test_manual_sources_are_named_as_such_and_saved_with_their_section() -
             limit: int,
             document_ids: Sequence[uuid.UUID],
             team_ids: Sequence[uuid.UUID] = (),
-            on_rating: Callable[[], None] | None = None,
+            on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(
@@ -653,7 +689,7 @@ async def test_only_the_sources_that_fit_are_cited() -> None:
             limit: int,
             document_ids: Sequence[uuid.UUID],
             team_ids: Sequence[uuid.UUID] = (),
-            on_rating: Callable[[], None] | None = None,
+            on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(document_id="best", snippet="best " * 5, score=0.9),
