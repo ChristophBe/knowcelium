@@ -44,6 +44,17 @@ services:
       KNOWCEL_OCR_ENABLED: ${KNOWCEL_OCR_ENABLED:-false}
       KNOWCEL_OCR_LANGUAGES: ${KNOWCEL_OCR_LANGUAGES:-eng}
       KNOWCEL_WORKER_CONCURRENCY: ${KNOWCEL_WORKER_CONCURRENCY:-2}
+      # Connectors (docs/operations/connectors.md): the file that lists them, mounted below.
+      KNOWCEL_INGESTION_ADDR: ingestion-service:9002
+      KNOWCEL_IAM_ADDR: iam-service:9006
+      KNOWCEL_CONNECTORS_FILE: /etc/knowcel/connectors.yaml
+      # Presigned upload URLs name the storage as browsers reach it; the worker uses this address instead.
+      KNOWCEL_CONNECTORS_UPLOAD_ENDPOINT: s3:8333
+    volumes:
+      # The connectors and the folder the watched-folder connector reads. Point
+      # them elsewhere with KNOWCEL_CONNECTORS_CONFIG and KNOWCEL_WATCH_DIR.
+      - ${KNOWCEL_CONNECTORS_CONFIG:-./connectors.yaml}:/etc/knowcel/connectors.yaml:ro
+      - ${KNOWCEL_WATCH_DIR:-./watch}:/watch:ro
     # Prometheus /metrics (docs/metrics.md).
     ports: ["9105:9105"]
     # The worker pauses job intake while document or llm is down.

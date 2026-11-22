@@ -247,4 +247,55 @@ describe("DocumentDetail", () => {
     renderModule(documents, transport, "/d1", null, undefined, undefined, [history]);
     expect(await screen.findByRole("heading", { name: "History of d1" })).toBeTruthy();
   });
+
+  describe("documents synced by a connector", () => {
+    const synced = {
+      ownerId: "alice",
+      metadata: { connector: "handbook", source_url: "https://wiki.example.com/page" },
+    };
+
+    it("names the connector and links the original", async () => {
+      renderDocument(synced);
+      const row = within(
+        (await screen.findByText("Source", { selector: "dt" })).parentElement as HTMLElement,
+      );
+      expect(row.getByText(/Synced by connector “handbook”/)).toBeTruthy();
+      expect(row.getByRole("link", { name: "Open the original" }).getAttribute("href")).toBe(
+        "https://wiki.example.com/page",
+      );
+    });
+
+    it("tells the owner that the next sync overwrites their edits", async () => {
+      const transport = createRouterTransport(({ service }) =>
+        service(DocumentService, {
+          getDocument: () => ({
+            document: { id: "d1", title: "Notes", status: DocumentStatus.READY, ...synced },
+          }),
+          listChunks: () => ({ chunks: [] }),
+        }),
+      );
+      renderModule(documents, transport, "/d1", alice);
+      const note = await screen.findByRole("note");
+      expect(note.textContent).toContain("kept in sync with the connector “handbook”");
+      expect(note.textContent).toContain("are lost");
+    });
+
+    it("shows no notice to readers who can't edit, and none for other documents", async () => {
+      renderDocument({
+        ...synced,
+        metadata: { connector: "handbook", source_url: "file:///a.md" },
+      });
+      const row = within(
+        (await screen.findByText("Source", { selector: "dt" })).parentElement as HTMLElement,
+      );
+      expect(row.queryByRole("link")).toBeNull();
+      expect(screen.queryByRole("note")).toBeNull();
+    });
+
+    it("has no Source row for an ordinary document", async () => {
+      renderDocument({ ownerId: "alice" });
+      await screen.findByText("Version", { selector: "dt" });
+      expect(screen.queryByText("Source", { selector: "dt" })).toBeNull();
+    });
+  });
 });

@@ -74,13 +74,16 @@ flowchart TB
     ingsvc -- "CreateDocument, SetDocumentStatus" --> docsvc
     ingworker -- "ReadContent, AddChunks, SetDocumentStatus" --> docsvc
     ingworker -- "Embed" --> llmsvc
+    ingworker -- "connectors: CreateUpload, ReplaceUpload, CompleteUpload" --> ingsvc
+    ingworker -- "connectors: UpdateDocument, DeleteDocument" --> docsvc
+    ingworker -- "connectors: ResolveCaller" --> iamsvc
     chatsvc -- "SearchChunks" --> docsvc
     chatsvc -- "Generate, Embed, Rerank" --> llmsvc
     docsvc -- "Embed (SearchDocuments)" --> llmsvc
     llmsvc -- "HTTP" --> ollama
 
     ingsvc -- "pub knowcel.ingestion.uploaded<br/>sub started / processed / failed" --> nats
-    ingworker -- "sub knowcel.ingestion.uploaded<br/>pub started / processed / failed" --> nats
+    ingworker -- "sub knowcel.ingestion.uploaded<br/>pub started / processed / failed<br/>KV: connector state" --> nats
     docsvc -- "pub knowcel.document.reindex_requested" --> nats
     ingsvc -- "sub knowcel.document.reindex_requested" --> nats
 
@@ -97,7 +100,7 @@ flowchart TB
 |---|---|---|---|---|
 | `document-service` | document | schema `document` (documents, chunks + `vector(768)`), S3 bucket, stream `DOCUMENT` | llm (`SearchDocuments`, and the current model for `ReindexDocuments`) | publishes `reindex_requested` ([Changing the embedding model](../operations/embedding-model.md)) |
 | `ingestion-service` | ingestion | schema `ingestion` (jobs), stream `INGESTION` | document | publishes `uploaded`; consumes `started`, `processed`, `failed`, and the document module's `reindex_requested` |
-| `ingestion-worker` | ingestion | — | document, llm | consumes `uploaded`; publishes `started`, `processed`, `failed` |
+| `ingestion-worker` | ingestion | key-value bucket `ingestion_connectors` (connector status and sync state) | document, llm; ingestion and iam for [connectors](../operations/connectors.md) | consumes `uploaded`; publishes `started`, `processed`, `failed` |
 | `chat-service` | chat | schema `chat` (conversations, messages) | document, llm | — |
 | `llm-service` | llm | schema `llm` (usage of generations), provider registry | Ollama over HTTP, Anthropic API | — |
 | `iam-service` | iam | schema `iam` (users) | — | — |

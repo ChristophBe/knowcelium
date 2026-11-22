@@ -1,0 +1,13 @@
+# Connectors the ingestion worker runs (docs/operations/connectors.md). Restart
+# the worker after changing this file. Example, the watched folder, which
+# reads the files in ./watch (KNOWCEL_WATCH_DIR) as /watch:
+#
+# connectors:
+#   - name: watch
+#     kind: folder
+#     owner: 3f5c6d3e-0000-0000-0000-000000000000   # id of a platform admin
+#     public: true                                  # or team_ids: [<team id>]
+#     interval_seconds: 60
+#     settings:
+#       path: /watch
+connectors: []
