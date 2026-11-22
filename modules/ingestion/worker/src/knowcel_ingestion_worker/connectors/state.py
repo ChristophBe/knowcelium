@@ -6,6 +6,7 @@ state survives restarts."""
 import contextlib
 import hashlib
 import json
+import re
 import time
 from collections.abc import Callable
 from typing import Any, Protocol
@@ -16,8 +17,9 @@ from nats.js.errors import (
     KeyDeletedError,
     KeyNotFoundError,
     KeyWrongLastSequenceError,
-    NoKeysError,
 )
+
+from .spec import NAME_PATTERN
 
 BUCKET = "ingestion_connectors"
 
@@ -36,6 +38,10 @@ class State(Protocol):
 
     async def keys(self, prefix: str) -> list[str]: ...
 
+    async def items(self, prefix: str) -> dict[str, Entry]:
+        """The entries whose key starts with `prefix`, in one read."""
+        ...
+
     async def acquire(self, key: str, holder: str, ttl: float) -> bool:
         """Takes a lease on `key` for `ttl` seconds unless another holder has one,
         so that two workers never sync the same connector at once."""
@@ -50,7 +56,14 @@ def item_key(connector: str, external_id: str) -> str:
 
 
 def status_key(connector: str) -> str:
-    return f"{connector}.status"
+    """The key of a connector's status. The name of a connector that is not
+    valid (it is only reported) is encoded: it may hold characters a key
+    cannot, and must not collide with a valid name."""
+    if re.fullmatch(NAME_PATTERN, connector):
+        return f"{connector}.status"
+    safe = re.sub(r"[^a-zA-Z0-9]+", "_", connector).strip("_")[:40]
+    digest = hashlib.sha256(connector.encode()).hexdigest()[:10]
+    return f"invalid.{safe}-{digest}.status"
 
 
 def lease_key(connector: str) -> str:
@@ -75,6 +88,9 @@ class MemoryState:
 
     async def keys(self, prefix: str) -> list[str]:
         return [k for k in self._data if k.startswith(prefix)]
+
+    async def items(self, prefix: str) -> dict[str, Entry]:
+        return {k: v for k, v in self._data.items() if k.startswith(prefix)}
 
     async def acquire(self, key: str, holder: str, ttl: float) -> bool:
         lease = self._data.get(key)
@@ -118,10 +134,25 @@ class KvState:
             await self._kv.delete(key)
 
     async def keys(self, prefix: str) -> list[str]:
+        return list(await self._watch(prefix, meta_only=True))
+
+    async def items(self, prefix: str) -> dict[str, Entry]:
+        return await self._watch(prefix, meta_only=False)
+
+    async def _watch(self, prefix: str, meta_only: bool) -> dict[str, Entry]:
+        # A watch on the subject `<prefix>>` reads only the keys below the prefix
+        # (which ends in a "."), unlike `keys()`, which reads every key, and
+        # carries the values, so there is no get per key.
+        watcher = await self._kv.watch(f"{prefix}>", ignore_deletes=True, meta_only=meta_only)
+        found: dict[str, Entry] = {}
         try:
-            return [k for k in await self._kv.keys() if k.startswith(prefix)]
-        except NoKeysError:
-            return []
+            async for entry in watcher:
+                if entry is None:  # what exists has been listed
+                    break
+                found[entry.key] = json.loads(entry.value) if entry.value else {}
+        finally:
+            await watcher.stop()
+        return found
 
     async def acquire(self, key: str, holder: str, ttl: float) -> bool:
         lease = json.dumps({"holder": holder, "until": self._clock() + ttl}).encode()

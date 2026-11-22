@@ -22,7 +22,7 @@ connectors:
 
 - **Owner.** The connector acts as this user, who must be a platform admin; documents are owned by them. A connector whose owner is not a platform admin does not sync and reports that as its error.
 - **Sharing.** The documents are shared with `team_ids` (the owner has to be a member of each) or public. The document module has no private mode for documents yet, so there is no default: a connector that sets neither is rejected.
-- **Invalid entries** never stop the others. The worker logs the problem and records it as that connector's error.
+- **Invalid entries** never stop the others. The worker logs the problem and records it as that entry's error. The status of an entry that has no valid name is stored under `invalid.<name>-<hash>.status`; an entry whose name is also used by a valid one gets the suffix `(entry n)` in its name. Only valid entries claim a name, so a valid entry is not rejected because an earlier invalid one has the same name.
 
 ## Watched folder (`kind: folder`)
 
@@ -31,15 +31,16 @@ connectors:
 | `path` | The directory, as the worker sees it. The compose stack mounts `KNOWCEL_WATCH_DIR` (default `modules/ingestion/watch/`) read-only as `/watch`. |
 | `recursive` | Also read subdirectories (default `true`). |
 
-It reads the file types the worker can process (PDF, Word, HTML, Markdown and plain text formats) and skips hidden files and directories. A file's external id is its path inside the folder, so editing it replaces the document's file and removing it deletes the document. Renaming or moving a file removes the old document and adds a new one.
+It reads the file types the worker can process (PDF, Word, HTML, Markdown and plain text formats) and skips hidden files and directories and files that are links leading outside the folder (a warning in the log names them). A folder that cannot be read or is missing fails the run instead of counting as empty, and so does a path inside it that cannot be read: the documents are kept. A file's external id is its path inside the folder, so editing it replaces the document's file and removing it deletes the document. Renaming or moving a file removes the old document and adds a new one.
 
 ## How a sync works
 
 - **Change detection.** Each item has a version (for files, modification time and size). An item whose version is unchanged is not read again; a changed one is read and uploaded only if its content differs. A sync that did not fail does not upload anything twice.
 - **Last success.** A sync records its start time when it succeeds and passes it to the next one, so a source that can report changes (`since`) only has to list those. A failed run does not move it: the next run starts again from the last success, skipping what already worked.
-- **Deletes.** A source that lists everything (`complete`, like the folder) has the documents of items missing from the listing deleted, but only after a run without failures. A source that lists only changes marks removed items as `deleted`.
+- **Deletes.** A source that lists everything (`complete`, like the folder) has the documents of items missing from the listing deleted, but only after a run without failures, and never when the listing is empty while documents exist: that run fails with an error saying so (an unmounted folder looks like an emptied one). To really remove everything, delete the documents by hand and the connector's `<name>.item.*` keys, or remove the connector. A source that lists only changes marks removed items as `deleted`.
 - **Documents edited by hand.** What a sync overwrites (file, title, metadata) is also changed by the document's owner; the document page tells the owner that the document comes from a connector. A document deleted by hand is added again at the next change.
-- **Several workers.** A lease in the key-value bucket keeps two workers from syncing the same connector at once.
+- **Empty files.** An item that is empty (for instance a file truncated to 0 bytes) is not uploaded; its document keeps the old content. The version is remembered so the file is not read at every sync, and the status says `n items skipped; first: ...` until the item has content again. The run still counts as successful.
+- **Several workers.** A lease in the key-value bucket keeps two workers from syncing the same connector at once. A running sync renews it, so a long sync is not started a second time. A failing state store (NATS) fails that sync only: it is logged and retried at the next interval, and the lease is always released.
 
 State (status of each connector, the document of each item) lives in the JetStream key-value bucket `ingestion_connectors`. If it is lost, the next sync adds the items again as new documents.
 
