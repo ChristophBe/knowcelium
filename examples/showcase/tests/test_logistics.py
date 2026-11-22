@@ -1,4 +1,5 @@
 import json
+import re
 import threading
 from http.client import HTTPConnection
 from http.server import ThreadingHTTPServer
@@ -125,3 +126,47 @@ def test_http_server_serves_json_and_is_read_only(monkeypatch: pytest.MonkeyPatc
     finally:
         server.shutdown()
         thread.join(5)
+
+
+def test_every_collection_has_a_detail_endpoint():
+    assert get("/stock/STK-4002")[1]["id"] == "STK-4002"
+    assert get("/stock/STK-0000")[0] == 404
+    assert get("/stock/STK%2D4002")[1]["id"] == "STK-4002"
+    assert get("/suppliers/SUP%2D1001")[0] == 200
+
+
+@pytest.mark.parametrize(
+    "target",
+    [
+        "/stock?suplier_id=SUP-1002",
+        "/stock?supplier_id=",
+        "/suppliers?foo=1",
+        "/health?x=1",
+        "/stock/STK-4002?limit=1",
+        "/search?q=x&limit=",
+    ],
+)
+def test_unknown_and_blank_parameters_are_rejected(target: str):
+    status, body = get(target)
+    assert status == 400
+    assert "error" in body
+
+
+def test_updated_since_accepts_an_unencoded_plus_offset():
+    # parse_qs turns the `+` of `+01:00` into a space.
+    _, page = get("/stock?updated_since=2026-11-19T07:00:00+01:00")
+    assert page["total"] == get("/stock?updated_since=2026-11-19T06:00:00Z")[1]["total"]
+    assert get("/stock?updated_since=2026-11-19T07:00:00%2B01:00")[0] == 200
+    assert get("/stock?updated_since=2026-11-19 10:00")[0] == 200
+
+
+def test_unexpected_errors_answer_a_json_500():
+    boom = api.Router()
+
+    @boom.get("/boom")
+    def explode(_query: api.Query, _match: re.Match[str]) -> Any:
+        raise RuntimeError("secret")
+
+    status, body = boom.dispatch("/boom")
+    assert status == 500
+    assert body == {"error": "internal server error"}

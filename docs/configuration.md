@@ -241,3 +241,5 @@ Substituted by Docker Compose into the compose files: host ports, the release ve
 | `KNOWCEL_OTEL_GRPC_PORT` | `4317` | Host port of the collector's OTLP/gRPC receiver (observability profile). | `deploy/infra.compose.yaml` |
 | `KNOWCEL_JAEGER_PORT` | `16686` | Host port of the Jaeger UI (observability profile). | `deploy/infra.compose.yaml` |
 | `KNOWCEL_PROMETHEUS_PORT` | `9090` | Host port of the Prometheus UI (observability profile). | `deploy/infra.compose.yaml` |
+| `KNOWCEL_SHOWCASE_ENGINEERING_PORT` | `8091` | Host ports of the mock engineering and logistics systems (`showcase` profile, examples/showcase/README.md). | `examples/showcase/compose.yaml` |
+| `KNOWCEL_SHOWCASE_LOGISTICS_PORT` | `8092` | Host ports of the mock engineering and logistics systems (`showcase` profile, examples/showcase/README.md). | `examples/showcase/compose.yaml` |
