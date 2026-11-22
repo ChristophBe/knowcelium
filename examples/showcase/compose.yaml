@@ -1,0 +1,26 @@
+# Mock engineering and logistics systems for the connector showcase (examples/showcase/README.md).
+# Part of the stack only under the profile `showcase`: task up -- --profile showcase
+x-showcase: &showcase
+  profiles: [showcase]
+  restart: unless-stopped
+
+services:
+  showcase-engineering:
+    <<: *showcase
+    build: { context: ., args: { SERVICE: engineering } }
+    environment: { PORT: "8091" }
+    ports: ["${KNOWCEL_SHOWCASE_ENGINEERING_PORT:-8091}:8091"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8091/health', timeout=2)"]
+      interval: 2s
+      retries: 30
+
+  showcase-logistics:
+    <<: *showcase
+    build: { context: ., args: { SERVICE: logistics } }
+    environment: { PORT: "8092" }
+    ports: ["${KNOWCEL_SHOWCASE_LOGISTICS_PORT:-8092}:8092"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8092/health', timeout=2)"]
+      interval: 2s
+      retries: 30

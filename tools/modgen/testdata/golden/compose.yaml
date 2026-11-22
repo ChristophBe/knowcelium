@@ -4,5 +4,6 @@ name: knowcelium
 include:
   - deploy/infra.compose.yaml
   - deploy/edge.compose.yaml
+  - examples/showcase/compose.yaml
   - modules/notes/compose.yaml
   - modules/search/compose.yaml

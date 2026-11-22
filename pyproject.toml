@@ -22,6 +22,7 @@ package = false
 [tool.uv.workspace]
 members = [
     "platform/python",
+    "examples/showcase",
     "platform/api/python",
     "modules/*/api/python",
     "modules/chat/service",
@@ -45,9 +46,11 @@ select = [
 # gRPC servicers (and test fakes of them) implement the generated CamelCase method names.
 "**/server.py" = ["N802"]
 "**/tests/**" = ["N802"]
+# Seed data: prose strings in records.
+"examples/**/data.py" = ["E501"]
 
 [tool.pyright]
-include = ["platform/python", "modules/**/service", "modules/**/worker"]
+include = ["platform/python", "examples/showcase", "modules/**/service", "modules/**/worker"]
 exclude = ["**/api/python/src", "**/.venv", "**/node_modules"]
 pythonVersion = "3.13"
 # "standard" plus the strict checks that apply to our own code; full strict
