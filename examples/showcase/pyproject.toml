@@ -1,0 +1,16 @@
+[project]
+name = "knowcel-showcase"
+version = "0.1.0"
+description = "Mock engineering and logistics systems for the connector showcase (fictional data)"
+requires-python = ">=3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+# The services are run as `python -m engineering` from this directory.
+pythonpath = ["."]
+addopts = ["--import-mode=importlib"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"

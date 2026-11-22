@@ -8,7 +8,7 @@ vars:
   GOTOOL_ABS: go tool -modfile={{.ROOT_DIR}}/tools/go.mod
   # Python components with their own tests (each is run with its own rootdir).
   PY_COMPONENTS:
-    sh: for d in platform/python modules/*/service modules/*/worker; do [ -f "$d/pyproject.toml" ] && echo "$d"; done; true
+    sh: for d in platform/python modules/*/service modules/*/worker examples/showcase; do [ -f "$d/pyproject.toml" ] && echo "$d"; done; true
   # Shell function for the test tasks: `in_scope <module id>` is true when the module is
   # selected by MODULES (space-separated ids, as printed by `modgen affected`; empty or
   # "all" selects everything). `in_scope all` is true only for a full run, which is
@@ -141,6 +141,7 @@ tasks:
         modules/curation/service 70
         modules/llm/service      80
         modules/ingestion/worker 75
+        examples/showcase        90
     cmds:
       - for: { var: PY_COMPONENTS }
         cmd: |
@@ -149,7 +150,8 @@ tasks:
           in_scope "$id" || { echo "skip {{.ITEM}}: not in MODULES"; exit 0; }
           min=$(echo '{{.MINIMUMS}}' | awk -v c="{{.ITEM}}" '$1 == c { print $2 }')
           [ -n "$min" ] || { echo "no coverage minimum for {{.ITEM}} in Taskfile test:py"; exit 1; }
-          uv run pytest -q -m "not integration" --rootdir {{.ITEM}} {{.ITEM}} --cov={{.ITEM}}/src --cov-report=term:skip-covered --cov-fail-under="$min"
+          src={{.ITEM}}/src; [ -d "$src" ] || src={{.ITEM}}
+          uv run pytest -q -m "not integration" --rootdir {{.ITEM}} {{.ITEM}} --cov="$src" --cov-report=term:skip-covered --cov-fail-under="$min"
 
   test:ts:
     desc: TypeScript unit tests (Vitest) with the coverage thresholds from vitest.config.ts.

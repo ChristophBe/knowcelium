@@ -21,6 +21,7 @@ members = [
     "knowcel-llm-api",
     "knowcel-llm-service",
     "knowcel-platform",
+    "knowcel-showcase",
 ]
 
 [[package]]
@@ -1245,6 +1246,11 @@ requires-dist = [
     { name = "prometheus-client", specifier = ">=0.26" },
     { name = "pydantic-settings", specifier = ">=2.11" },
 ]
+
+[[package]]
+name = "knowcel-showcase"
+version = "0.1.0"
+source = { virtual = "examples/showcase" }
 
 [[package]]
 name = "lxml"
