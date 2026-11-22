@@ -39,6 +39,8 @@ import { Link } from "react-router";
 import { findingIsGone, findingsError, resolveError } from "./errors.ts";
 import { STATES, stateInfo } from "./lifecycle/states.ts";
 import { useUserNames } from "./lifecycle/useUserNames.ts";
+import RatingSummary from "./ratings/RatingSummary.tsx";
+import { useRatingSummary } from "./ratings/useRating.ts";
 import { reasonLabel } from "./reports/reasons.ts";
 
 const PAGE_SIZE = 25;
@@ -400,6 +402,7 @@ function FindingCard({
           {" · "}
           Found {formatTime(f.createdAt)}
           {score !== undefined && ` · Relevance ${Math.round(score * 100)} %`}
+          <RatedBy documentId={f.documentId} />
         </p>
         {f.reports.length > 0 && <ReportList reports={f.reports} />}
         <ul className="mt-3 flex flex-col gap-2">
@@ -435,6 +438,18 @@ function FindingCard({
         )}
       </Card>
     </li>
+  );
+}
+
+/** How the document was rated, after a separator; nothing while it has no ratings. */
+function RatedBy({ documentId }: { documentId: string }) {
+  const summary = useRatingSummary(documentId);
+  if ((summary.data?.helpful ?? 0) + (summary.data?.notHelpful ?? 0) === 0) return null;
+  return (
+    <>
+      {" · "}
+      <RatingSummary documentId={documentId} />
+    </>
   );
 }
 

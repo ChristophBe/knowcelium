@@ -170,7 +170,7 @@ if jq -e 'has("colors")' "$file" >/dev/null; then
 fi
 # --- icons: an object from icon name to an image file (copied to <web root>/branding/icons) ---
 # The icon names of the UI (platform/ui/kit/src/icons.tsx; a test keeps this list and the guide in step).
-ICON_NAMES="alert-triangle arrow-left arrow-right arrow-up bar-chart-3 check check-circle-2 chevron-left circle-alert circle-help circle-user copy cpu download file-text file-up info layers library log-out menu message-square message-square-text monitor moon plus rotate-ccw search search-x shield-alert square sun trash-2 triangle-alert upload user-minus user-round-cog users-round x"
+ICON_NAMES="alert-triangle arrow-left arrow-right arrow-up bar-chart-3 check check-circle-2 chevron-left circle-alert circle-help circle-user copy cpu download file-text file-up info layers library log-out menu message-square message-square-text monitor moon plus rotate-ccw search search-x shield-alert square sun thumbs-down thumbs-up trash-2 triangle-alert upload user-minus user-round-cog users-round x"
 if jq -e 'has("icons")' "$file" >/dev/null; then
   if ! jq -e '.icons | type == "object"' "$file" >/dev/null; then
     fail "icons must be an object from icon name to image file"

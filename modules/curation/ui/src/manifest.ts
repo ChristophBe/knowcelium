@@ -19,6 +19,15 @@ export default defineManifest({
       order: 20,
     },
     {
+      slot: "document.detail.actions",
+      load: () => import("./ratings/RateAction.tsx"),
+      order: 30,
+    },
+    {
+      slot: "chat.citation.actions",
+      load: () => import("./ratings/RatingButtons.tsx"),
+    },
+    {
       slot: "document.detail.sections",
       load: () => import("./lifecycle/LifecycleHistory.tsx"),
     },

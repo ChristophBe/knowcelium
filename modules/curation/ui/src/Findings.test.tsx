@@ -542,4 +542,21 @@ describe("Findings", () => {
       expect(within(card).queryByRole("button")).toBeNull();
     });
   });
+
+  it("shows how the document of a finding was rated", async () => {
+    const transport = createRouterTransport(({ service }) =>
+      service(CurationService, {
+        listFindings: () => ({ findings: [version, reminder], nextPageToken: "" }),
+        scoreChunks: () => ({ scores: [] }),
+        getRatingSummary: ({ documentId }) =>
+          documentId === "d1"
+            ? { helpful: 1, notHelpful: 4, myRating: 0 }
+            : { helpful: 0, notHelpful: 0, myRating: 0 },
+      }),
+    );
+    renderModule(curation, transport);
+    expect(await screen.findByText("1 found it helpful, 4 not")).toBeTruthy();
+    // The other document has no ratings: nothing is said.
+    expect(screen.getAllByText(/found it helpful/)).toHaveLength(1);
+  });
 });

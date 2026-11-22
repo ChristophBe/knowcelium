@@ -68,7 +68,12 @@ export interface SlotProps {
   /** Small status badges next to a document in the documents list. */
   "document.list.badges": { documentId: string };
   /** Actions on a source of a chat answer; only for sources that are documents. */
-  "chat.citation.actions": { documentId: string; chunkIndex: number; conversationId?: string };
+  "chat.citation.actions": {
+    documentId: string;
+    documentTitle: string;
+    chunkIndex: number;
+    conversationId?: string;
+  };
 }
 
 export type SlotName = keyof SlotProps;

@@ -63,6 +63,15 @@ The document's owner, the admins of the teams it is shared with and platform adm
 
 You have one report per document. Once you have reported a document, the button reads **Reported**: select it to see your report, and **Change report** to change the reason or the comment. When the report has been dismissed, the button reads **Report** again.
 
+## Rate a document or a passage
+
+Tell Knowcelium whether a document helped you, so that documents people find helpful rank higher in answers and search, and those they don't rank lower.
+
+- **On a document's page**, the thumbs next to the other actions rate the whole document: **Mark this document as helpful** and **Mark this document as not helpful**. Next to them it says how many people found the document helpful and how many not.
+- **Under a source in chat**, the thumbs rate that passage of the document: **Mark passage … as helpful** or **as not helpful**. Select a document's row under **Sources** to see them.
+
+The thumb you chose stays pressed, also after you come back to the page. Select it again to take your rating back, or the other thumb to change it. A notification confirms each change, and your keyboard focus stays on the thumb. You have one vote per document: your latest rating of the document or of any of its passages is the one that counts. A rating only changes how a document ranks once a few people have rated it, so one rating doesn't decide. If your rating can't be saved, Knowcelium says so and the thumbs stay as they were. While ratings can't be loaded, the thumbs are not shown.
+
 ## Open a document
 
 Select a document's title. The page shows its **Status**, **Detail** (the reason when processing failed), its **Version** (1 for the first upload, one more for every [new version](#replace-a-document-with-a-new-version)), **Filename**, **Content type**, **Size**, **Passages**, when it was **Created** and **Updated**, its **Metadata** and its **ID**. A value that is empty shows as "—".

@@ -209,8 +209,8 @@ describe("Answer", () => {
         {
           slot: "chat.citation.actions",
           load: async () => ({
-            default: ({ documentId, chunkIndex, conversationId }) => (
-              <button type="button">{`Rate ${documentId}/${chunkIndex}/${conversationId}`}</button>
+            default: ({ documentId, documentTitle, chunkIndex, conversationId }) => (
+              <button type="button">{`Rate ${documentTitle} ${documentId}/${chunkIndex}/${conversationId}`}</button>
             ),
           }),
         },
@@ -237,8 +237,8 @@ describe("Answer", () => {
     for (const name of [/Report\.pdf/, /Notes\.md/, /User manual/]) {
       fireEvent.click(screen.getByRole("button", { name }));
     }
-    expect(await screen.findByRole("button", { name: "Rate d1/3/c1" })).toBeTruthy();
-    expect(screen.getByRole("button", { name: "Rate d2/0/c1" })).toBeTruthy();
+    expect(await screen.findByRole("button", { name: "Rate Report.pdf d1/3/c1" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Rate Notes.md d2/0/c1" })).toBeTruthy();
     // The user manual has no document to act on.
     expect(screen.getAllByRole("button", { name: /^Rate / })).toHaveLength(2);
   });

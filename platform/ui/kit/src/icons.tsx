@@ -31,6 +31,8 @@ import {
   ShieldAlert as LucideShieldAlert,
   Square as LucideSquare,
   Sun as LucideSun,
+  ThumbsDown as LucideThumbsDown,
+  ThumbsUp as LucideThumbsUp,
   Trash2 as LucideTrash2,
   TriangleAlert as LucideTriangleAlert,
   Upload as LucideUpload,
@@ -144,6 +146,8 @@ export const SearchX = icon("search-x", LucideSearchX);
 export const ShieldAlert = icon("shield-alert", LucideShieldAlert);
 export const Square = icon("square", LucideSquare);
 export const Sun = icon("sun", LucideSun);
+export const ThumbsDown = icon("thumbs-down", LucideThumbsDown);
+export const ThumbsUp = icon("thumbs-up", LucideThumbsUp);
 export const Trash2 = icon("trash-2", LucideTrash2);
 export const TriangleAlert = icon("triangle-alert", LucideTriangleAlert);
 export const Upload = icon("upload", LucideUpload);

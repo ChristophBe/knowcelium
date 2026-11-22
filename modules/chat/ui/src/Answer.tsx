@@ -291,6 +291,7 @@ function SourceGroupRow({
                 <Slot
                   name="chat.citation.actions"
                   documentId={c.documentId}
+                  documentTitle={c.documentTitle}
                   chunkIndex={c.chunkIndex}
                   conversationId={conversationId}
                 />

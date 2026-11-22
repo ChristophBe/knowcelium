@@ -170,7 +170,7 @@ describe("Slot", () => {
     const typed = () => (
       <>
         <Slot name="document.detail.actions" documentId="d1" />
-        <Slot name="chat.citation.actions" documentId="d1" chunkIndex={2} />
+        <Slot name="chat.citation.actions" documentId="d1" documentTitle="Notes" chunkIndex={2} />
         {/* @ts-expect-error documentId is required */}
         <Slot name="document.detail.actions" />
         {/* @ts-expect-error there is no such slot */}
