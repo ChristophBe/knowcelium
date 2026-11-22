@@ -14,7 +14,45 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file knowcel/chat/v1/chat.proto.
  */
 export const file_knowcel_chat_v1_chat: GenFile = /*@__PURE__*/
-  fileDesc("Chprbm93Y2VsL2NoYXQvdjEvY2hhdC5wcm90bxIPa25vd2NlbC5jaGF0LnYxIpkBCghDaXRhdGlvbhITCgtkb2N1bWVudF9pZBgBIAEoCRIWCg5kb2N1bWVudF90aXRsZRgCIAEoCRITCgtjaHVua19pbmRleBgDIAEoBRIPCgdzbmlwcGV0GAQgASgJEg0KBXNjb3JlGAUgASgCEhMKC21hbnVhbF9wYWdlGAYgASgJEhYKDm1hbnVhbF9zZWN0aW9uGAcgASgJIuUBCgtDaGF0TWVzc2FnZRIKCgJpZBgBIAEoCRIqCgRyb2xlGAIgASgOMhwua25vd2NlbC5jaGF0LnYxLk1lc3NhZ2VSb2xlEg8KB2NvbnRlbnQYAyABKAkSLAoJY2l0YXRpb25zGAQgAygLMhkua25vd2NlbC5jaGF0LnYxLkNpdGF0aW9uEi8KC2NyZWF0ZV90aW1lGAUgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIuCgZzdGF0dXMYBiABKA4yHi5rbm93Y2VsLmNoYXQudjEuTWVzc2FnZVN0YXR1cyLfAgoMQ29udmVyc2F0aW9uEgoKAmlkGAEgASgJEg0KBXRpdGxlGAIgASgJEi8KC2NyZWF0ZV90aW1lGAMgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIvCgt1cGRhdGVfdGltZRgEIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASFAoMZG9jdW1lbnRfaWRzGAUgAygJEjUKEWxhc3RfbWVzc2FnZV90aW1lGAYgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIcChRsYXN0X21lc3NhZ2VfcHJldmlldxgHIAEoCRIQCghvd25lcl9pZBgIIAEoCRIQCgh0ZWFtX2lkcxgJIAMoCRISCgpnZW5lcmF0aW5nGAogASgIEhgKEGNvbXBsZXRlZF91bnNlZW4YCyABKAgSFQoNc3lzdGVtX3Byb21wdBgMIAEoCSIWCgdUZWFtSWRzEgsKA2lkcxgBIAMoCSIaCgtEb2N1bWVudElkcxILCgNpZHMYASADKAkiUgoZQ3JlYXRlQ29udmVyc2F0aW9uUmVxdWVzdBINCgV0aXRsZRgBIAEoCRIUCgxkb2N1bWVudF9pZHMYAiADKAkSEAoIdGVhbV9pZHMYAyADKAkiUQoaQ3JlYXRlQ29udmVyc2F0aW9uUmVzcG9uc2USMwoMY29udmVyc2F0aW9uGAEgASgLMh0ua25vd2NlbC5jaGF0LnYxLkNvbnZlcnNhdGlvbiIkChZHZXRDb252ZXJzYXRpb25SZXF1ZXN0EgoKAmlkGAEgASgJIn4KF0dldENvbnZlcnNhdGlvblJlc3BvbnNlEjMKDGNvbnZlcnNhdGlvbhgBIAEoCzIdLmtub3djZWwuY2hhdC52MS5Db252ZXJzYXRpb24SLgoIbWVzc2FnZXMYAiADKAsyHC5rbm93Y2VsLmNoYXQudjEuQ2hhdE1lc3NhZ2UiSAoYTGlzdENvbnZlcnNhdGlvbnNSZXF1ZXN0EiwKBHBhZ2UYASABKAsyHi5rbm93Y2VsLmNvbW1vbi52MS5QYWdlUmVxdWVzdCKAAQoZTGlzdENvbnZlcnNhdGlvbnNSZXNwb25zZRI0Cg1jb252ZXJzYXRpb25zGAEgAygLMh0ua25vd2NlbC5jaGF0LnYxLkNvbnZlcnNhdGlvbhItCgRwYWdlGAIgASgLMh8ua25vd2NlbC5jb21tb24udjEuUGFnZVJlc3BvbnNlIicKGURlbGV0ZUNvbnZlcnNhdGlvblJlcXVlc3QSCgoCaWQYASABKAkiHAoaRGVsZXRlQ29udmVyc2F0aW9uUmVzcG9uc2Ui0wEKGVVwZGF0ZUNvbnZlcnNhdGlvblJlcXVlc3QSCgoCaWQYASABKAkSEgoFdGl0bGUYAiABKAlIAIgBARIyCgxkb2N1bWVudF9pZHMYAyABKAsyHC5rbm93Y2VsLmNoYXQudjEuRG9jdW1lbnRJZHMSKgoIdGVhbV9pZHMYBCABKAsyGC5rbm93Y2VsLmNoYXQudjEuVGVhbUlkcxIaCg1zeXN0ZW1fcHJvbXB0GAUgASgJSAGIAQFCCAoGX3RpdGxlQhAKDl9zeXN0ZW1fcHJvbXB0IlEKGlVwZGF0ZUNvbnZlcnNhdGlvblJlc3BvbnNlEjMKDGNvbnZlcnNhdGlvbhgBIAEoCzIdLmtub3djZWwuY2hhdC52MS5Db252ZXJzYXRpb24iOgoaU2VhcmNoQ29udmVyc2F0aW9uc1JlcXVlc3QSDQoFcXVlcnkYASABKAkSDQoFbGltaXQYAiABKAUiUgobU2VhcmNoQ29udmVyc2F0aW9uc1Jlc3BvbnNlEjMKB3Jlc3VsdHMYASADKAsyIi5rbm93Y2VsLmNoYXQudjEuQ29udmVyc2F0aW9uTWF0Y2giWQoRQ29udmVyc2F0aW9uTWF0Y2gSMwoMY29udmVyc2F0aW9uGAEgASgLMh0ua25vd2NlbC5jaGF0LnYxLkNvbnZlcnNhdGlvbhIPCgdzbmlwcGV0GAIgASgJImgKEVN0cmVhbUNoYXRSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoCRIPCgdjb250ZW50GAIgASgJEhoKEnVzZV9rbm93bGVkZ2VfYmFzZRgDIAEoCBINCgVtb2RlbBgEIAEoCSIqCg9TdG9wQ2hhdFJlcXVlc3QSFwoPY29udmVyc2F0aW9uX2lkGAEgASgJIhIKEFN0b3BDaGF0UmVzcG9uc2Ui8QEKElN0cmVhbUNoYXRSZXNwb25zZRIvCgljaXRhdGlvbnMYASABKAsyGi5rbm93Y2VsLmNoYXQudjEuQ2l0YXRpb25zSAASDwoFZGVsdGEYAiABKAlIABIvCgdtZXNzYWdlGAMgASgLMhwua25vd2NlbC5jaGF0LnYxLkNoYXRNZXNzYWdlSAASKwoFZXJyb3IYBCABKAsyGi5rbm93Y2VsLmNoYXQudjEuQ2hhdEVycm9ySAASMgoIcHJvZ3Jlc3MYBSABKA4yHi5rbm93Y2VsLmNoYXQudjEuUHJvZ3Jlc3NTdGFnZUgAQgcKBWV2ZW50IkoKCUNoYXRFcnJvchIsCgRjb2RlGAEgASgOMh4ua25vd2NlbC5jaGF0LnYxLkNoYXRFcnJvckNvZGUSDwoHbWVzc2FnZRgCIAEoCSI1CglDaXRhdGlvbnMSKAoFaXRlbXMYASADKAsyGS5rbm93Y2VsLmNoYXQudjEuQ2l0YXRpb24i1QEKD1Byb21wdFRlbXBsYXRlcxI2Cg1zeXN0ZW1fcHJvbXB0GAEgASgLMh8ua25vd2NlbC5jaGF0LnYxLlByb21wdFRlbXBsYXRlEjkKEHNvdXJjZXNfdGVtcGxhdGUYAiABKAsyHy5rbm93Y2VsLmNoYXQudjEuUHJvbXB0VGVtcGxhdGUSPAoTbm9fc291cmNlc190ZW1wbGF0ZRgDIAEoCzIfLmtub3djZWwuY2hhdC52MS5Qcm9tcHRUZW1wbGF0ZRIRCgl2YXJpYWJsZXMYBCADKAkiTgoOUHJvbXB0VGVtcGxhdGUSDwoHY29udGVudBgBIAEoCRIXCg9kZWZhdWx0X2NvbnRlbnQYAiABKAkSEgoKaXNfZGVmYXVsdBgDIAEoCCIbChlHZXRQcm9tcHRUZW1wbGF0ZXNSZXF1ZXN0IlEKGkdldFByb21wdFRlbXBsYXRlc1Jlc3BvbnNlEjMKCXRlbXBsYXRlcxgBIAEoCzIgLmtub3djZWwuY2hhdC52MS5Qcm9tcHRUZW1wbGF0ZXMiugEKHFVwZGF0ZVByb21wdFRlbXBsYXRlc1JlcXVlc3QSGgoNc3lzdGVtX3Byb21wdBgBIAEoCUgAiAEBEh0KEHNvdXJjZXNfdGVtcGxhdGUYAiABKAlIAYgBARIgChNub19zb3VyY2VzX3RlbXBsYXRlGAMgASgJSAKIAQFCEAoOX3N5c3RlbV9wcm9tcHRCEwoRX3NvdXJjZXNfdGVtcGxhdGVCFgoUX25vX3NvdXJjZXNfdGVtcGxhdGUiVAodVXBkYXRlUHJvbXB0VGVtcGxhdGVzUmVzcG9uc2USMwoJdGVtcGxhdGVzGAEgASgLMiAua25vd2NlbC5jaGF0LnYxLlByb21wdFRlbXBsYXRlcypeCgtNZXNzYWdlUm9sZRIcChhNRVNTQUdFX1JPTEVfVU5TUEVDSUZJRUQQABIVChFNRVNTQUdFX1JPTEVfVVNFUhABEhoKFk1FU1NBR0VfUk9MRV9BU1NJU1RBTlQQAiqDAQoNTWVzc2FnZVN0YXR1cxIeChpNRVNTQUdFX1NUQVRVU19VTlNQRUNJRklFRBAAEhsKF01FU1NBR0VfU1RBVFVTX0NPTVBMRVRFEAESGgoWTUVTU0FHRV9TVEFUVVNfU1RPUFBFRBACEhkKFU1FU1NBR0VfU1RBVFVTX0ZBSUxFRBADKm8KDUNoYXRFcnJvckNvZGUSHwobQ0hBVF9FUlJPUl9DT0RFX1VOU1BFQ0lGSUVEEAASHwobQ0hBVF9FUlJPUl9DT0RFX1VOQVZBSUxBQkxFEAESHAoYQ0hBVF9FUlJPUl9DT0RFX0lOVEVSTkFMEAIqhAEKDVByb2dyZXNzU3RhZ2USHgoaUFJPR1JFU1NfU1RBR0VfVU5TUEVDSUZJRUQQABIcChhQUk9HUkVTU19TVEFHRV9TRUFSQ0hJTkcQARIZChVQUk9HUkVTU19TVEFHRV9SQVRJTkcQAhIaChZQUk9HUkVTU19TVEFHRV9XUklUSU5HEAMyrwgKC0NoYXRTZXJ2aWNlEm0KEkNyZWF0ZUNvbnZlcnNhdGlvbhIqLmtub3djZWwuY2hhdC52MS5DcmVhdGVDb252ZXJzYXRpb25SZXF1ZXN0Gisua25vd2NlbC5jaGF0LnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlc3BvbnNlEmQKD0dldENvbnZlcnNhdGlvbhInLmtub3djZWwuY2hhdC52MS5HZXRDb252ZXJzYXRpb25SZXF1ZXN0Gigua25vd2NlbC5jaGF0LnYxLkdldENvbnZlcnNhdGlvblJlc3BvbnNlEmoKEUxpc3RDb252ZXJzYXRpb25zEikua25vd2NlbC5jaGF0LnYxLkxpc3RDb252ZXJzYXRpb25zUmVxdWVzdBoqLmtub3djZWwuY2hhdC52MS5MaXN0Q29udmVyc2F0aW9uc1Jlc3BvbnNlEm0KEkRlbGV0ZUNvbnZlcnNhdGlvbhIqLmtub3djZWwuY2hhdC52MS5EZWxldGVDb252ZXJzYXRpb25SZXF1ZXN0Gisua25vd2NlbC5jaGF0LnYxLkRlbGV0ZUNvbnZlcnNhdGlvblJlc3BvbnNlEm0KElVwZGF0ZUNvbnZlcnNhdGlvbhIqLmtub3djZWwuY2hhdC52MS5VcGRhdGVDb252ZXJzYXRpb25SZXF1ZXN0Gisua25vd2NlbC5jaGF0LnYxLlVwZGF0ZUNvbnZlcnNhdGlvblJlc3BvbnNlEnAKE1NlYXJjaENvbnZlcnNhdGlvbnMSKy5rbm93Y2VsLmNoYXQudjEuU2VhcmNoQ29udmVyc2F0aW9uc1JlcXVlc3QaLC5rbm93Y2VsLmNoYXQudjEuU2VhcmNoQ29udmVyc2F0aW9uc1Jlc3BvbnNlElcKClN0cmVhbUNoYXQSIi5rbm93Y2VsLmNoYXQudjEuU3RyZWFtQ2hhdFJlcXVlc3QaIy5rbm93Y2VsLmNoYXQudjEuU3RyZWFtQ2hhdFJlc3BvbnNlMAESTwoIU3RvcENoYXQSIC5rbm93Y2VsLmNoYXQudjEuU3RvcENoYXRSZXF1ZXN0GiEua25vd2NlbC5jaGF0LnYxLlN0b3BDaGF0UmVzcG9uc2USbQoSR2V0UHJvbXB0VGVtcGxhdGVzEioua25vd2NlbC5jaGF0LnYxLkdldFByb21wdFRlbXBsYXRlc1JlcXVlc3QaKy5rbm93Y2VsLmNoYXQudjEuR2V0UHJvbXB0VGVtcGxhdGVzUmVzcG9uc2USdgoVVXBkYXRlUHJvbXB0VGVtcGxhdGVzEi0ua25vd2NlbC5jaGF0LnYxLlVwZGF0ZVByb21wdFRlbXBsYXRlc1JlcXVlc3QaLi5rbm93Y2VsLmNoYXQudjEuVXBkYXRlUHJvbXB0VGVtcGxhdGVzUmVzcG9uc2VCRVpDZ2l0aHViLmNvbS9DaHJpc3RvcGhCZS9rbm93Y2VsaXVtL21vZHVsZXMvY2hhdC9hcGkvZ28vY2hhdHYxO2NoYXR2MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_knowcel_common_v1_common]);
+  fileDesc("Chprbm93Y2VsL2NoYXQvdjEvY2hhdC5wcm90bxIPa25vd2NlbC5jaGF0LnYxIncKCFByb2dyZXNzEi0KBXN0YWdlGAEgASgOMh4ua25vd2NlbC5jaGF0LnYxLlByb2dyZXNzU3RhZ2USEAoIcGFzc2FnZXMYAiABKAUSEQoJZG9jdW1lbnRzGAMgASgFEhcKD21hbnVhbF9zZWN0aW9ucxgEIAEoBSKZAQoIQ2l0YXRpb24SEwoLZG9jdW1lbnRfaWQYASABKAkSFgoOZG9jdW1lbnRfdGl0bGUYAiABKAkSEwoLY2h1bmtfaW5kZXgYAyABKAUSDwoHc25pcHBldBgEIAEoCRINCgVzY29yZRgFIAEoAhITCgttYW51YWxfcGFnZRgGIAEoCRIWCg5tYW51YWxfc2VjdGlvbhgHIAEoCSLlAQoLQ2hhdE1lc3NhZ2USCgoCaWQYASABKAkSKgoEcm9sZRgCIAEoDjIcLmtub3djZWwuY2hhdC52MS5NZXNzYWdlUm9sZRIPCgdjb250ZW50GAMgASgJEiwKCWNpdGF0aW9ucxgEIAMoCzIZLmtub3djZWwuY2hhdC52MS5DaXRhdGlvbhIvCgtjcmVhdGVfdGltZRgFIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLgoGc3RhdHVzGAYgASgOMh4ua25vd2NlbC5jaGF0LnYxLk1lc3NhZ2VTdGF0dXMi3wIKDENvbnZlcnNhdGlvbhIKCgJpZBgBIAEoCRINCgV0aXRsZRgCIAEoCRIvCgtjcmVhdGVfdGltZRgDIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLdXBkYXRlX3RpbWUYBCABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhQKDGRvY3VtZW50X2lkcxgFIAMoCRI1ChFsYXN0X21lc3NhZ2VfdGltZRgGIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASHAoUbGFzdF9tZXNzYWdlX3ByZXZpZXcYByABKAkSEAoIb3duZXJfaWQYCCABKAkSEAoIdGVhbV9pZHMYCSADKAkSEgoKZ2VuZXJhdGluZxgKIAEoCBIYChBjb21wbGV0ZWRfdW5zZWVuGAsgASgIEhUKDXN5c3RlbV9wcm9tcHQYDCABKAkiFgoHVGVhbUlkcxILCgNpZHMYASADKAkiGgoLRG9jdW1lbnRJZHMSCwoDaWRzGAEgAygJIlIKGUNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QSDQoFdGl0bGUYASABKAkSFAoMZG9jdW1lbnRfaWRzGAIgAygJEhAKCHRlYW1faWRzGAMgAygJIlEKGkNyZWF0ZUNvbnZlcnNhdGlvblJlc3BvbnNlEjMKDGNvbnZlcnNhdGlvbhgBIAEoCzIdLmtub3djZWwuY2hhdC52MS5Db252ZXJzYXRpb24iJAoWR2V0Q29udmVyc2F0aW9uUmVxdWVzdBIKCgJpZBgBIAEoCSJ+ChdHZXRDb252ZXJzYXRpb25SZXNwb25zZRIzCgxjb252ZXJzYXRpb24YASABKAsyHS5rbm93Y2VsLmNoYXQudjEuQ29udmVyc2F0aW9uEi4KCG1lc3NhZ2VzGAIgAygLMhwua25vd2NlbC5jaGF0LnYxLkNoYXRNZXNzYWdlIkgKGExpc3RDb252ZXJzYXRpb25zUmVxdWVzdBIsCgRwYWdlGAEgASgLMh4ua25vd2NlbC5jb21tb24udjEuUGFnZVJlcXVlc3QigAEKGUxpc3RDb252ZXJzYXRpb25zUmVzcG9uc2USNAoNY29udmVyc2F0aW9ucxgBIAMoCzIdLmtub3djZWwuY2hhdC52MS5Db252ZXJzYXRpb24SLQoEcGFnZRgCIAEoCzIfLmtub3djZWwuY29tbW9uLnYxLlBhZ2VSZXNwb25zZSInChlEZWxldGVDb252ZXJzYXRpb25SZXF1ZXN0EgoKAmlkGAEgASgJIhwKGkRlbGV0ZUNvbnZlcnNhdGlvblJlc3BvbnNlItMBChlVcGRhdGVDb252ZXJzYXRpb25SZXF1ZXN0EgoKAmlkGAEgASgJEhIKBXRpdGxlGAIgASgJSACIAQESMgoMZG9jdW1lbnRfaWRzGAMgASgLMhwua25vd2NlbC5jaGF0LnYxLkRvY3VtZW50SWRzEioKCHRlYW1faWRzGAQgASgLMhgua25vd2NlbC5jaGF0LnYxLlRlYW1JZHMSGgoNc3lzdGVtX3Byb21wdBgFIAEoCUgBiAEBQggKBl90aXRsZUIQCg5fc3lzdGVtX3Byb21wdCJRChpVcGRhdGVDb252ZXJzYXRpb25SZXNwb25zZRIzCgxjb252ZXJzYXRpb24YASABKAsyHS5rbm93Y2VsLmNoYXQudjEuQ29udmVyc2F0aW9uIjoKGlNlYXJjaENvbnZlcnNhdGlvbnNSZXF1ZXN0Eg0KBXF1ZXJ5GAEgASgJEg0KBWxpbWl0GAIgASgFIlIKG1NlYXJjaENvbnZlcnNhdGlvbnNSZXNwb25zZRIzCgdyZXN1bHRzGAEgAygLMiIua25vd2NlbC5jaGF0LnYxLkNvbnZlcnNhdGlvbk1hdGNoIlkKEUNvbnZlcnNhdGlvbk1hdGNoEjMKDGNvbnZlcnNhdGlvbhgBIAEoCzIdLmtub3djZWwuY2hhdC52MS5Db252ZXJzYXRpb24SDwoHc25pcHBldBgCIAEoCSJoChFTdHJlYW1DaGF0UmVxdWVzdBIXCg9jb252ZXJzYXRpb25faWQYASABKAkSDwoHY29udGVudBgCIAEoCRIaChJ1c2Vfa25vd2xlZGdlX2Jhc2UYAyABKAgSDQoFbW9kZWwYBCABKAkiKgoPU3RvcENoYXRSZXF1ZXN0EhcKD2NvbnZlcnNhdGlvbl9pZBgBIAEoCSISChBTdG9wQ2hhdFJlc3BvbnNlIqICChJTdHJlYW1DaGF0UmVzcG9uc2USLwoJY2l0YXRpb25zGAEgASgLMhoua25vd2NlbC5jaGF0LnYxLkNpdGF0aW9uc0gAEg8KBWRlbHRhGAIgASgJSAASLwoHbWVzc2FnZRgDIAEoCzIcLmtub3djZWwuY2hhdC52MS5DaGF0TWVzc2FnZUgAEisKBWVycm9yGAQgASgLMhoua25vd2NlbC5jaGF0LnYxLkNoYXRFcnJvckgAEjYKCHByb2dyZXNzGAUgASgOMh4ua25vd2NlbC5jaGF0LnYxLlByb2dyZXNzU3RhZ2VCAhgBSAASKwoGc3RhdHVzGAYgASgLMhkua25vd2NlbC5jaGF0LnYxLlByb2dyZXNzSABCBwoFZXZlbnQiSgoJQ2hhdEVycm9yEiwKBGNvZGUYASABKA4yHi5rbm93Y2VsLmNoYXQudjEuQ2hhdEVycm9yQ29kZRIPCgdtZXNzYWdlGAIgASgJIjUKCUNpdGF0aW9ucxIoCgVpdGVtcxgBIAMoCzIZLmtub3djZWwuY2hhdC52MS5DaXRhdGlvbiLVAQoPUHJvbXB0VGVtcGxhdGVzEjYKDXN5c3RlbV9wcm9tcHQYASABKAsyHy5rbm93Y2VsLmNoYXQudjEuUHJvbXB0VGVtcGxhdGUSOQoQc291cmNlc190ZW1wbGF0ZRgCIAEoCzIfLmtub3djZWwuY2hhdC52MS5Qcm9tcHRUZW1wbGF0ZRI8ChNub19zb3VyY2VzX3RlbXBsYXRlGAMgASgLMh8ua25vd2NlbC5jaGF0LnYxLlByb21wdFRlbXBsYXRlEhEKCXZhcmlhYmxlcxgEIAMoCSJOCg5Qcm9tcHRUZW1wbGF0ZRIPCgdjb250ZW50GAEgASgJEhcKD2RlZmF1bHRfY29udGVudBgCIAEoCRISCgppc19kZWZhdWx0GAMgASgIIhsKGUdldFByb21wdFRlbXBsYXRlc1JlcXVlc3QiUQoaR2V0UHJvbXB0VGVtcGxhdGVzUmVzcG9uc2USMwoJdGVtcGxhdGVzGAEgASgLMiAua25vd2NlbC5jaGF0LnYxLlByb21wdFRlbXBsYXRlcyK6AQocVXBkYXRlUHJvbXB0VGVtcGxhdGVzUmVxdWVzdBIaCg1zeXN0ZW1fcHJvbXB0GAEgASgJSACIAQESHQoQc291cmNlc190ZW1wbGF0ZRgCIAEoCUgBiAEBEiAKE25vX3NvdXJjZXNfdGVtcGxhdGUYAyABKAlIAogBAUIQCg5fc3lzdGVtX3Byb21wdEITChFfc291cmNlc190ZW1wbGF0ZUIWChRfbm9fc291cmNlc190ZW1wbGF0ZSJUCh1VcGRhdGVQcm9tcHRUZW1wbGF0ZXNSZXNwb25zZRIzCgl0ZW1wbGF0ZXMYASABKAsyIC5rbm93Y2VsLmNoYXQudjEuUHJvbXB0VGVtcGxhdGVzKl4KC01lc3NhZ2VSb2xlEhwKGE1FU1NBR0VfUk9MRV9VTlNQRUNJRklFRBAAEhUKEU1FU1NBR0VfUk9MRV9VU0VSEAESGgoWTUVTU0FHRV9ST0xFX0FTU0lTVEFOVBACKoMBCg1NZXNzYWdlU3RhdHVzEh4KGk1FU1NBR0VfU1RBVFVTX1VOU1BFQ0lGSUVEEAASGwoXTUVTU0FHRV9TVEFUVVNfQ09NUExFVEUQARIaChZNRVNTQUdFX1NUQVRVU19TVE9QUEVEEAISGQoVTUVTU0FHRV9TVEFUVVNfRkFJTEVEEAMqbwoNQ2hhdEVycm9yQ29kZRIfChtDSEFUX0VSUk9SX0NPREVfVU5TUEVDSUZJRUQQABIfChtDSEFUX0VSUk9SX0NPREVfVU5BVkFJTEFCTEUQARIcChhDSEFUX0VSUk9SX0NPREVfSU5URVJOQUwQAiqEAQoNUHJvZ3Jlc3NTdGFnZRIeChpQUk9HUkVTU19TVEFHRV9VTlNQRUNJRklFRBAAEhwKGFBST0dSRVNTX1NUQUdFX1NFQVJDSElORxABEhkKFVBST0dSRVNTX1NUQUdFX1JBVElORxACEhoKFlBST0dSRVNTX1NUQUdFX1dSSVRJTkcQAzKvCAoLQ2hhdFNlcnZpY2USbQoSQ3JlYXRlQ29udmVyc2F0aW9uEioua25vd2NlbC5jaGF0LnYxLkNyZWF0ZUNvbnZlcnNhdGlvblJlcXVlc3QaKy5rbm93Y2VsLmNoYXQudjEuQ3JlYXRlQ29udmVyc2F0aW9uUmVzcG9uc2USZAoPR2V0Q29udmVyc2F0aW9uEicua25vd2NlbC5jaGF0LnYxLkdldENvbnZlcnNhdGlvblJlcXVlc3QaKC5rbm93Y2VsLmNoYXQudjEuR2V0Q29udmVyc2F0aW9uUmVzcG9uc2USagoRTGlzdENvbnZlcnNhdGlvbnMSKS5rbm93Y2VsLmNoYXQudjEuTGlzdENvbnZlcnNhdGlvbnNSZXF1ZXN0Gioua25vd2NlbC5jaGF0LnYxLkxpc3RDb252ZXJzYXRpb25zUmVzcG9uc2USbQoSRGVsZXRlQ29udmVyc2F0aW9uEioua25vd2NlbC5jaGF0LnYxLkRlbGV0ZUNvbnZlcnNhdGlvblJlcXVlc3QaKy5rbm93Y2VsLmNoYXQudjEuRGVsZXRlQ29udmVyc2F0aW9uUmVzcG9uc2USbQoSVXBkYXRlQ29udmVyc2F0aW9uEioua25vd2NlbC5jaGF0LnYxLlVwZGF0ZUNvbnZlcnNhdGlvblJlcXVlc3QaKy5rbm93Y2VsLmNoYXQudjEuVXBkYXRlQ29udmVyc2F0aW9uUmVzcG9uc2UScAoTU2VhcmNoQ29udmVyc2F0aW9ucxIrLmtub3djZWwuY2hhdC52MS5TZWFyY2hDb252ZXJzYXRpb25zUmVxdWVzdBosLmtub3djZWwuY2hhdC52MS5TZWFyY2hDb252ZXJzYXRpb25zUmVzcG9uc2USVwoKU3RyZWFtQ2hhdBIiLmtub3djZWwuY2hhdC52MS5TdHJlYW1DaGF0UmVxdWVzdBojLmtub3djZWwuY2hhdC52MS5TdHJlYW1DaGF0UmVzcG9uc2UwARJPCghTdG9wQ2hhdBIgLmtub3djZWwuY2hhdC52MS5TdG9wQ2hhdFJlcXVlc3QaIS5rbm93Y2VsLmNoYXQudjEuU3RvcENoYXRSZXNwb25zZRJtChJHZXRQcm9tcHRUZW1wbGF0ZXMSKi5rbm93Y2VsLmNoYXQudjEuR2V0UHJvbXB0VGVtcGxhdGVzUmVxdWVzdBorLmtub3djZWwuY2hhdC52MS5HZXRQcm9tcHRUZW1wbGF0ZXNSZXNwb25zZRJ2ChVVcGRhdGVQcm9tcHRUZW1wbGF0ZXMSLS5rbm93Y2VsLmNoYXQudjEuVXBkYXRlUHJvbXB0VGVtcGxhdGVzUmVxdWVzdBouLmtub3djZWwuY2hhdC52MS5VcGRhdGVQcm9tcHRUZW1wbGF0ZXNSZXNwb25zZUJFWkNnaXRodWIuY29tL0NocmlzdG9waEJlL2tub3djZWxpdW0vbW9kdWxlcy9jaGF0L2FwaS9nby9jaGF0djE7Y2hhdHYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_knowcel_common_v1_common]);
+
+/**
+ * What the system is doing while an answer is prepared, with what it has found.
+ *
+ * @generated from message knowcel.chat.v1.Progress
+ */
+export type Progress = Message<"knowcel.chat.v1.Progress"> & {
+  /**
+   * @generated from field: knowcel.chat.v1.ProgressStage stage = 1;
+   */
+  stage: ProgressStage;
+
+  /**
+   * From RATING on: the passages of documents and the distinct documents they
+   * belong to, and the sections of the user manual. RATING counts what the
+   * search found, WRITING what the prompt contains.
+   *
+   * @generated from field: int32 passages = 2;
+   */
+  passages: number;
+
+  /**
+   * @generated from field: int32 documents = 3;
+   */
+  documents: number;
+
+  /**
+   * @generated from field: int32 manual_sections = 4;
+   */
+  manualSections: number;
+};
+
+/**
+ * Describes the message knowcel.chat.v1.Progress.
+ * Use `create(ProgressSchema)` to create a new message.
+ */
+export const ProgressSchema: GenMessage<Progress> = /*@__PURE__*/
+  messageDesc(file_knowcel_chat_v1_chat, 0);
 
 /**
  * A source an answer is grounded in: a chunk of a document, or a section of the
@@ -69,7 +107,7 @@ export type Citation = Message<"knowcel.chat.v1.Citation"> & {
  * Use `create(CitationSchema)` to create a new message.
  */
 export const CitationSchema: GenMessage<Citation> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 0);
+  messageDesc(file_knowcel_chat_v1_chat, 1);
 
 /**
  * @generated from message knowcel.chat.v1.ChatMessage
@@ -111,7 +149,7 @@ export type ChatMessage = Message<"knowcel.chat.v1.ChatMessage"> & {
  * Use `create(ChatMessageSchema)` to create a new message.
  */
 export const ChatMessageSchema: GenMessage<ChatMessage> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 1);
+  messageDesc(file_knowcel_chat_v1_chat, 2);
 
 /**
  * @generated from message knowcel.chat.v1.Conversation
@@ -206,7 +244,7 @@ export type Conversation = Message<"knowcel.chat.v1.Conversation"> & {
  * Use `create(ConversationSchema)` to create a new message.
  */
 export const ConversationSchema: GenMessage<Conversation> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 2);
+  messageDesc(file_knowcel_chat_v1_chat, 3);
 
 /**
  * A list of team ids, wrapped like DocumentIds so that an update can tell
@@ -226,7 +264,7 @@ export type TeamIds = Message<"knowcel.chat.v1.TeamIds"> & {
  * Use `create(TeamIdsSchema)` to create a new message.
  */
 export const TeamIdsSchema: GenMessage<TeamIds> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 3);
+  messageDesc(file_knowcel_chat_v1_chat, 4);
 
 /**
  * A list of document ids, wrapped so that an update can tell "keep the scope"
@@ -246,7 +284,7 @@ export type DocumentIds = Message<"knowcel.chat.v1.DocumentIds"> & {
  * Use `create(DocumentIdsSchema)` to create a new message.
  */
 export const DocumentIdsSchema: GenMessage<DocumentIds> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 4);
+  messageDesc(file_knowcel_chat_v1_chat, 5);
 
 /**
  * @generated from message knowcel.chat.v1.CreateConversationRequest
@@ -279,7 +317,7 @@ export type CreateConversationRequest = Message<"knowcel.chat.v1.CreateConversat
  * Use `create(CreateConversationRequestSchema)` to create a new message.
  */
 export const CreateConversationRequestSchema: GenMessage<CreateConversationRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 5);
+  messageDesc(file_knowcel_chat_v1_chat, 6);
 
 /**
  * @generated from message knowcel.chat.v1.CreateConversationResponse
@@ -296,7 +334,7 @@ export type CreateConversationResponse = Message<"knowcel.chat.v1.CreateConversa
  * Use `create(CreateConversationResponseSchema)` to create a new message.
  */
 export const CreateConversationResponseSchema: GenMessage<CreateConversationResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 6);
+  messageDesc(file_knowcel_chat_v1_chat, 7);
 
 /**
  * @generated from message knowcel.chat.v1.GetConversationRequest
@@ -313,7 +351,7 @@ export type GetConversationRequest = Message<"knowcel.chat.v1.GetConversationReq
  * Use `create(GetConversationRequestSchema)` to create a new message.
  */
 export const GetConversationRequestSchema: GenMessage<GetConversationRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 7);
+  messageDesc(file_knowcel_chat_v1_chat, 8);
 
 /**
  * @generated from message knowcel.chat.v1.GetConversationResponse
@@ -335,7 +373,7 @@ export type GetConversationResponse = Message<"knowcel.chat.v1.GetConversationRe
  * Use `create(GetConversationResponseSchema)` to create a new message.
  */
 export const GetConversationResponseSchema: GenMessage<GetConversationResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 8);
+  messageDesc(file_knowcel_chat_v1_chat, 9);
 
 /**
  * Conversations come newest first by their latest message; a conversation
@@ -356,7 +394,7 @@ export type ListConversationsRequest = Message<"knowcel.chat.v1.ListConversation
  * Use `create(ListConversationsRequestSchema)` to create a new message.
  */
 export const ListConversationsRequestSchema: GenMessage<ListConversationsRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 9);
+  messageDesc(file_knowcel_chat_v1_chat, 10);
 
 /**
  * @generated from message knowcel.chat.v1.ListConversationsResponse
@@ -378,7 +416,7 @@ export type ListConversationsResponse = Message<"knowcel.chat.v1.ListConversatio
  * Use `create(ListConversationsResponseSchema)` to create a new message.
  */
 export const ListConversationsResponseSchema: GenMessage<ListConversationsResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 10);
+  messageDesc(file_knowcel_chat_v1_chat, 11);
 
 /**
  * @generated from message knowcel.chat.v1.DeleteConversationRequest
@@ -395,7 +433,7 @@ export type DeleteConversationRequest = Message<"knowcel.chat.v1.DeleteConversat
  * Use `create(DeleteConversationRequestSchema)` to create a new message.
  */
 export const DeleteConversationRequestSchema: GenMessage<DeleteConversationRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 11);
+  messageDesc(file_knowcel_chat_v1_chat, 12);
 
 /**
  * @generated from message knowcel.chat.v1.DeleteConversationResponse
@@ -408,7 +446,7 @@ export type DeleteConversationResponse = Message<"knowcel.chat.v1.DeleteConversa
  * Use `create(DeleteConversationResponseSchema)` to create a new message.
  */
 export const DeleteConversationResponseSchema: GenMessage<DeleteConversationResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 12);
+  messageDesc(file_knowcel_chat_v1_chat, 13);
 
 /**
  * @generated from message knowcel.chat.v1.UpdateConversationRequest
@@ -456,7 +494,7 @@ export type UpdateConversationRequest = Message<"knowcel.chat.v1.UpdateConversat
  * Use `create(UpdateConversationRequestSchema)` to create a new message.
  */
 export const UpdateConversationRequestSchema: GenMessage<UpdateConversationRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 13);
+  messageDesc(file_knowcel_chat_v1_chat, 14);
 
 /**
  * @generated from message knowcel.chat.v1.UpdateConversationResponse
@@ -473,7 +511,7 @@ export type UpdateConversationResponse = Message<"knowcel.chat.v1.UpdateConversa
  * Use `create(UpdateConversationResponseSchema)` to create a new message.
  */
 export const UpdateConversationResponseSchema: GenMessage<UpdateConversationResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 14);
+  messageDesc(file_knowcel_chat_v1_chat, 15);
 
 /**
  * Each word of the query matches words that start with it, regardless of case;
@@ -503,7 +541,7 @@ export type SearchConversationsRequest = Message<"knowcel.chat.v1.SearchConversa
  * Use `create(SearchConversationsRequestSchema)` to create a new message.
  */
 export const SearchConversationsRequestSchema: GenMessage<SearchConversationsRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 15);
+  messageDesc(file_knowcel_chat_v1_chat, 16);
 
 /**
  * Title matches come first, then message matches, each group best match first;
@@ -523,7 +561,7 @@ export type SearchConversationsResponse = Message<"knowcel.chat.v1.SearchConvers
  * Use `create(SearchConversationsResponseSchema)` to create a new message.
  */
 export const SearchConversationsResponseSchema: GenMessage<SearchConversationsResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 16);
+  messageDesc(file_knowcel_chat_v1_chat, 17);
 
 /**
  * @generated from message knowcel.chat.v1.ConversationMatch
@@ -548,7 +586,7 @@ export type ConversationMatch = Message<"knowcel.chat.v1.ConversationMatch"> & {
  * Use `create(ConversationMatchSchema)` to create a new message.
  */
 export const ConversationMatchSchema: GenMessage<ConversationMatch> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 17);
+  messageDesc(file_knowcel_chat_v1_chat, 18);
 
 /**
  * @generated from message knowcel.chat.v1.StreamChatRequest
@@ -584,7 +622,7 @@ export type StreamChatRequest = Message<"knowcel.chat.v1.StreamChatRequest"> & {
  * Use `create(StreamChatRequestSchema)` to create a new message.
  */
 export const StreamChatRequestSchema: GenMessage<StreamChatRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 18);
+  messageDesc(file_knowcel_chat_v1_chat, 19);
 
 /**
  * @generated from message knowcel.chat.v1.StopChatRequest
@@ -601,7 +639,7 @@ export type StopChatRequest = Message<"knowcel.chat.v1.StopChatRequest"> & {
  * Use `create(StopChatRequestSchema)` to create a new message.
  */
 export const StopChatRequestSchema: GenMessage<StopChatRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 19);
+  messageDesc(file_knowcel_chat_v1_chat, 20);
 
 /**
  * Sent also when no answer was being written.
@@ -616,7 +654,7 @@ export type StopChatResponse = Message<"knowcel.chat.v1.StopChatResponse"> & {
  * Use `create(StopChatResponseSchema)` to create a new message.
  */
 export const StopChatResponseSchema: GenMessage<StopChatResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 20);
+  messageDesc(file_knowcel_chat_v1_chat, 21);
 
 /**
  * @generated from message knowcel.chat.v1.StreamChatResponse
@@ -660,13 +698,24 @@ export type StreamChatResponse = Message<"knowcel.chat.v1.StreamChatResponse"> &
     case: "error";
   } | {
     /**
-     * The stage the answer has reached, sent before the first delta. Stages
-     * that don't happen are skipped; the last one is always WRITING.
+     * Deprecated: superseded by `status`, which carries the stage too; no
+     * longer sent. Kept because a field can't change its type.
      *
-     * @generated from field: knowcel.chat.v1.ProgressStage progress = 5;
+     * @generated from field: knowcel.chat.v1.ProgressStage progress = 5 [deprecated = true];
+     * @deprecated
      */
     value: ProgressStage;
     case: "progress";
+  } | {
+    /**
+     * The stage the answer has reached and what it has found, sent before the
+     * first delta. Stages that don't happen are skipped; the last one is
+     * always WRITING.
+     *
+     * @generated from field: knowcel.chat.v1.Progress status = 6;
+     */
+    value: Progress;
+    case: "status";
   } | { case: undefined; value?: undefined };
 };
 
@@ -675,7 +724,7 @@ export type StreamChatResponse = Message<"knowcel.chat.v1.StreamChatResponse"> &
  * Use `create(StreamChatResponseSchema)` to create a new message.
  */
 export const StreamChatResponseSchema: GenMessage<StreamChatResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 21);
+  messageDesc(file_knowcel_chat_v1_chat, 22);
 
 /**
  * @generated from message knowcel.chat.v1.ChatError
@@ -699,7 +748,7 @@ export type ChatError = Message<"knowcel.chat.v1.ChatError"> & {
  * Use `create(ChatErrorSchema)` to create a new message.
  */
 export const ChatErrorSchema: GenMessage<ChatError> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 22);
+  messageDesc(file_knowcel_chat_v1_chat, 23);
 
 /**
  * @generated from message knowcel.chat.v1.Citations
@@ -716,7 +765,7 @@ export type Citations = Message<"knowcel.chat.v1.Citations"> & {
  * Use `create(CitationsSchema)` to create a new message.
  */
 export const CitationsSchema: GenMessage<Citations> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 23);
+  messageDesc(file_knowcel_chat_v1_chat, 24);
 
 /**
  * The prompts that build the system message of an answer. Templates are text
@@ -766,7 +815,7 @@ export type PromptTemplates = Message<"knowcel.chat.v1.PromptTemplates"> & {
  * Use `create(PromptTemplatesSchema)` to create a new message.
  */
 export const PromptTemplatesSchema: GenMessage<PromptTemplates> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 24);
+  messageDesc(file_knowcel_chat_v1_chat, 25);
 
 /**
  * @generated from message knowcel.chat.v1.PromptTemplate
@@ -799,7 +848,7 @@ export type PromptTemplate = Message<"knowcel.chat.v1.PromptTemplate"> & {
  * Use `create(PromptTemplateSchema)` to create a new message.
  */
 export const PromptTemplateSchema: GenMessage<PromptTemplate> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 25);
+  messageDesc(file_knowcel_chat_v1_chat, 26);
 
 /**
  * @generated from message knowcel.chat.v1.GetPromptTemplatesRequest
@@ -812,7 +861,7 @@ export type GetPromptTemplatesRequest = Message<"knowcel.chat.v1.GetPromptTempla
  * Use `create(GetPromptTemplatesRequestSchema)` to create a new message.
  */
 export const GetPromptTemplatesRequestSchema: GenMessage<GetPromptTemplatesRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 26);
+  messageDesc(file_knowcel_chat_v1_chat, 27);
 
 /**
  * @generated from message knowcel.chat.v1.GetPromptTemplatesResponse
@@ -829,7 +878,7 @@ export type GetPromptTemplatesResponse = Message<"knowcel.chat.v1.GetPromptTempl
  * Use `create(GetPromptTemplatesResponseSchema)` to create a new message.
  */
 export const GetPromptTemplatesResponseSchema: GenMessage<GetPromptTemplatesResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 27);
+  messageDesc(file_knowcel_chat_v1_chat, 28);
 
 /**
  * @generated from message knowcel.chat.v1.UpdatePromptTemplatesRequest
@@ -860,7 +909,7 @@ export type UpdatePromptTemplatesRequest = Message<"knowcel.chat.v1.UpdatePrompt
  * Use `create(UpdatePromptTemplatesRequestSchema)` to create a new message.
  */
 export const UpdatePromptTemplatesRequestSchema: GenMessage<UpdatePromptTemplatesRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 28);
+  messageDesc(file_knowcel_chat_v1_chat, 29);
 
 /**
  * @generated from message knowcel.chat.v1.UpdatePromptTemplatesResponse
@@ -877,7 +926,7 @@ export type UpdatePromptTemplatesResponse = Message<"knowcel.chat.v1.UpdatePromp
  * Use `create(UpdatePromptTemplatesResponseSchema)` to create a new message.
  */
 export const UpdatePromptTemplatesResponseSchema: GenMessage<UpdatePromptTemplatesResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_chat_v1_chat, 29);
+  messageDesc(file_knowcel_chat_v1_chat, 30);
 
 /**
  * @generated from enum knowcel.chat.v1.MessageRole

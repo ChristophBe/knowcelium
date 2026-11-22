@@ -42,7 +42,7 @@ interface Pending {
   answer: string;
   citations: Citation[];
   /** What the system is doing until the first words arrive. */
-  stage: ProgressStage;
+  stage: Stage;
   /** The reason from the stream's error event, once the answer failed. */
   failure?: string;
 }
@@ -54,19 +54,40 @@ interface Stopped extends Pending {
   savedCount: number;
 }
 
-const STAGE_LABELS: Record<ProgressStage, string> = {
-  [ProgressStage.UNSPECIFIED]: "Writing the answer…",
-  [ProgressStage.SEARCHING]: "Searching your documents and the user manual…",
-  [ProgressStage.RATING]: "Choosing the best passages…",
-  [ProgressStage.WRITING]: "Writing the answer…",
-};
+/** What the system has reached while no words of the answer are there yet, and what it found. */
+interface Stage {
+  stage: ProgressStage;
+  passages: number;
+  documents: number;
+  manualSections: number;
+  /** The platform knowledge is searched for this answer. */
+  searched: boolean;
+}
+
+const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
+
+function stageLabel({ stage, passages, documents, manualSections, searched }: Stage): string {
+  if (stage === ProgressStage.SEARCHING) return "Searching your documents and the user manual…";
+  if (stage === ProgressStage.RATING) {
+    return `Choosing the best of ${count(passages, "passage")} from ${count(documents, "document")}…`;
+  }
+  if (stage !== ProgressStage.WRITING || !searched) return "Writing the answer…";
+  const found = [
+    passages > 0 && `${count(passages, "passage")} of ${count(documents, "document")}`,
+    manualSections > 0 && `${count(manualSections, "section")} of the user manual`,
+  ].filter(Boolean);
+  if (found.length === 0) {
+    return "Nothing in your documents matched. Writing the answer from the model's knowledge…";
+  }
+  return `Writing the answer from ${found.join(" and ")}…`;
+}
 
 /** What the system is doing while no words of the answer are there yet. */
-function ProgressLine({ stage }: { stage: ProgressStage }) {
+function ProgressLine({ stage }: { stage: Stage }) {
   return (
     <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-4 py-2 text-base text-fg-muted">
       <Spinner />
-      {STAGE_LABELS[stage]}
+      {stageLabel(stage)}
     </div>
   );
 }
@@ -163,10 +184,16 @@ export function Conversation() {
     setStopped(null);
     setStatus("");
     // Without platform knowledge there is no search; the first event may take a moment.
-    const stage = useKnowledgeBase ? ProgressStage.SEARCHING : ProgressStage.WRITING;
+    const stage: Stage = {
+      stage: useKnowledgeBase ? ProgressStage.SEARCHING : ProgressStage.WRITING,
+      passages: 0,
+      documents: 0,
+      manualSections: 0,
+      searched: useKnowledgeBase,
+    };
     let state: Pending = { question, answer: "", citations: [], stage };
     setPending(state);
-    setStatus(STAGE_LABELS[stage]);
+    setStatus(stageLabel(stage));
     const controller = new AbortController();
     abort.current = controller;
     stopping.current = false;
@@ -187,9 +214,11 @@ export function Conversation() {
       for await (const res of stream) {
         const event = res.event;
         if (event.case === "citations") state = { ...state, citations: event.value.items };
-        if (event.case === "progress") {
-          state = { ...state, stage: event.value };
-          setStatus(STAGE_LABELS[event.value]);
+        if (event.case === "status") {
+          const { stage, passages, documents, manualSections } = event.value;
+          const next = { ...state.stage, stage, passages, documents, manualSections };
+          state = { ...state, stage: next };
+          setStatus(stageLabel(next));
         }
         if (event.case === "delta") {
           if (!state.answer) setStatus("");
@@ -325,7 +354,17 @@ export function Conversation() {
               )}
             </>
           )}
-          {generating && <ProgressLine stage={ProgressStage.WRITING} />}
+          {generating && (
+            <ProgressLine
+              stage={{
+                stage: ProgressStage.WRITING,
+                passages: 0,
+                documents: 0,
+                manualSections: 0,
+                searched: false,
+              }}
+            />
+          )}
           <div ref={bottom} />
         </div>
         <p role="status" className="sr-only">

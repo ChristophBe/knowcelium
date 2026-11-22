@@ -429,8 +429,15 @@ def _response(event: AnswerEvent) -> chat_pb2.StreamChatResponse:
     match event:
         case SourcesFound(citations):
             return chat_pb2.StreamChatResponse(citations=chat_pb2.Citations(items=citations))
-        case ProgressChanged(stage):
-            return chat_pb2.StreamChatResponse(progress=stage)
+        case ProgressChanged(stage, passages, documents, manual_sections):
+            return chat_pb2.StreamChatResponse(
+                status=chat_pb2.Progress(
+                    stage=stage,
+                    passages=passages,
+                    documents=documents,
+                    manual_sections=manual_sections,
+                )
+            )
         case AnswerDelta(text):
             return chat_pb2.StreamChatResponse(delta=text)
         case AnswerFailed(error):

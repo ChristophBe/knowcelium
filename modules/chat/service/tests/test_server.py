@@ -252,14 +252,14 @@ class FakeDocuments:
 
 def kinds_of(events: Sequence[Any]) -> list[str]:
     """The kinds of the events, without the progress ones."""
-    return [k for e in events if (k := e.WhichOneof("event")) != "progress"]
+    return [k for e in events if (k := e.WhichOneof("event")) != "status"]
 
 
 async def read_kinds(call: Any, count: int) -> list[str]:
     """The kinds of the next `count` events, without the progress ones."""
     kinds: list[str] = []
     while len(kinds) < count:
-        if (kind := (await call.read()).WhichOneof("event")) != "progress":
+        if (kind := (await call.read()).WhichOneof("event")) != "status":
             kinds.append(kind)
     return kinds
 
@@ -297,7 +297,7 @@ async def test_stream_chat_with_knowledge_base(env: Env) -> None:
     assert kinds[0] == "citations"
     assert kinds[-1] == "message"
     assert set(kinds[1:-1]) == {"delta"}
-    events = [e for e in events if e.WhichOneof("event") != "progress"]
+    events = [e for e in events if e.WhichOneof("event") != "status"]
     assert events[0].citations.items[0].document_title == "geo.md"
     assert events[-1].message.content == "Paris is the capital [1]."
     assert events[-1].message.citations[0].document_id == "d1"
@@ -384,7 +384,7 @@ async def test_an_unavailable_peer_ends_the_stream_with_an_error(
     events, got = await stream_with(documents, llm)
 
     assert kinds_of(events) == ["error", "message"]
-    events = [e for e in events if e.WhichOneof("event") != "progress"]
+    events = [e for e in events if e.WhichOneof("event") != "status"]
     assert events[0].error.code == chat_pb2.CHAT_ERROR_CODE_UNAVAILABLE
     assert events[0].error.message == (
         f"The {service} service isn't available. Try again in a moment."
@@ -592,7 +592,7 @@ async def test_other_peer_errors_are_hidden_from_the_user() -> None:
     events, _ = await stream_with(FakeDocuments(), BrokenLlm(), use_knowledge_base=False)
 
     assert kinds_of(events) == ["error", "message"]
-    events = [e for e in events if e.WhichOneof("event") != "progress"]
+    events = [e for e in events if e.WhichOneof("event") != "status"]
     assert events[0].error.code == chat_pb2.CHAT_ERROR_CODE_INTERNAL
     assert events[0].error.message == "The Models service couldn't complete the answer."
     assert "no such model" not in events[0].error.message
@@ -1147,8 +1147,12 @@ async def test_stream_chat_reports_progress_before_the_first_word(env: Env) -> N
     ]
 
     kinds = [e.WhichOneof("event") for e in events]
-    assert [e.progress for e in events if e.WhichOneof("event") == "progress"] == [
+    progress = [e.status for e in events if e.WhichOneof("event") == "status"]
+    assert [p.stage for p in progress] == [
         chat_pb2.PROGRESS_STAGE_SEARCHING,
         chat_pb2.PROGRESS_STAGE_WRITING,
     ]
-    assert kinds.index("delta") > max(i for i, k in enumerate(kinds) if k == "progress")
+    # The writing stage counts what the streamed sources consist of.
+    cited = next(e for e in events if e.WhichOneof("event") == "citations").citations.items
+    assert (progress[1].passages, progress[1].documents) == (len(cited), 1)
+    assert kinds.index("delta") > max(i for i, k in enumerate(kinds) if k == "status")
