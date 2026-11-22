@@ -30,6 +30,7 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { AccessEditor } from "./AccessEditor.tsx";
 import { ChunkList } from "./ChunkList.tsx";
+import { ConnectorNotice, ConnectorSource, connectorOf } from "./ConnectorNotice.tsx";
 import { DeleteDocumentDialog, useDownloadDocument } from "./documentActions.tsx";
 import { MetadataEditor } from "./MetadataEditor.tsx";
 import { OwnerName } from "./OwnerName.tsx";
@@ -130,6 +131,9 @@ export function DocumentDetail() {
       "Access",
       isOwner ? <SharedWith access={d.access} teamIds={d.teamIds} /> : <ShareEditor document={d} />,
     ],
+    ...(connectorOf(d.metadata)
+      ? ([["Source", <ConnectorSource metadata={d.metadata} />]] as [string, React.ReactNode][])
+      : []),
     ["Created", formatTime(d.createTime)],
     ["Updated", formatTime(d.updateTime)],
     ["Metadata", <MetadataEditor id={d.id} metadata={d.metadata} />],
@@ -164,6 +168,7 @@ export function DocumentDetail() {
         )}
       </div>
       <FailureNotice document={d} />
+      {isOwner && <ConnectorNotice metadata={d.metadata} />}
       <Card className="max-w-2xl">
         <dl className="divide-y divide-dotted divide-border text-sm">
           {rows.map(([k, v]) => (
