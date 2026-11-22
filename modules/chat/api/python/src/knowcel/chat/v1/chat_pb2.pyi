@@ -256,18 +256,20 @@ class StopChatResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class StreamChatResponse(_message.Message):
-    __slots__ = ("citations", "delta", "message", "error", "progress")
+    __slots__ = ("citations", "delta", "message", "error", "progress", "status")
     CITATIONS_FIELD_NUMBER: _ClassVar[int]
     DELTA_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     PROGRESS_FIELD_NUMBER: _ClassVar[int]
+    STATUS_FIELD_NUMBER: _ClassVar[int]
     citations: Citations
     delta: str
     message: ChatMessage
     error: ChatError
-    progress: Progress
-    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[Progress, _Mapping]] = ...) -> None: ...
+    progress: ProgressStage
+    status: Progress
+    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[ProgressStage, str]] = ..., status: _Optional[_Union[Progress, _Mapping]] = ...) -> None: ...
 
 class ChatError(_message.Message):
     __slots__ = ("code", "message")

@@ -214,7 +214,7 @@ export function Conversation() {
       for await (const res of stream) {
         const event = res.event;
         if (event.case === "citations") state = { ...state, citations: event.value.items };
-        if (event.case === "progress") {
+        if (event.case === "status") {
           const { stage, passages, documents, manualSections } = event.value;
           const next = { ...state.stage, stage, passages, documents, manualSections };
           state = { ...state, stage: next };

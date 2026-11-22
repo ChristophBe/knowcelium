@@ -296,7 +296,7 @@ describe("Conversation", () => {
       value: ProgressStage,
       counts: { passages?: number; documents?: number; manualSections?: number } = {},
     ): StreamChatResponse["event"] => ({
-      case: "progress",
+      case: "status",
       value: create(ProgressSchema, { stage: value, ...counts }),
     });
 

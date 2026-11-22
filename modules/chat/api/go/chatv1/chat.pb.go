@@ -1554,6 +1554,7 @@ type StreamChatResponse struct {
 	//	*StreamChatResponse_Message
 	//	*StreamChatResponse_Error
 	//	*StreamChatResponse_Progress
+	//	*StreamChatResponse_Status
 	Event         isStreamChatResponse_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1632,10 +1633,20 @@ func (x *StreamChatResponse) GetError() *ChatError {
 	return nil
 }
 
-func (x *StreamChatResponse) GetProgress() *Progress {
+// Deprecated: Marked as deprecated in knowcel/chat/v1/chat.proto.
+func (x *StreamChatResponse) GetProgress() ProgressStage {
 	if x != nil {
 		if x, ok := x.Event.(*StreamChatResponse_Progress); ok {
 			return x.Progress
+		}
+	}
+	return ProgressStage_PROGRESS_STAGE_UNSPECIFIED
+}
+
+func (x *StreamChatResponse) GetStatus() *Progress {
+	if x != nil {
+		if x, ok := x.Event.(*StreamChatResponse_Status); ok {
+			return x.Status
 		}
 	}
 	return nil
@@ -1667,9 +1678,18 @@ type StreamChatResponse_Error struct {
 }
 
 type StreamChatResponse_Progress struct {
-	// The stage the answer has reached, sent before the first delta. Stages
-	// that don't happen are skipped; the last one is always WRITING.
-	Progress *Progress `protobuf:"bytes,5,opt,name=progress,proto3,oneof"`
+	// Deprecated: superseded by `status`, which carries the stage too; no
+	// longer sent. Kept because a field can't change its type.
+	//
+	// Deprecated: Marked as deprecated in knowcel/chat/v1/chat.proto.
+	Progress ProgressStage `protobuf:"varint,5,opt,name=progress,proto3,enum=knowcel.chat.v1.ProgressStage,oneof"`
+}
+
+type StreamChatResponse_Status struct {
+	// The stage the answer has reached and what it has found, sent before the
+	// first delta. Stages that don't happen are skipped; the last one is
+	// always WRITING.
+	Status *Progress `protobuf:"bytes,6,opt,name=status,proto3,oneof"`
 }
 
 func (*StreamChatResponse_Citations) isStreamChatResponse_Event() {}
@@ -1681,6 +1701,8 @@ func (*StreamChatResponse_Message) isStreamChatResponse_Event() {}
 func (*StreamChatResponse_Error) isStreamChatResponse_Event() {}
 
 func (*StreamChatResponse_Progress) isStreamChatResponse_Event() {}
+
+func (*StreamChatResponse_Status) isStreamChatResponse_Event() {}
 
 type ChatError struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -2205,13 +2227,14 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x05model\x18\x04 \x01(\tR\x05model\":\n" +
 	"\x0fStopChatRequest\x12'\n" +
 	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\"\x12\n" +
-	"\x10StopChatResponse\"\x98\x02\n" +
+	"\x10StopChatResponse\"\xd6\x02\n" +
 	"\x12StreamChatResponse\x12:\n" +
 	"\tcitations\x18\x01 \x01(\v2\x1a.knowcel.chat.v1.CitationsH\x00R\tcitations\x12\x16\n" +
 	"\x05delta\x18\x02 \x01(\tH\x00R\x05delta\x128\n" +
 	"\amessage\x18\x03 \x01(\v2\x1c.knowcel.chat.v1.ChatMessageH\x00R\amessage\x122\n" +
-	"\x05error\x18\x04 \x01(\v2\x1a.knowcel.chat.v1.ChatErrorH\x00R\x05error\x127\n" +
-	"\bprogress\x18\x05 \x01(\v2\x19.knowcel.chat.v1.ProgressH\x00R\bprogressB\a\n" +
+	"\x05error\x18\x04 \x01(\v2\x1a.knowcel.chat.v1.ChatErrorH\x00R\x05error\x12@\n" +
+	"\bprogress\x18\x05 \x01(\x0e2\x1e.knowcel.chat.v1.ProgressStageB\x02\x18\x01H\x00R\bprogress\x123\n" +
+	"\x06status\x18\x06 \x01(\v2\x19.knowcel.chat.v1.ProgressH\x00R\x06statusB\a\n" +
 	"\x05event\"Y\n" +
 	"\tChatError\x122\n" +
 	"\x04code\x18\x01 \x01(\x0e2\x1e.knowcel.chat.v1.ChatErrorCodeR\x04code\x12\x18\n" +
@@ -2348,39 +2371,40 @@ var file_knowcel_chat_v1_chat_proto_depIdxs = []int32{
 	28, // 19: knowcel.chat.v1.StreamChatResponse.citations:type_name -> knowcel.chat.v1.Citations
 	6,  // 20: knowcel.chat.v1.StreamChatResponse.message:type_name -> knowcel.chat.v1.ChatMessage
 	27, // 21: knowcel.chat.v1.StreamChatResponse.error:type_name -> knowcel.chat.v1.ChatError
-	4,  // 22: knowcel.chat.v1.StreamChatResponse.progress:type_name -> knowcel.chat.v1.Progress
-	2,  // 23: knowcel.chat.v1.ChatError.code:type_name -> knowcel.chat.v1.ChatErrorCode
-	5,  // 24: knowcel.chat.v1.Citations.items:type_name -> knowcel.chat.v1.Citation
-	30, // 25: knowcel.chat.v1.PromptTemplates.system_prompt:type_name -> knowcel.chat.v1.PromptTemplate
-	30, // 26: knowcel.chat.v1.PromptTemplates.sources_template:type_name -> knowcel.chat.v1.PromptTemplate
-	30, // 27: knowcel.chat.v1.PromptTemplates.no_sources_template:type_name -> knowcel.chat.v1.PromptTemplate
-	29, // 28: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	29, // 29: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	10, // 30: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
-	12, // 31: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
-	14, // 32: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
-	16, // 33: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
-	18, // 34: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
-	20, // 35: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
-	23, // 36: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
-	24, // 37: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
-	31, // 38: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
-	33, // 39: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
-	11, // 40: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
-	13, // 41: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
-	15, // 42: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
-	17, // 43: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
-	19, // 44: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
-	21, // 45: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
-	26, // 46: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
-	25, // 47: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
-	32, // 48: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
-	34, // 49: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
-	40, // [40:50] is the sub-list for method output_type
-	30, // [30:40] is the sub-list for method input_type
-	30, // [30:30] is the sub-list for extension type_name
-	30, // [30:30] is the sub-list for extension extendee
-	0,  // [0:30] is the sub-list for field type_name
+	3,  // 22: knowcel.chat.v1.StreamChatResponse.progress:type_name -> knowcel.chat.v1.ProgressStage
+	4,  // 23: knowcel.chat.v1.StreamChatResponse.status:type_name -> knowcel.chat.v1.Progress
+	2,  // 24: knowcel.chat.v1.ChatError.code:type_name -> knowcel.chat.v1.ChatErrorCode
+	5,  // 25: knowcel.chat.v1.Citations.items:type_name -> knowcel.chat.v1.Citation
+	30, // 26: knowcel.chat.v1.PromptTemplates.system_prompt:type_name -> knowcel.chat.v1.PromptTemplate
+	30, // 27: knowcel.chat.v1.PromptTemplates.sources_template:type_name -> knowcel.chat.v1.PromptTemplate
+	30, // 28: knowcel.chat.v1.PromptTemplates.no_sources_template:type_name -> knowcel.chat.v1.PromptTemplate
+	29, // 29: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	29, // 30: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	10, // 31: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
+	12, // 32: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
+	14, // 33: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
+	16, // 34: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
+	18, // 35: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
+	20, // 36: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
+	23, // 37: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
+	24, // 38: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
+	31, // 39: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
+	33, // 40: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
+	11, // 41: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
+	13, // 42: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
+	15, // 43: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
+	17, // 44: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
+	19, // 45: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
+	21, // 46: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
+	26, // 47: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
+	25, // 48: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
+	32, // 49: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
+	34, // 50: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
+	41, // [41:51] is the sub-list for method output_type
+	31, // [31:41] is the sub-list for method input_type
+	31, // [31:31] is the sub-list for extension type_name
+	31, // [31:31] is the sub-list for extension extendee
+	0,  // [0:31] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_chat_v1_chat_proto_init() }
@@ -2395,6 +2419,7 @@ func file_knowcel_chat_v1_chat_proto_init() {
 		(*StreamChatResponse_Message)(nil),
 		(*StreamChatResponse_Error)(nil),
 		(*StreamChatResponse_Progress)(nil),
+		(*StreamChatResponse_Status)(nil),
 	}
 	file_knowcel_chat_v1_chat_proto_msgTypes[29].OneofWrappers = []any{}
 	type x struct{}

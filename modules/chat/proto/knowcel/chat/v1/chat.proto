@@ -255,9 +255,13 @@ message StreamChatResponse {
     ChatMessage message = 3;
     // The answer failed. Sent once, before the message with the failed status.
     ChatError error = 4;
-    // The stage the answer has reached, sent before the first delta. Stages
-    // that don't happen are skipped; the last one is always WRITING.
-    Progress progress = 5;
+    // Deprecated: superseded by `status`, which carries the stage too; no
+    // longer sent. Kept because a field can't change its type.
+    ProgressStage progress = 5 [deprecated = true];
+    // The stage the answer has reached and what it has found, sent before the
+    // first delta. Stages that don't happen are skipped; the last one is
+    // always WRITING.
+    Progress status = 6;
   }
 }
 
