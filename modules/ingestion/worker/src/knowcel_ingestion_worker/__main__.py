@@ -99,10 +99,32 @@ async def run() -> None:
             settings.worker_concurrency,
         )
         syncing = asyncio.create_task(connectors.run(settings, js, document_stub, stop))
-        await consume(fetch, handle, settings.worker_concurrency, stop, gate.is_open)
-        await syncing
+        syncing.add_done_callback(log_failure)
+        try:
+            await consume(fetch, handle, settings.worker_concurrency, stop, gate.is_open)
+        finally:
+            await stop_connectors(syncing, stop)
 
     await nc.drain()
+
+
+# Seconds a running sync gets to finish when the worker stops.
+CONNECTOR_GRACE = 30
+
+
+def log_failure(task: asyncio.Task[None]) -> None:
+    if not task.cancelled() and (err := task.exception()):
+        log.error("the connectors stopped: %s", err, exc_info=err)
+
+
+async def stop_connectors(task: asyncio.Task[None], stop: asyncio.Event) -> None:
+    """Lets the connectors finish what they are doing, then cancels them, so
+    that no task outlives the connection it uses."""
+    stop.set()
+    await asyncio.wait({task}, timeout=CONNECTOR_GRACE)
+    if not task.done():
+        task.cancel()
+        await asyncio.wait({task})
 
 
 class _Delivery:

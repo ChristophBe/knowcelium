@@ -1,5 +1,7 @@
+import asyncio
 import os
 import pathlib
+import re
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -7,14 +9,16 @@ from typing import Any
 import grpc
 import pytest
 from knowcel_ingestion_worker.config import Settings
+from knowcel_ingestion_worker.connectors import runner as runner_module
 from knowcel_ingestion_worker.connectors.folder import FolderConfig, FolderSource
 from knowcel_ingestion_worker.connectors.library import DocumentGoneError, metadata_of
 from knowcel_ingestion_worker.connectors.model import ConnectorError, Record
 from knowcel_ingestion_worker.connectors.registry import KINDS, Kind
 from knowcel_ingestion_worker.connectors.runner import Runner, run_schedule
 from knowcel_ingestion_worker.connectors.spec import ConnectorSpec, load_specs, parse_specs
-from knowcel_ingestion_worker.connectors.state import MemoryState, item_key, status_key
+from knowcel_ingestion_worker.connectors.state import KvState, MemoryState, item_key, status_key
 from knowcel_platform.config import Problems
+from nats.js.errors import InvalidKeyError, KeyNotFoundError, KeyWrongLastSequenceError
 from pydantic import BaseModel
 
 
@@ -300,8 +304,6 @@ async def test_report_records_why_a_connector_did_not_start(runner_parts: Parts)
 async def test_schedule_runs_enabled_connectors_until_stopped(
     source: ListSource, runner_parts: Parts
 ):
-    import asyncio
-
     runner, library, _ = runner_parts
     source.records = [rec("a.md")]
     stop = asyncio.Event()
@@ -326,8 +328,6 @@ def test_leases_expire():
         assert not await state.acquire("k", "b", 10)
         now[0] = 111
         assert await state.acquire("k", "b", 10)
-
-    import asyncio
 
     asyncio.run(go())
 
@@ -493,3 +493,313 @@ def test_settings_check_the_connectors_file(tmp_path: pathlib.Path):
     assert problems(connectors_file=str(f), connectors_upload_endpoint="nope") == [
         "KNOWCEL_CONNECTORS_UPLOAD_ENDPOINT: must be host:port, got 'nope'"
     ]
+
+
+# --- the key-value state ----------------------------------------------------
+
+_KEY = re.compile(r"^[-/_=.a-zA-Z0-9]+$")
+
+
+class _Entry:
+    def __init__(self, key: str, value: bytes, revision: int) -> None:
+        self.key, self.value, self.revision = key, value, revision
+
+
+class _Watcher:
+    def __init__(self, entries: list[_Entry]) -> None:
+        self._items: list[_Entry | None] = [*entries, None]
+        self.stopped = False
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> _Entry | None:
+        return self._items.pop(0)
+
+    async def stop(self) -> None:
+        self.stopped = True
+
+
+class FakeKv:
+    """The parts of a NATS key-value bucket the state uses, with its key rules
+    and failures on demand (`broken` names operations that raise)."""
+
+    def __init__(self) -> None:
+        self.data: dict[str, _Entry] = {}
+        self.broken: set[str] = set()
+        self._rev = 0
+
+    def _check(self, op: str, key: str = "a") -> None:
+        if op in self.broken:
+            raise ConnectionError(f"{op}: nats is unreachable")
+        if not _KEY.match(key):
+            raise InvalidKeyError(key)
+
+    async def get(self, key: str) -> _Entry:
+        self._check("get", key)
+        if key not in self.data:
+            raise KeyNotFoundError
+        return self.data[key]
+
+    async def put(self, key: str, value: bytes) -> int:
+        self._check("put", key)
+        return self._store(key, value)
+
+    def _store(self, key: str, value: bytes) -> int:
+        self._rev += 1
+        self.data[key] = _Entry(key, value, self._rev)
+        return self._rev
+
+    async def create(self, key: str, value: bytes) -> int:
+        self._check("create", key)
+        if key in self.data:
+            raise KeyWrongLastSequenceError
+        return self._store(key, value)
+
+    async def update(self, key: str, value: bytes, last: int) -> int:
+        self._check("update", key)
+        if self.data[key].revision != last:
+            raise KeyWrongLastSequenceError
+        return self._store(key, value)
+
+    async def delete(self, key: str) -> bool:
+        self._check("delete", key)
+        self.data.pop(key, None)
+        return True
+
+    async def watch(self, subject: str, **_: Any) -> _Watcher:
+        self._check("watch")
+        assert subject.endswith(">")
+        return _Watcher([e for k, e in self.data.items() if k.startswith(subject[:-1])])
+
+
+async def test_invalid_entries_are_reported_under_keys_the_bucket_accepts(
+    source: ListSource,
+):
+    kv = FakeKv()
+    runner = Runner(FakeLibrary(), KvState(kv), clock=Clock())
+    loaded = parse_specs(
+        [
+            {"name": "Bad Name", "kind": "folder", "owner": "a", "public": True},
+            {"name": "x/y z!", "kind": "folder"},
+            {"kind": "folder"},
+            "nonsense",
+            {"name": "ok", "kind": "folder", "owner": "a", "public": True, "settings": {}},
+            {"name": "ok", "kind": "folder", "owner": "a", "public": True, "settings": {}},
+        ]
+    )
+    assert [s.name for s in loaded.specs] == ["ok"]
+    for name, error in loaded.errors.items():
+        await runner.report(name, error)  # raises InvalidKeyError on a bad key
+    assert len(kv.data) == len(loaded.errors) == 5
+    assert all(_KEY.match(k) for k in kv.data)
+    # A valid connector is not affected by invalid ones.
+    assert await runner.sync(spec()) is not None
+
+
+def test_a_later_valid_entry_is_not_rejected_for_the_name_of_an_invalid_one(
+    tmp_path: pathlib.Path,
+):
+    good = {"kind": "folder", "owner": "a", "public": True, "settings": {"path": str(tmp_path)}}
+    loaded = parse_specs(
+        [{"name": "dup", "kind": "ftp", "owner": "a", "public": True}, {"name": "dup", **good}]
+    )
+    assert [s.name for s in loaded.specs] == ["dup"]
+    assert "unknown kind" in loaded.errors["dup (entry 1)"]
+    assert "dup" not in loaded.errors
+
+
+async def test_a_state_failure_does_not_end_the_schedule_and_the_lease_is_released(
+    source: ListSource,
+):
+    kv = FakeKv()
+    runner = Runner(FakeLibrary(), KvState(kv), clock=Clock(), holder="w1")
+    source.records = [rec("a.md")]
+    kv.broken = {"put"}
+    assert await runner.sync(spec()) is not None  # does not raise
+    kv.broken = set()
+    assert "docs.lease" not in kv.data  # the failed status write did not skip the release
+    kv.broken = {"get"}
+    assert await runner.sync(spec()) is None  # does not raise
+    kv.broken = {"create"}
+    assert await runner.sync(spec()) is None  # cannot take the lease
+    kv.broken = set()
+    assert await runner.sync(spec()) is not None
+
+
+async def test_the_schedule_survives_a_failing_sync(source: ListSource):
+    class Boom(Runner):
+        calls = 0
+
+        async def sync(self, spec: ConnectorSpec) -> None:
+            Boom.calls += 1
+            raise RuntimeError("nats is unreachable")
+
+    stop = asyncio.Event()
+    s = spec(interval_seconds=10)
+    task = asyncio.create_task(run_schedule(Boom(FakeLibrary(), MemoryState()), [s], stop))
+    await asyncio.sleep(0.05)
+    assert not task.done()
+    stop.set()
+    await asyncio.wait_for(task, 1)
+    assert Boom.calls == 1
+
+
+async def test_the_lease_is_renewed_while_a_long_sync_runs(
+    source: ListSource, monkeypatch: pytest.MonkeyPatch
+):
+    monkeypatch.setattr(runner_module, "LEASE_SECONDS", 6)
+
+    class Counting(KvState):
+        acquires = 0
+
+        async def acquire(self, key: str, holder: str, ttl: float) -> bool:
+            self.acquires += 1
+            return await super().acquire(key, holder, ttl)
+
+    state = Counting(FakeKv(), clock=lambda: 0)
+    runner = Runner(FakeLibrary(), state, clock=Clock(), holder="w1")
+    source.records = [rec(f"{i}.md") for i in range(10)]
+    assert await runner.sync(spec()) is not None
+    assert state.acquires > 1
+
+
+async def test_an_item_that_became_empty_is_remembered_and_reported(
+    source: ListSource, runner_parts: Parts
+):
+    runner, library, state = runner_parts
+    source.records = [rec("a.md", "content", version="1")]
+    await runner.sync(spec())
+    source.records = [Record(external_id="a.md", filename="a.md", data=b"", version="2")]
+    outcome = await runner.sync(spec())
+    assert outcome
+    assert outcome.skipped == 1
+    assert outcome.failed == 0
+    status = await state.get(status_key("docs"))
+    assert status
+    assert "1 items skipped" in status["last_error"]
+    assert "a.md is empty" in status["last_error"]
+    assert [d[1] for d in library.docs.values()] == [b"content"]  # unchanged, but reported
+    # The version is known, so the next sync does not read it again, and still reports it.
+    reads = 0
+
+    async def load() -> bytes:
+        nonlocal reads
+        reads += 1
+        return b""
+
+    source.records = [Record(external_id="a.md", filename="a.md", load=load, version="2")]
+    outcome = await runner.sync(spec())
+    assert reads == 0
+    assert outcome
+    assert outcome.skipped == 1
+    # Filled again: updated.
+    source.records = [rec("a.md", "new", version="3")]
+    await runner.sync(spec())
+    assert [d[1] for d in library.docs.values()] == [b"new"]
+    status = await state.get(status_key("docs"))
+    assert status
+    assert status["last_error"] == ""
+
+
+async def test_a_new_empty_item_can_be_filled_later_and_removed(
+    source: ListSource, runner_parts: Parts
+):
+    runner, library, _ = runner_parts
+    source.records = [Record(external_id="a.md", filename="a.md", data=b"", version="1")]
+    await runner.sync(spec())
+    source.records = [rec("a.md", "x", version="2")]
+    await runner.sync(spec())
+    assert library.calls == ["create a.md"]
+    source.records = [Record(external_id="b.md", filename="b.md", data=b"", version="1")]
+    await runner.sync(spec())
+    source.records = [rec("a.md", "x", version="2")]
+    await runner.sync(spec())  # b.md left without ever having a document: no failure
+    assert len(library.docs) == 1
+
+
+async def test_a_source_that_lists_nothing_does_not_delete_every_document(
+    source: ListSource, runner_parts: Parts
+):
+    runner, library, state = runner_parts
+    source.records = [rec("a.md"), rec("b.md", "two")]
+    await runner.sync(spec())
+    source.records = []
+    assert await runner.sync(spec()) is None
+    assert len(library.docs) == 2
+    status = await state.get(status_key("docs"))
+    assert status
+    assert "not deleting" in status["last_error"]
+
+
+async def test_the_sweep_lists_items_in_one_read(source: ListSource):
+    kv = FakeKv()
+    runner = Runner(FakeLibrary(), KvState(kv), clock=Clock())
+    source.records = [rec("a.md"), rec("b.md", "two")]
+    await runner.sync(spec())
+    source.records = [rec("a.md")]
+    outcome = await runner.sync(spec())
+    assert outcome
+    assert outcome.deleted == 1
+    assert len([k for k in kv.data if ".item." in k]) == 1
+
+
+async def test_the_folder_is_an_error_when_it_cannot_be_read(tmp_path: pathlib.Path):
+    folder = tmp_path / "mount"
+    folder.mkdir()
+    (folder / "a.md").write_text("one")
+    library, state = FakeLibrary(), MemoryState()
+    runner = Runner(library, state, clock=Clock())
+    s = spec(settings={"path": str(folder)})
+    await runner.sync(s)
+    (folder / "a.md").unlink()
+    folder.rmdir()  # unmounted
+    folder.mkdir()
+    # An empty folder where documents exist is not trusted ...
+    assert await runner.sync(s) is None
+    assert len(library.docs) == 1
+    folder.rmdir()  # ... and a missing one is an error of its own.
+    assert await runner.sync(s) is None
+    status = await state.get(status_key("docs"))
+    assert status
+    assert status["last_error"]
+    assert len(library.docs) == 1
+
+
+@pytest.mark.skipif(os.geteuid() == 0, reason="root reads everything")
+async def test_unreadable_paths_fail_the_run_instead_of_shrinking_the_listing(
+    tmp_path: pathlib.Path,
+):
+    (tmp_path / "a.md").write_text("one")
+    locked = tmp_path / "locked"
+    locked.mkdir()
+    (locked / "b.md").write_text("two")
+    library, state = FakeLibrary(), MemoryState()
+    runner = Runner(library, state, clock=Clock())
+    s = spec(settings={"path": str(tmp_path)})
+    await runner.sync(s)
+    assert len(library.docs) == 2
+    locked.chmod(0)
+    try:
+        assert await runner.sync(s) is None
+        assert len(library.docs) == 2  # b.md was not deleted
+        status = await state.get(status_key("docs"))
+        assert status
+        assert "cannot be read" in status["last_error"]
+    finally:
+        locked.chmod(0o755)
+
+
+async def test_folder_skips_links_that_leave_the_folder(tmp_path: pathlib.Path):
+    root = tmp_path / "root"
+    root.mkdir()
+    (root / "a.md").write_text("a")
+    (tmp_path / "secret.md").write_text("secret")
+    (root / "escape.md").symlink_to(tmp_path / "secret.md")
+    (root / "inside.md").symlink_to(root / "a.md")
+    (root / "gone.md").symlink_to(tmp_path / "nowhere.md")
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "c.md").write_text("c")
+    (root / "dir").symlink_to(outside, target_is_directory=True)
+    assert sorted(await listing(root)) == ["a.md", "inside.md"]

@@ -80,14 +80,13 @@ def load_specs(path: str) -> Loaded:
 
 
 def parse_specs(entries: list[Any]) -> Loaded:
-    loaded = Loaded()
+    specs: list[ConnectorSpec] = []
+    problems: list[tuple[int, str, str]] = []  # position, label, what is wrong
+    names: set[str] = set()
     for position, entry in enumerate(entries, start=1):
         label = f"#{position}"
         if isinstance(entry, dict) and isinstance(entry.get("name"), str):
             label = entry["name"]
-        if label in loaded.errors or any(s.name == label for s in loaded.specs):
-            loaded.errors[label + f" (entry {position})"] = "the name is used twice"
-            continue
         try:
             spec = ConnectorSpec.model_validate(entry)
             kind = KINDS.get(spec.kind)
@@ -95,10 +94,19 @@ def parse_specs(entries: list[Any]) -> Loaded:
                 raise ValueError(f"unknown kind {spec.kind!r}; known kinds: {', '.join(KINDS)}")
             kind.config.model_validate(spec.settings)
         except (ValidationError, ValueError) as err:
-            loaded.errors[label] = describe(err)
+            problems.append((position, label, describe(err)))
             continue
-        loaded.specs.append(spec)
-    return loaded
+        if spec.name in names:  # only valid entries claim a name
+            problems.append((position, label, "the name is used twice"))
+            continue
+        names.add(spec.name)
+        specs.append(spec)
+    errors: dict[str, str] = {}
+    for position, label, message in problems:
+        # A problem never shares a key with a running connector or another problem.
+        key = label if label not in names and label not in errors else f"{label} (entry {position})"
+        errors[key] = message
+    return Loaded(specs=specs, errors=errors)
 
 
 def describe(err: ValidationError | ValueError) -> str:
