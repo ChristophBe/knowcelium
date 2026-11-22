@@ -4,7 +4,9 @@ version = "0.1.0"
 description = "kb ingestion module: extract, chunk and embed uploaded documents"
 requires-python = ">=3.13"
 dependencies = [
+    "httpx>=0.28",
     "knowcel-document-api",
+    "knowcel-iam-api",
     "knowcel-ingestion-api",
     "knowcel-llm-api",
     "knowcel-platform",
@@ -13,6 +15,7 @@ dependencies = [
     "pypdf>=6.0",
     "pypdfium2>=5.15.2",
     "pytesseract>=0.3.13",
+    "pyyaml>=6.0",
     "python-docx>=1.2.0",
     "readability-lxml>=0.9",
     "tokenizers>=0.22",
@@ -23,6 +26,7 @@ knowcel-ingestion-worker = "knowcel_ingestion_worker.__main__:main"
 
 [tool.uv.sources]
 knowcel-document-api = { workspace = true }
+knowcel-iam-api = { workspace = true }
 knowcel-ingestion-api = { workspace = true }
 knowcel-llm-api = { workspace = true }
 knowcel-platform = { workspace = true }

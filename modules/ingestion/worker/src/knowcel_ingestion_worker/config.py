@@ -3,6 +3,7 @@ import re
 from knowcel_platform.config import PlatformSettings, Problems
 from pydantic import Field
 
+from .connectors.spec import load_specs
 from .tokens import TokenizerNotFoundError
 from .tokens import load as load_tokenizer
 
@@ -20,6 +21,17 @@ class Settings(PlatformSettings):
     # Languages Tesseract reads, as its codes joined with "+" ("eng+deu"). Each
     # needs its tesseract-ocr-<code> package.
     ocr_languages: str = "eng"
+    # The ingestion module (host:port); connectors upload through it.
+    ingestion_addr: str = "localhost:9002"
+    # The iam module (host:port); connectors check that their owner is a platform admin.
+    iam_addr: str = "localhost:9006"
+    # YAML file listing the connectors to run (see knowcel_ingestion_worker/connectors/spec.py);
+    # none run while it is empty.
+    connectors_file: str = ""
+    # Where the worker reaches the file storage that presigned upload URLs name
+    # (host:port), when that name only resolves outside the stack (the default
+    # KNOWCEL_S3_PUBLIC_ENDPOINT is localhost:8333). Empty uploads to the URL as given.
+    connectors_upload_endpoint: str = ""
     # Chunks are measured in tokens of the embedding model's tokenizer: a name
     # bundled in knowcel_ingestion_worker/vocab (nomic-embed-text) or a path to a
     # Hugging Face tokenizer.json. Change it together with KNOWCEL_EMBEDDING_MODEL
@@ -55,6 +67,15 @@ class Settings(PlatformSettings):
         super().check(problems)
         problems.addr("document_addr", self.document_addr)
         problems.addr("llm_addr", self.llm_addr)
+        if self.connectors_file:
+            problems.addr("ingestion_addr", self.ingestion_addr)
+            problems.addr("iam_addr", self.iam_addr)
+            if self.connectors_upload_endpoint:
+                problems.addr("connectors_upload_endpoint", self.connectors_upload_endpoint)
+            try:
+                load_specs(self.connectors_file)
+            except ValueError as err:
+                problems.add("connectors_file", str(err))
         if self.ocr_enabled and not re.fullmatch(r"\w+(\+\w+)*", self.ocr_languages):
             problems.add(
                 "ocr_languages",

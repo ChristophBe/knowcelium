@@ -1138,7 +1138,9 @@ name = "knowcel-ingestion-worker"
 version = "0.1.0"
 source = { editable = "modules/ingestion/worker" }
 dependencies = [
+    { name = "httpx" },
     { name = "knowcel-document-api" },
+    { name = "knowcel-iam-api" },
     { name = "knowcel-ingestion-api" },
     { name = "knowcel-llm-api" },
     { name = "knowcel-platform" },
@@ -1148,13 +1150,16 @@ dependencies = [
     { name = "pypdfium2" },
     { name = "pytesseract" },
     { name = "python-docx" },
+    { name = "pyyaml" },
     { name = "readability-lxml" },
     { name = "tokenizers" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "httpx", specifier = ">=0.28" },
     { name = "knowcel-document-api", editable = "modules/document/api/python" },
+    { name = "knowcel-iam-api", editable = "modules/iam/api/python" },
     { name = "knowcel-ingestion-api", editable = "modules/ingestion/api/python" },
     { name = "knowcel-llm-api", editable = "modules/llm/api/python" },
     { name = "knowcel-platform", editable = "platform/python" },
@@ -1164,6 +1169,7 @@ requires-dist = [
     { name = "pypdfium2", specifier = ">=5.15.2" },
     { name = "pytesseract", specifier = ">=0.3.13" },
     { name = "python-docx", specifier = ">=1.2.0" },
+    { name = "pyyaml", specifier = ">=6.0" },
     { name = "readability-lxml", specifier = ">=0.9" },
     { name = "tokenizers", specifier = ">=0.22" },
 ]

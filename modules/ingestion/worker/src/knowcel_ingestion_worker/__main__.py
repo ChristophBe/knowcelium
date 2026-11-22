@@ -17,6 +17,7 @@ from nats.js.api import AckPolicy, ConsumerConfig
 from nats.js.errors import Error as JetStreamError
 
 from .config import Settings
+from .connectors import service as connectors
 from .worker import STREAM, SUBJECT_UPLOADED, PeerGate, Processor, consume, deliver
 
 CONSUMER = "ingestion-worker"
@@ -45,9 +46,10 @@ async def run() -> None:
         )
 
     async with channel(settings.document_addr) as doc_ch, channel(settings.llm_addr) as llm_ch:
+        document_stub = document_pb2_grpc.DocumentServiceStub(doc_ch)
         processor = Processor(
             settings,
-            document_pb2_grpc.DocumentServiceStub(doc_ch),
+            document_stub,
             llm_pb2_grpc.LlmServiceStub(llm_ch),
             publish,
         )
@@ -96,7 +98,9 @@ async def run() -> None:
             SUBJECT_UPLOADED,
             settings.worker_concurrency,
         )
+        syncing = asyncio.create_task(connectors.run(settings, js, document_stub, stop))
         await consume(fetch, handle, settings.worker_concurrency, stop, gate.is_open)
+        await syncing
 
     await nc.drain()
 

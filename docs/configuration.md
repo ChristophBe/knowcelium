@@ -156,6 +156,10 @@ From `Settings` in [modules/ingestion/worker/src/knowcel_ingestion_worker/config
 | `KNOWCEL_LLM_ADDR` | `localhost:9004` | The llm module (host:port), which embeds the chunks. |
 | `KNOWCEL_OCR_ENABLED` | `false` | Read PDF pages without a text layer (scans) with Tesseract OCR. Off by default: it is slow and the image needs the tesseract binary (the Docker image of the worker has it). |
 | `KNOWCEL_OCR_LANGUAGES` | `eng` | Languages Tesseract reads, as its codes joined with "+" ("eng+deu"). Each needs its tesseract-ocr-<code> package. |
+| `KNOWCEL_INGESTION_ADDR` | `localhost:9002` | The ingestion module (host:port); connectors upload through it. |
+| `KNOWCEL_IAM_ADDR` | `localhost:9006` | The iam module (host:port); connectors check that their owner is a platform admin. |
+| `KNOWCEL_CONNECTORS_FILE` | empty | YAML file listing the connectors to run (see knowcel_ingestion_worker/connectors/spec.py); none run while it is empty. |
+| `KNOWCEL_CONNECTORS_UPLOAD_ENDPOINT` | empty | Where the worker reaches the file storage that presigned upload URLs name (host:port), when that name only resolves outside the stack (the default KNOWCEL_S3_PUBLIC_ENDPOINT is localhost:8333). Empty uploads to the URL as given. |
 | `KNOWCEL_CHUNK_TOKENIZER` | `nomic-embed-text` | Chunks are measured in tokens of the embedding model's tokenizer: a name bundled in knowcel_ingestion_worker/vocab (nomic-embed-text) or a path to a Hugging Face tokenizer.json. Change it together with KNOWCEL_EMBEDDING_MODEL on the llm service. |
 | `KNOWCEL_CHUNK_TOKENS` | `256` | Size of a chunk in tokens; it must fit KNOWCEL_EMBEDDING_MAX_TOKENS. |
 | `KNOWCEL_CHUNK_OVERLAP_TOKENS` | `32` | Tokens a chunk repeats from the end of the previous one, below KNOWCEL_CHUNK_TOKENS. |
@@ -241,3 +245,5 @@ Substituted by Docker Compose into the compose files: host ports, the release ve
 | `KNOWCEL_OTEL_GRPC_PORT` | `4317` | Host port of the collector's OTLP/gRPC receiver (observability profile). | `deploy/infra.compose.yaml` |
 | `KNOWCEL_JAEGER_PORT` | `16686` | Host port of the Jaeger UI (observability profile). | `deploy/infra.compose.yaml` |
 | `KNOWCEL_PROMETHEUS_PORT` | `9090` | Host port of the Prometheus UI (observability profile). | `deploy/infra.compose.yaml` |
+| `KNOWCEL_CONNECTORS_CONFIG` | `./connectors.yaml` | Connectors that sync external systems into documents (docs/operations/connectors.md): the file listing them, and the folder the watched-folder connector reads (mounted as /watch). Relative paths are relative to modules/ingestion; the defaults run no connector. | `modules/ingestion/compose.yaml` |
+| `KNOWCEL_WATCH_DIR` | `./watch` | Connectors that sync external systems into documents (docs/operations/connectors.md): the file listing them, and the folder the watched-folder connector reads (mounted as /watch). Relative paths are relative to modules/ingestion; the defaults run no connector. | `modules/ingestion/compose.yaml` |

@@ -91,6 +91,12 @@ When you open a passage from [search results](search.md#open-a-passage-in-its-do
 
 A document that is still being processed has no passages yet. One whose processing failed shows the reason instead.
 
+## Documents that come from a connector
+
+Your administrator can connect Knowcelium to a source such as a shared folder. Documents it adds are kept in step with that source: when the original changes, Knowcelium replaces the document's file, and when the original is removed, the document is deleted. Such a document shows a **Source** row on its page that names the connector, with a link to the original when the source has a web address.
+
+If you own a document from a connector, its page says that the next sync replaces the file, the title and the metadata. Make changes in the source instead; what you change here is lost. Who can read the document is not touched by a sync, and you can still change it.
+
 ## Rename a document
 
 A new document is titled with its file name.
