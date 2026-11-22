@@ -22,8 +22,8 @@ Every list endpoint returns `{items, total, limit, offset, next_offset}` (`next_
 the last page), oldest change first, and takes:
 
 - `limit` (1 to 100, default 20) and `offset` (default 0)
-- `updated_since`: an ISO 8601 timestamp; returns records with `updated_at` at or after it (no offset means UTC)
-- exact-match filters: `status`/`supplier_id` on parts, change requests and shipments, `part_id` on specifications and stock
+- `updated_since`: an ISO 8601 timestamp; returns records with `updated_at` at or after it (no offset means UTC; write an offset's `+` as `%2B`, though a bare `+01:00` is accepted too)
+- exact-match filters (a blank value, or a parameter the endpoint does not know, is a 400): `status`/`supplier_id` on parts, change requests and shipments, `part_id` on specifications and stock
 
 `GET /search?q=<words>[&type=supplier|stock|shipment]` on logistics matches records containing every word
 (case-insensitive) and takes the paging parameters and `updated_since` too; each hit carries its `type`.

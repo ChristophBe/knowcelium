@@ -175,7 +175,7 @@ func CollectSettings(root string, modules []Module, py PyRunner) ([]SettingsGrou
 	}
 
 	composeFiles := []string{"compose.yaml"}
-	for _, pattern := range []string{"deploy/*.compose.yaml", "modules/*/compose.yaml"} {
+	for _, pattern := range []string{"deploy/*.compose.yaml", "examples/*/compose.yaml", "modules/*/compose.yaml"} {
 		matches, err := filepath.Glob(filepath.Join(root, pattern))
 		if err != nil {
 			return nil, err
