@@ -12,7 +12,7 @@ from knowcel_ingestion_worker.connectors.model import ConnectorError, Record
 from knowcel_ingestion_worker.connectors.spec import ConnectorSpec
 from knowcel_ingestion_worker.connectors.state import KvState
 from knowcel_platform.grpc import current_user
-from nats.js.errors import KeyDeletedError, KeyNotFoundError, KeyWrongLastSequenceError, NoKeysError
+from nats.js.errors import KeyDeletedError, KeyNotFoundError, KeyWrongLastSequenceError
 
 
 def rpc_error(code: grpc.StatusCode) -> grpc.aio.AioRpcError:
@@ -227,11 +227,29 @@ class FakeKv:
             raise KeyNotFoundError
         await self.put(key, b"")
 
-    async def keys(self) -> list[str]:
-        live = [k for k, e in self.data.items() if e.value]
-        if not live:
-            raise NoKeysError
-        return live
+    async def watch(self, subject: str, **_: object) -> "Watcher":
+        assert subject.endswith(">")
+        live = [(k, e) for k, e in self.data.items() if e.value and k.startswith(subject[:-1])]
+        return Watcher([Item(k, e.value) for k, e in live])
+
+
+class Item:
+    def __init__(self, key: str, value: bytes) -> None:
+        self.key, self.value = key, value
+
+
+class Watcher:
+    def __init__(self, items: list[Item]) -> None:
+        self._items: list[Item | None] = [*items, None]
+
+    def __aiter__(self):
+        return self
+
+    async def __anext__(self) -> Item | None:
+        return self._items.pop(0)
+
+    async def stop(self) -> None:
+        pass
 
 
 async def test_kv_state_stores_json_by_key():
@@ -241,7 +259,9 @@ async def test_kv_state_stores_json_by_key():
     await state.put("a.item.1", {"x": 1})
     await state.put("b.status", {"y": 2})
     assert await state.get("a.item.1") == {"x": 1}
+    await state.put("a.items", {"z": 3})
     assert await state.keys("a.item.") == ["a.item.1"]
+    assert await state.items("a.item.") == {"a.item.1": {"x": 1}}
     await state.delete("a.item.1")
     await state.delete("a.item.1")
     assert await state.get("a.item.1") is None
