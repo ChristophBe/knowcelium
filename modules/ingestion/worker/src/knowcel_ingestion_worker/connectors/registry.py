@@ -9,6 +9,8 @@ from pydantic import BaseModel
 from .folder import FolderConnector
 from .model import Source
 from .sdk import Connector
+from .showcase_engineering import ShowcaseEngineeringConnector
+from .showcase_logistics import ShowcaseLogisticsConnector
 
 
 @dataclass(frozen=True)
@@ -30,5 +32,7 @@ class Kind:
 
 KINDS: dict[str, Kind] = {
     "folder": Kind.of(FolderConnector),
+    "showcase_engineering": Kind.of(ShowcaseEngineeringConnector),
+    "showcase_logistics": Kind.of(ShowcaseLogisticsConnector),
     # `task connector:new` registers new connectors above this line.
 }

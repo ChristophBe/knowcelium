@@ -1,0 +1,22 @@
+# The showcase connectors (docs/operations/connectors.md): they sync the mock systems into documents.
+# The main stack does not run them; this file replaces modules/ingestion/connectors.yaml when you start
+# the showcase: task showcase:up (or KNOWCEL_CONNECTORS_CONFIG=../../examples/showcase/connectors.yaml).
+#
+# `owner` is the id of alice@example.com, the platform admin of the dev stack (KNOWCEL_IAM_BOOTSTRAP_ADMINS).
+# She has to have signed in once. With another admin, put their id here.
+connectors:
+  - name: showcase-engineering
+    kind: showcase_engineering
+    owner: CgVhbGljZRIFbG9jYWw
+    public: true
+    interval_seconds: 60
+    settings:
+      base_url: http://showcase-engineering:8091
+
+  - name: showcase-logistics
+    kind: showcase_logistics
+    owner: CgVhbGljZRIFbG9jYWw
+    public: true
+    interval_seconds: 60
+    settings:
+      base_url: http://showcase-logistics:8092
