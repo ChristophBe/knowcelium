@@ -5,7 +5,7 @@ A connector connects Knowcelium to a system that holds content: a wiki, a drive,
 A connector works in one or both of two modes:
 
 - **Sync** copies the source into documents on a schedule. Everything downstream (search, chat, access rules) then works as for an upload. Implement `list_changes`; this is all a connector needs.
-- **Live search** asks the source at question time and copies nothing, for content that is too large or too volatile to mirror. Implement `search` in addition. The SDK defines the interface (`search`, `Snippet`, `Connector.searchable()`); the retrieval pipeline does not call it yet, so a connector's `search` is not used until live retrieval lands.
+- **Live search** asks the source at question time and copies nothing, for content that is too large or too volatile to mirror. Implement `search` in addition and set `live_search: true` on the connector ([operations](operations/connectors.md#live-search)). Chat then asks the connector whenever someone asks a question and cites what it returns, next to document passages. A connector can do both, or only live search (`sync: false`).
 
 The code lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`:
 
@@ -82,6 +82,13 @@ async def search(self, query: str, limit: int) -> list[Snippet]: ...
 ```
 
 Return up to `limit` `Snippet`s (`text`, `source_url`, optional `title` and `external_id`) that match the query, best first. `Connector.searchable()` tells the framework whether you did. A connector without it returns nothing.
+
+Things to know when you write one:
+
+- **The query is the user's question**, as typed. Turn it into what your source understands (keywords, filters).
+- **You do not learn who is asking.** The connector runs with its own credentials, and everyone allowed to read it (`public`, or a member of one of its `team_ids`) gets whatever you return. Only expose in `search` what all of them may see; the administrator has to opt in per connector.
+- **Be quick.** A search that takes longer than the timeout (5 s by default) is dropped and the answer notes that the connector was unavailable. Raise `ConnectorError` for problems the administrator can fix; any other exception is logged and treated the same way.
+- `source_url` is shown as the citation's link, and is only followed when it is an `http` or `https` address.
 
 ## Walkthrough: the watched folder
 
