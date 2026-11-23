@@ -42,14 +42,27 @@ It reads the file types the worker can process (PDF, Word, HTML, Markdown and pl
 - **Empty files.** An item that is empty (for instance a file truncated to 0 bytes) is not uploaded; its document keeps the old content. The version is remembered so the file is not read at every sync, and the status says `n items skipped; first: ...` until the item has content again. The run still counts as successful.
 - **Several workers.** A lease in the key-value bucket keeps two workers from syncing the same connector at once. A running sync renews it, so a long sync is not started a second time. A failing state store (NATS) fails that sync only: it is logged and retried at the next interval, and the lease is always released.
 
-State (status of each connector, the document of each item) lives in the JetStream key-value bucket `ingestion_connectors`. If it is lost, the next sync adds the items again as new documents.
+State (the bookkeeping of each connector, the document of each item) lives in the JetStream key-value bucket `ingestion_connectors`. If it is lost, the next sync adds the items again as new documents.
 
 ## Status and errors
 
-Each connector's status is stored under `<name>.status` in that bucket: start and end of the last run, last successful run and its start, number of synced documents and the last error (empty when the run succeeded). Errors caused by the settings (an unknown kind, a missing directory, an owner who is not a platform admin) are recorded there, not only in the worker's log. A page that shows connectors and their health is planned (issues #259 and #260).
+Two copies of a connector's status exist:
 
-## Limits
+- **The worker's** is stored under `<name>.status` in the bucket: start and end of the last run, last successful run and its start (where the next run continues), number of synced documents and the last error (empty when the run succeeded). It is the worker's own memory, not meant to be read.
+- **The ingestion service's** is what people read: `IngestionService.ListConnectors` and `GetConnector`, for platform admins only (`PERMISSION_DENIED` for everyone else, `UNAVAILABLE` while iam, which tells who is one, is down). The worker reports to it by event: `knowcel.ingestion.connectors_configured` once at start with every entry of the connectors file (valid or not; connectors no longer listed disappear, one that never ran is `UNKNOWN`), and `knowcel.ingestion.connector_synced` after each sync run. A lost event only delays the status until the next run.
 
-- Only the folder connector exists; the SDK for writing others follows (#254).
-- The worker uploads through `ingestion-service` and reaches the storage at `KNOWCEL_CONNECTORS_UPLOAD_ENDPOINT` (the presigned URLs name the public storage address). Without that setting it uploads to the address in the URL.
-- The Helm chart does not mount a connectors file yet; connectors run in the compose stack.
+Errors caused by the settings (an unknown kind, a missing directory, an owner who is not a platform admin) are recorded in both, not only in the worker's log.
+
+### Health
+
+The service derives a connector's health when it is read:
+
+| Health | When |
+|---|---|
+| `HEALTHY` | The last sync succeeded, and within twice the connector's interval. |
+| `DEGRADED` | The last sync had partial failures: some items synced, others did not (`last_error` names the first). |
+| `FAILING` | The last sync failed: it could not run (settings, permissions, an unreachable source), or no item synced (`last_error` says why). |
+| `STALE` | The last sync succeeded more than twice the interval ago: syncs have stopped, for instance because the worker is down. |
+| `UNKNOWN` | The connector has not synced yet. |
+
+A failed or partial run is `FAILING` or `DEGRADED` however old, because the error is what to fix. A disabled connector or an invalid entry (no interval) is never `STALE`. Skipped empty files do not fail a run; the note shows as `last_error` while the connector stays `HEALTHY`. A page that shows connectors and their health is planned (issue #260).

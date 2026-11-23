@@ -72,6 +72,7 @@ flowchart TB
     envoy -- "CurationService" --> cursvc
 
     ingsvc -- "CreateDocument, SetDocumentStatus" --> docsvc
+    ingsvc -- "ResolveCaller (connector status is for platform admins)" --> iamsvc
     ingworker -- "ReadContent, AddChunks, SetDocumentStatus" --> docsvc
     ingworker -- "Embed" --> llmsvc
     ingworker -- "connectors: CreateUpload, ReplaceUpload, CompleteUpload" --> ingsvc
@@ -82,8 +83,8 @@ flowchart TB
     docsvc -- "Embed (SearchDocuments)" --> llmsvc
     llmsvc -- "HTTP" --> ollama
 
-    ingsvc -- "pub knowcel.ingestion.uploaded<br/>sub started / processed / failed" --> nats
-    ingworker -- "sub knowcel.ingestion.uploaded<br/>pub started / processed / failed<br/>KV: connector state" --> nats
+    ingsvc -- "pub knowcel.ingestion.uploaded<br/>sub started / processed / failed<br/>sub connector_synced / connectors_configured" --> nats
+    ingworker -- "sub knowcel.ingestion.uploaded<br/>pub started / processed / failed<br/>pub connector_synced / connectors_configured<br/>KV: connector state" --> nats
     docsvc -- "pub knowcel.document.reindex_requested" --> nats
     ingsvc -- "sub knowcel.document.reindex_requested" --> nats
 
@@ -99,8 +100,8 @@ flowchart TB
 | Container | Module | Owns | Calls (gRPC) | Events |
 |---|---|---|---|---|
 | `document-service` | document | schema `document` (documents, chunks + `vector(768)`), S3 bucket, stream `DOCUMENT` | llm (`SearchDocuments`, and the current model for `ReindexDocuments`) | publishes `reindex_requested` ([Changing the embedding model](../operations/embedding-model.md)) |
-| `ingestion-service` | ingestion | schema `ingestion` (jobs), stream `INGESTION` | document | publishes `uploaded`; consumes `started`, `processed`, `failed`, and the document module's `reindex_requested` |
-| `ingestion-worker` | ingestion | key-value bucket `ingestion_connectors` (connector status and sync state) | document, llm; ingestion and iam for [connectors](../operations/connectors.md) | consumes `uploaded`; publishes `started`, `processed`, `failed` |
+| `ingestion-service` | ingestion | schema `ingestion` (jobs, connector status), stream `INGESTION` | document; iam for the connector status | publishes `uploaded`; consumes `started`, `processed`, `failed`, `connector_synced`, `connectors_configured`, and the document module's `reindex_requested` |
+| `ingestion-worker` | ingestion | key-value bucket `ingestion_connectors` (connector sync state) | document, llm; ingestion and iam for [connectors](../operations/connectors.md) | consumes `uploaded`; publishes `started`, `processed`, `failed`, `connector_synced`, `connectors_configured` |
 | `chat-service` | chat | schema `chat` (conversations, messages) | document, llm | — |
 | `llm-service` | llm | schema `llm` (usage of generations), provider registry | Ollama over HTTP, Anthropic API | — |
 | `iam-service` | iam | schema `iam` (users) | — | — |

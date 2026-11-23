@@ -98,7 +98,7 @@ async def run() -> None:
             SUBJECT_UPLOADED,
             settings.worker_concurrency,
         )
-        syncing = asyncio.create_task(connectors.run(settings, js, document_stub, stop))
+        syncing = asyncio.create_task(connectors.run(settings, js, document_stub, publish, stop))
         syncing.add_done_callback(log_failure)
         try:
             await consume(fetch, handle, settings.worker_concurrency, stop, gate.is_open)

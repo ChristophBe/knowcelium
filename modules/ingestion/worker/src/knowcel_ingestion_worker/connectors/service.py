@@ -12,7 +12,8 @@ from nats.js import JetStreamContext
 
 from ..config import Settings
 from .library import GrpcLibrary
-from .runner import Runner, run_schedule
+from .reporting import EventReporter, Publish
+from .runner import Runner, now, run_schedule
 from .spec import load_specs
 from .state import KvState
 
@@ -26,10 +27,11 @@ async def run(
     settings: Settings,
     js: JetStreamContext,
     documents: document_pb2_grpc.DocumentServiceStub,
+    publish: Publish,
     stop: asyncio.Event,
 ) -> None:
-    """Syncs the connectors of `settings.connectors_file` until `stop` is set.
-    Does nothing without one."""
+    """Syncs the connectors of `settings.connectors_file` until `stop` is set,
+    reporting their status through `publish`. Does nothing without a file."""
     if not settings.connectors_file:
         return
     loaded = load_specs(settings.connectors_file)
@@ -46,7 +48,9 @@ async def run(
             http,
             settings.connectors_upload_endpoint,
         )
-        runner = Runner(library, state)
+        reporter = EventReporter(publish)
+        runner = Runner(library, state, reporter=reporter)
+        await reporter.configured(loaded, now())
         for name, error in loaded.errors.items():
             log.error("connector %s is not started: %s", name, error)
             await runner.report(name, error)
