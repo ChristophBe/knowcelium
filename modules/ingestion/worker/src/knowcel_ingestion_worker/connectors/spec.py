@@ -42,12 +42,23 @@ class ConnectorSpec(BaseModel):
     # Share with everyone instead. There is no private mode in the document
     # module yet, so a connector has to choose one or the other explicitly.
     public: bool = False
+    # Copy the source into documents on a schedule. Off for a connector that is
+    # only searched live.
+    sync: bool = True
+    # Also search the source at question time (the kind must implement `search`).
+    # Off by default: a live search runs with the connector's own access to the
+    # source, which cannot tell who is asking, so an administrator turns it on
+    # knowing that everyone who may read the connector (`public` or `team_ids`)
+    # can see whatever a search of it returns.
+    live_search: bool = False
     # Seconds between the start of two syncs.
     interval_seconds: int = Field(default=300, ge=10)
     settings: dict[str, Any] = {}
 
     @model_validator(mode="after")
     def _sharing(self) -> "ConnectorSpec":
+        if not self.sync and not self.live_search:
+            raise ValueError("a connector that neither syncs nor searches live does nothing")
         if self.public and self.team_ids:
             raise ValueError("set either team_ids or public: true, not both")
         if not self.public and not self.team_ids:
@@ -93,6 +104,8 @@ def parse_specs(entries: list[Any]) -> Loaded:
             if kind is None:
                 raise ValueError(f"unknown kind {spec.kind!r}; known kinds: {', '.join(KINDS)}")
             kind.config.model_validate(spec.settings)
+            if spec.live_search and not kind.searchable:
+                raise ValueError(f"live_search: kind {spec.kind!r} does not implement search")
         except (ValidationError, ValueError) as err:
             problems.append((position, label, describe(err)))
             continue

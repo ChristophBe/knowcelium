@@ -6,19 +6,22 @@ import asyncio
 import logging
 import os
 import pathlib
+import re
 from collections.abc import AsyncIterator
 from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict, field_validator
 
 from ..extract import HTML_SUFFIXES, TEXT_SUFFIXES
-from .model import ConnectorError, Record
+from .model import ConnectorError, Record, Snippet
 from .sdk import Connector
 
 log = logging.getLogger(__name__)
 
 SUPPORTED_SUFFIXES = TEXT_SUFFIXES | HTML_SUFFIXES | {".pdf", ".docx"}
 # mimetypes has no entry for these on every platform.
+# Longest passage a live search returns.
+_SNIPPET_CHARS = 1000
 _CONTENT_TYPES = {".md": "text/markdown", ".markdown": "text/markdown", ".rst": "text/x-rst"}
 
 
@@ -88,6 +91,43 @@ class FolderConnector(Connector[FolderConfig]):
             raise ConnectorError(
                 f"{len(unreadable)} paths of {self._root} cannot be read; first: {unreadable[0]}"
             )
+
+    async def search(self, query: str, limit: int) -> list[Snippet]:
+        """The paragraphs of the text files that contain most of the words of
+        `query` (words of at least 3 letters, ignoring case), best first.
+        Searching reads the files as they are now, so it also finds what has
+        not been synced yet; PDF and Word files are not searched."""
+        words = set(re.findall(r"\w{3,}", query.lower()))
+        if not words:
+            return []
+        try:
+            files, _ = await asyncio.to_thread(self._files)
+        except OSError as err:
+            raise ConnectorError(f"cannot read the folder {self._root}: {err}") from err
+        found: list[tuple[int, Snippet]] = []
+        for relative, path in files:
+            if pathlib.PurePath(relative).suffix.lower() not in TEXT_SUFFIXES | HTML_SUFFIXES:
+                continue
+            try:
+                text = (await asyncio.to_thread(path.read_bytes)).decode("utf-8", "replace")
+            except OSError:
+                continue  # removed or unreadable since it was listed
+            for paragraph in re.split(r"\n\s*\n", text):
+                matched = sum(1 for w in words if w in paragraph.lower())
+                if matched:
+                    found.append(
+                        (
+                            matched,
+                            Snippet(
+                                text=paragraph.strip()[:_SNIPPET_CHARS],
+                                source_url=(self._root / relative).as_uri(),
+                                title=pathlib.PurePosixPath(relative).stem,
+                                external_id=relative,
+                            ),
+                        )
+                    )
+        found.sort(key=lambda hit: hit[0], reverse=True)
+        return [snippet for _, snippet in found[:limit]]
 
     def _check_readable(self) -> None:
         with os.scandir(self._root) as entries:

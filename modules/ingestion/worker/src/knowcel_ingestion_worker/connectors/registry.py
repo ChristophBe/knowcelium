@@ -18,12 +18,14 @@ class Kind:
 
     config: type[BaseModel]
     create: Callable[..., Source]
+    # Whether the connector can be searched live (it implements `search`).
+    searchable: bool = False
 
     @classmethod
     def of(cls, connector: type[Connector[Any]]) -> "Kind":
         if not hasattr(connector, "config_model"):
             raise TypeError(f"{connector.__name__} must set config_model to its settings model")
-        return cls(connector.config_model, connector)
+        return cls(connector.config_model, connector, connector.searchable())
 
 
 KINDS: dict[str, Kind] = {

@@ -319,7 +319,7 @@ def _brief(err: BaseException) -> str:
 
 
 async def run_schedule(runner: Runner, specs: list[ConnectorSpec], stop: asyncio.Event) -> None:
-    """Syncs every enabled connector on its own interval, the first time at
+    """Syncs every enabled connector that syncs on its own interval, the first time at
     once, until `stop` is set."""
 
     async def loop(spec: ConnectorSpec) -> None:
@@ -331,4 +331,4 @@ async def run_schedule(runner: Runner, specs: list[ConnectorSpec], stop: asyncio
             with contextlib.suppress(TimeoutError):
                 await asyncio.wait_for(stop.wait(), spec.interval_seconds)
 
-    await asyncio.gather(*(loop(s) for s in specs if s.enabled))
+    await asyncio.gather(*(loop(s) for s in specs if s.enabled and s.sync))

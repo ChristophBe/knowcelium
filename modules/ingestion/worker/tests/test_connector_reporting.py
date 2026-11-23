@@ -276,8 +276,23 @@ async def test_the_configured_connectors_are_announced_again_until_stopped(
 
 
 async def test_a_worker_without_a_connectors_file_announces_none(published: Published):
+    class Subscription:
+        async def unsubscribe(self) -> None:
+            pass
+
+    class Nats:
+        async def subscribe(self, *_: object, **__: object) -> Subscription:
+            return Subscription()
+
     settings = Settings(connectors_file="")
-    await service.run(settings, None, None, published, asyncio.Event())  # type: ignore[arg-type]
+    stop = asyncio.Event()
+
+    async def publish_then_stop(subject: str, message: Message, dedupe_id: str) -> None:
+        await published(subject, message, dedupe_id)
+        stop.set()  # it keeps answering live searches until stopped
+
+    async with asyncio.timeout(5):
+        await service.run(settings, Nats(), None, None, publish_then_stop, stop)  # type: ignore[arg-type]
     ((subject, event, _),) = published.events
     assert subject == SUBJECT_CONFIGURED
     assert isinstance(event, events_pb2.ConnectorsConfigured)

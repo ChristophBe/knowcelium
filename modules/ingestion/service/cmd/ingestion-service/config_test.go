@@ -45,3 +45,21 @@ func TestInvalidConfigListsEveryProblem(t *testing.T) {
 		t.Errorf("problems = %q\nwant %q", cfgErr.Problems, want)
 	}
 }
+
+func TestConnectorSearchSettingsAreChecked(t *testing.T) {
+	t.Setenv("KNOWCEL_IAM_ADDR", "iam-service")
+	t.Setenv("KNOWCEL_CONNECTOR_SEARCH_TIMEOUT", "0s")
+	_, err := loadConfig()
+	var cfgErr *config.Error
+	if !errors.As(err, &cfgErr) {
+		t.Fatalf("err = %v, want *config.Error", err)
+	}
+	for _, want := range []string{
+		"KNOWCEL_IAM_ADDR: must be host:port, got \"iam-service\"",
+		"KNOWCEL_CONNECTOR_SEARCH_TIMEOUT: must be positive, got 0s",
+	} {
+		if !slices.Contains(cfgErr.Problems, want) {
+			t.Errorf("problems %v lack %q", cfgErr.Problems, want)
+		}
+	}
+}
