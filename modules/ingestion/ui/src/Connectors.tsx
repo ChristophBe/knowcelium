@@ -34,12 +34,10 @@ import {
   useDocumentTitle,
 } from "@knowcel/ui";
 import { Link } from "react-router";
+import { CONNECTOR_GUIDE_URL } from "./links.ts";
 
 /** How often the list refreshes: the worker reports a sync at most every few seconds, usually minutes. */
 export const REFRESH_MS = 30_000;
-
-/** The guide for people who write a connector, where the empty state sends them. */
-const GUIDE_URL = "https://github.com/ChristophBe/knowcelium/blob/main/docs/connectors.md";
 
 /** Where the manual says what to do about an unhealthy connector. */
 const FIX_HREF = "/help/ingestion#fix-an-unhealthy-connector";
@@ -158,7 +156,7 @@ function ConnectorList() {
           icon={Plug}
           action={
             <a
-              href={GUIDE_URL}
+              href={CONNECTOR_GUIDE_URL}
               target="_blank"
               rel="noopener noreferrer"
               className="text-sm font-medium text-accent underline"
