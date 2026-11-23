@@ -14,5 +14,6 @@ ui: "@knowcel/module-chat"
 # teams, which a conversation can be limited to; while it is down, only
 # "all documents" works. curation scores the retrieved passages' documents and
 # says which are replaced, deprecated or archived; while it is down, passages
-# are ranked by similarity alone.
-depends_on: [document, llm, iam, curation]
+# are ranked by similarity alone. ingestion searches connectors live at
+# question time; while it is down, answers use documents only.
+depends_on: [document, llm, iam, curation, ingestion]

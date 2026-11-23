@@ -14,6 +14,8 @@ services:
       KNOWCEL_CURATION_ADDR: curation-service:9005
       # Soft dependency: no depends_on on iam-service; while it is down, conversations can't be limited to teams.
       KNOWCEL_IAM_ADDR: iam-service:9006
+      # Soft dependency: no depends_on on ingestion-service; while it is down, answers use documents only.
+      KNOWCEL_INGESTION_ADDR: ingestion-service:9002
       KNOWCEL_RAG_MIN_SCORE: ${KNOWCEL_RAG_MIN_SCORE:-0.5}
     # gRPC and Prometheus /metrics (docs/metrics.md).
     ports: ["9003:9003", "9103:9103"]

@@ -325,3 +325,23 @@ async def test_global_prompt_templates_are_stored_replaced_and_removed(
     assert await repo.get_prompt_templates() == {"system": "Two", "sources": "{sources}"}
     await repo.set_prompt_templates({"system": "", "sources": ""})
     assert await repo.get_prompt_templates() == {}
+
+
+async def test_the_sources_that_did_not_answer_are_kept_with_the_message(
+    repo: SqlRepository,
+) -> None:
+    conv = await repo.create_conversation(ALICE, "", [])
+    await repo.add_message(conv.id, chat_pb2.MESSAGE_ROLE_ASSISTANT, "a", [])
+    await repo.add_message(
+        conv.id,
+        chat_pb2.MESSAGE_ROLE_ASSISTANT,
+        "b",
+        [{"connector": "stock", "source_url": "https://wms.example/3"}],
+        unavailable_sources=["crm", "wiki"],
+    )
+
+    plain, live = await repo.list_messages(conv.id)
+
+    assert plain.unavailable_sources == []
+    assert live.unavailable_sources == ["crm", "wiki"]
+    assert live.citations[0]["connector"] == "stock"

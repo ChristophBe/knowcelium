@@ -10,6 +10,7 @@ import (
 	"os/signal"
 	"strings"
 	"syscall"
+	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"golang.org/x/sync/errgroup"
@@ -44,9 +45,14 @@ type Config struct {
 	// DocumentAddr is the document module (host:port), where uploads are
 	// created and their status is set.
 	DocumentAddr string `env:"DOCUMENT_ADDR" envDefault:"localhost:9001"`
-	// IAMAddr is the iam module (host:port), which tells whether a caller is
-	// a platform admin, who alone can read the connectors' status.
+	// IAMAddr is the iam module (host:port), which tells whether a caller is a
+	// platform admin, who alone can read the connectors' status, and the teams
+	// of a caller, so that a live search asks only the connectors they may
+	// read. While it is down, only public connectors are searched.
 	IAMAddr string `env:"IAM_ADDR" envDefault:"localhost:9006"`
+	// ConnectorSearchTimeout bounds a live connector search; a connector that
+	// has not answered by then is reported as unavailable.
+	ConnectorSearchTimeout time.Duration `env:"CONNECTOR_SEARCH_TIMEOUT" envDefault:"5s"`
 }
 
 func (c Config) Validate(p *config.Problems) {
@@ -58,6 +64,9 @@ func (c Config) Validate(p *config.Problems) {
 	}
 	p.Addr("KNOWCEL_DOCUMENT_ADDR", c.DocumentAddr)
 	p.Addr("KNOWCEL_IAM_ADDR", c.IAMAddr)
+	if c.ConnectorSearchTimeout <= 0 {
+		p.Addf("KNOWCEL_CONNECTOR_SEARCH_TIMEOUT", "must be positive, got %s", c.ConnectorSearchTimeout)
+	}
 }
 
 // loadConfig reads the configuration with the ports of module.yaml as defaults.
@@ -118,7 +127,7 @@ func run(cfg Config) error {
 	}
 	defer conn.Close()
 
-	// Resolves who is a platform admin, cached briefly; lazy like document's.
+	// Resolves who is a platform admin and the teams of each caller, cached briefly; lazy like document's.
 	iamConn, err := grpcserver.Dial(cfg.IAMAddr)
 	if err != nil {
 		return err
@@ -135,7 +144,9 @@ func run(cfg Config) error {
 	)
 	status := connectors.New(store.NewConnectors(queries))
 	srv := grpcserver.New(log)
-	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log).WithConnectors(status, callers))
+	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log).
+		WithConnectors(status, callers).
+		WithConnectorSearch(connectors.NewSearcher(nc, cfg.ConnectorSearchTimeout)))
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return events.Consume(ctx, js, service, log) })

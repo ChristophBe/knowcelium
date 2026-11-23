@@ -6,7 +6,7 @@ import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2"
 import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
 import type { Timestamp } from "@bufbuild/protobuf/wkt";
 import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
-import type { JobStage } from "./ingestion_pb";
+import type { ConnectorSnippet, JobStage } from "./ingestion_pb";
 import { file_knowcel_ingestion_v1_ingestion } from "./ingestion_pb";
 import type { Message } from "@bufbuild/protobuf";
 
@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file knowcel/ingestion/v1/events.proto.
  */
 export const file_knowcel_ingestion_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBSKfAgoPQ29ubmVjdG9yU3luY2VkEgwKBG5hbWUYASABKAkSMgoHb3V0Y29tZRgCIAEoDjIhLmtub3djZWwuaW5nZXN0aW9uLnYxLlN5bmNPdXRjb21lEi4KCnN0YXJ0X3RpbWUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCglkb2N1bWVudHMYBSABKAVIAIgBARINCgVlcnJvchgGIAEoCRIMCgRraW5kGAcgASgJEg8KB2VuYWJsZWQYCCABKAgSGAoQaW50ZXJ2YWxfc2Vjb25kcxgJIAEoBUIMCgpfZG9jdW1lbnRzImcKD0Nvbm5lY3RvckNvbmZpZxIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIYChBpbnRlcnZhbF9zZWNvbmRzGAQgASgFEg0KBWVycm9yGAUgASgJInsKFENvbm5lY3RvcnNDb25maWd1cmVkEjkKCmNvbm5lY3RvcnMYASADKAsyJS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3JDb25maWcSKAoEdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAqegoLU3luY091dGNvbWUSHAoYU1lOQ19PVVRDT01FX1VOU1BFQ0lGSUVEEAASGgoWU1lOQ19PVVRDT01FX1NVQ0NFRURFRBABEhgKFFNZTkNfT1VUQ09NRV9QQVJUSUFMEAISFwoTU1lOQ19PVVRDT01FX0ZBSUxFRBADQlRaUmdpdGh1Yi5jb20vQ2hyaXN0b3BoQmUva25vd2NlbGl1bS9tb2R1bGVzL2luZ2VzdGlvbi9hcGkvZ28vaW5nZXN0aW9udjE7aW5nZXN0aW9udjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_knowcel_ingestion_v1_ingestion]);
+  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBSKfAgoPQ29ubmVjdG9yU3luY2VkEgwKBG5hbWUYASABKAkSMgoHb3V0Y29tZRgCIAEoDjIhLmtub3djZWwuaW5nZXN0aW9uLnYxLlN5bmNPdXRjb21lEi4KCnN0YXJ0X3RpbWUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCglkb2N1bWVudHMYBSABKAVIAIgBARINCgVlcnJvchgGIAEoCRIMCgRraW5kGAcgASgJEg8KB2VuYWJsZWQYCCABKAgSGAoQaW50ZXJ2YWxfc2Vjb25kcxgJIAEoBUIMCgpfZG9jdW1lbnRzImcKD0Nvbm5lY3RvckNvbmZpZxIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIYChBpbnRlcnZhbF9zZWNvbmRzGAQgASgFEg0KBWVycm9yGAUgASgJInsKFENvbm5lY3RvcnNDb25maWd1cmVkEjkKCmNvbm5lY3RvcnMYASADKAsyJS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3JDb25maWcSKAoEdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAilwEKFkNvbm5lY3RvclNlYXJjaFJlcXVlc3QSDQoFcXVlcnkYASABKAkSFQoNY29ubmVjdG9yX2lkcxgCIAMoCRINCgVsaW1pdBgDIAEoBRIXCg9tZW1iZXJfdGVhbV9pZHMYBCADKAkSFgoOc2NvcGVfdGVhbV9pZHMYBSADKAkSFwoPdGltZW91dF9zZWNvbmRzGAYgASgCInAKFENvbm5lY3RvclNlYXJjaFJlcGx5EjgKCHNuaXBwZXRzGAEgAygLMiYua25vd2NlbC5pbmdlc3Rpb24udjEuQ29ubmVjdG9yU25pcHBldBIeChZ1bmF2YWlsYWJsZV9jb25uZWN0b3JzGAIgAygJKnoKC1N5bmNPdXRjb21lEhwKGFNZTkNfT1VUQ09NRV9VTlNQRUNJRklFRBAAEhoKFlNZTkNfT1VUQ09NRV9TVUNDRUVERUQQARIYChRTWU5DX09VVENPTUVfUEFSVElBTBACEhcKE1NZTkNfT1VUQ09NRV9GQUlMRUQQA0JUWlJnaXRodWIuY29tL0NocmlzdG9waEJlL2tub3djZWxpdW0vbW9kdWxlcy9pbmdlc3Rpb24vYXBpL2dvL2luZ2VzdGlvbnYxO2luZ2VzdGlvbnYxYgZwcm90bzM", [file_google_protobuf_timestamp, file_knowcel_ingestion_v1_ingestion]);
 
 /**
  * Subject: knowcel.ingestion.uploaded
@@ -363,6 +363,84 @@ export type ConnectorsConfigured = Message<"knowcel.ingestion.v1.ConnectorsConfi
  */
 export const ConnectorsConfiguredSchema: GenMessage<ConnectorsConfigured> = /*@__PURE__*/
   messageDesc(file_knowcel_ingestion_v1_events, 7);
+
+/**
+ * Request/reply, not events: the ingestion service asks the worker's connector
+ * runtime for live search results with a core NATS request on subject
+ * knowcel.connectors.search (outside the INGESTION stream, which would
+ * acknowledge the request instead of the worker). Workers share the queue
+ * group "ingestion-worker". See docs/adr/0015-live-retrieval-through-connectors.md.
+ *
+ * @generated from message knowcel.ingestion.v1.ConnectorSearchRequest
+ */
+export type ConnectorSearchRequest = Message<"knowcel.ingestion.v1.ConnectorSearchRequest"> & {
+  /**
+   * @generated from field: string query = 1;
+   */
+  query: string;
+
+  /**
+   * @generated from field: repeated string connector_ids = 2;
+   */
+  connectorIds: string[];
+
+  /**
+   * @generated from field: int32 limit = 3;
+   */
+  limit: number;
+
+  /**
+   * Connectors shared with none of these teams are not asked, unless public.
+   * The service fills it from the caller's teams in iam.
+   *
+   * @generated from field: repeated string member_team_ids = 4;
+   */
+  memberTeamIds: string[];
+
+  /**
+   * When not empty, only connectors shared with one of these teams (and no
+   * public ones) are asked: the teams a conversation is limited to.
+   *
+   * @generated from field: repeated string scope_team_ids = 5;
+   */
+  scopeTeamIds: string[];
+
+  /**
+   * Seconds a connector gets to answer before it counts as unavailable.
+   *
+   * @generated from field: float timeout_seconds = 6;
+   */
+  timeoutSeconds: number;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ConnectorSearchRequest.
+ * Use `create(ConnectorSearchRequestSchema)` to create a new message.
+ */
+export const ConnectorSearchRequestSchema: GenMessage<ConnectorSearchRequest> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_events, 8);
+
+/**
+ * @generated from message knowcel.ingestion.v1.ConnectorSearchReply
+ */
+export type ConnectorSearchReply = Message<"knowcel.ingestion.v1.ConnectorSearchReply"> & {
+  /**
+   * @generated from field: repeated knowcel.ingestion.v1.ConnectorSnippet snippets = 1;
+   */
+  snippets: ConnectorSnippet[];
+
+  /**
+   * @generated from field: repeated string unavailable_connectors = 2;
+   */
+  unavailableConnectors: string[];
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ConnectorSearchReply.
+ * Use `create(ConnectorSearchReplySchema)` to create a new message.
+ */
+export const ConnectorSearchReplySchema: GenMessage<ConnectorSearchReply> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_events, 9);
 
 /**
  * SyncOutcome is how a connector's sync run ended.

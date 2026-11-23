@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log/slog"
 	"slices"
+	"strings"
 	"time"
 
 	"github.com/google/uuid"
@@ -43,6 +44,13 @@ type Server struct {
 	log     *slog.Logger
 	// PollInterval controls how often WatchJob checks for changes.
 	PollInterval time.Duration
+	// connectorSearch reaches the connector runtime for live search.
+	connectorSearch ConnectorSearcher
+}
+
+// ConnectorSearcher asks the connector runtime to search its connectors live.
+type ConnectorSearcher interface {
+	Search(ctx context.Context, req *ingestionv1.ConnectorSearchRequest) (*ingestionv1.ConnectorSearchReply, error)
 }
 
 func New(service *app.Service, log *slog.Logger) *Server {
@@ -53,6 +61,13 @@ func New(service *app.Service, log *slog.Logger) *Server {
 // callers knows. Without it ListConnectors and GetConnector are unimplemented.
 func (s *Server) WithConnectors(c *connectors.Service, callers *grpcserver.Resolver) *Server {
 	s.connectors, s.callers = c, callers
+	return s
+}
+
+// WithConnectorSearch sets how SearchConnectors reaches the connectors; without
+// one it finds nothing and reports UNAVAILABLE.
+func (s *Server) WithConnectorSearch(c ConnectorSearcher) *Server {
+	s.connectorSearch = c
 	return s
 }
 
@@ -238,6 +253,76 @@ func (s *Server) ReprocessJob(ctx context.Context, req *ingestionv1.ReprocessJob
 		return nil, s.toStatus("reprocess job", err)
 	}
 	return &ingestionv1.ReprocessJobResponse{Job: toProto(job)}, nil
+}
+
+const (
+	defaultSearchLimit = 5
+	maxSearchLimit     = 20
+	maxQueryLength     = 2000
+)
+
+// SearchConnectors searches the connectors the calling user may read. What the
+// user may read is decided here, from their teams in iam, never from the
+// request: the worker only gets the teams this service resolved.
+func (s *Server) SearchConnectors(ctx context.Context, req *ingestionv1.SearchConnectorsRequest) (*ingestionv1.SearchConnectorsResponse, error) {
+	user, err := caller(ctx)
+	if err != nil {
+		return nil, err
+	}
+	var violations []*errdetails.BadRequest_FieldViolation
+	query := strings.TrimSpace(req.GetQuery())
+	if query == "" {
+		violations = append(violations, grpcserver.Violation("query", "A query is required"))
+	}
+	if len(query) > maxQueryLength {
+		violations = append(violations, grpcserver.Violation("query", fmt.Sprintf("A query can be at most %d bytes", maxQueryLength)))
+	}
+	if req.GetLimit() < 0 || req.GetLimit() > maxSearchLimit {
+		violations = append(violations, grpcserver.Violation("limit", fmt.Sprintf("The limit must be between 0 and %d", maxSearchLimit)))
+	}
+	if len(violations) > 0 {
+		return nil, grpcserver.InvalidArgument(violations...)
+	}
+	if s.connectorSearch == nil {
+		return nil, status.Error(codes.Unavailable, "connector search is not available")
+	}
+	// Without teams (iam is down, or the server has no resolver) only public
+	// connectors are searched. Only this and the connector status RPCs ask iam,
+	// so the other calls do not depend on it.
+	var principal grpcserver.Principal
+	if s.callers != nil {
+		principal = s.callers.Resolve(ctx, user)
+	}
+	member := principal.TeamIDs()
+	scope := slices.DeleteFunc(slices.Clone(req.GetTeamIds()), func(id string) bool { return !slices.Contains(member, id) })
+	if len(req.GetTeamIds()) > 0 && len(scope) == 0 {
+		return &ingestionv1.SearchConnectorsResponse{}, nil
+	}
+	limit := req.GetLimit()
+	if limit == 0 {
+		limit = defaultSearchLimit
+	}
+	reply, err := s.connectorSearch.Search(ctx, &ingestionv1.ConnectorSearchRequest{
+		Query:         query,
+		ConnectorIds:  req.GetConnectorIds(),
+		Limit:         limit,
+		MemberTeamIds: member,
+		ScopeTeamIds:  scope,
+	})
+	switch {
+	case errors.Is(err, connectors.ErrUnavailable), errors.Is(err, connectors.ErrTimeout):
+		s.log.WarnContext(ctx, "search connectors", "error", err)
+		return nil, status.Error(codes.Unavailable, err.Error())
+	case errors.Is(err, context.Canceled):
+		return nil, status.FromContextError(err).Err()
+	case err != nil:
+		s.log.ErrorContext(ctx, "search connectors", "error", err)
+		return nil, status.Error(codes.Internal, "search connectors failed")
+	}
+	return &ingestionv1.SearchConnectorsResponse{
+		Snippets:              reply.GetSnippets(),
+		UnavailableConnectors: reply.GetUnavailableConnectors(),
+	}, nil
 }
 
 // getJob returns the calling user's job with the id in the request.

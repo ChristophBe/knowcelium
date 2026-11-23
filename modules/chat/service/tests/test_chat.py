@@ -64,9 +64,17 @@ class FakeRepo:
         content: str,
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = COMPLETE,
+        unavailable_sources: Sequence[str] = (),
     ) -> MessageRow:
         msg = MessageRow(
-            uuid.uuid4(), conversation_id, role, content, datetime.now(UTC), citations, status
+            uuid.uuid4(),
+            conversation_id,
+            role,
+            content,
+            datetime.now(UTC),
+            citations,
+            status,
+            list(unavailable_sources),
         )
         self.messages.append(msg)
         return msg
@@ -78,7 +86,9 @@ class FakeRetriever:
         error: Exception | None = None,
         results: list[chat_pb2.Citation] | None = None,
         rates: bool = False,
+        unavailable: Sequence[str] = (),
     ) -> None:
+        self.unavailable = list(unavailable)
         self.rates = rates
         self.error = error
         self.results = results
@@ -92,7 +102,10 @@ class FakeRetriever:
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
+        on_unavailable: Callable[[Sequence[str]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
+        if self.unavailable and on_unavailable:
+            on_unavailable(self.unavailable)
         self.calls.append((query, limit, list(document_ids)))
         self.team_calls.append(list(team_ids))
         if self.error:
@@ -185,6 +198,8 @@ async def test_answer_streams_sources_then_deltas_then_the_saved_message() -> No
             "score": pytest.approx(0.9),
             "manual_page": "",
             "manual_section": "",
+            "connector": "",
+            "source_url": "",
         }
     ]
     assert retriever.calls == [("Capital?", 3, [])]
@@ -444,6 +459,7 @@ async def test_manual_sources_are_named_as_such_and_saved_with_their_section() -
             document_ids: Sequence[uuid.UUID],
             team_ids: Sequence[uuid.UUID] = (),
             on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
+            on_unavailable: Callable[[Sequence[str]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(
@@ -690,6 +706,7 @@ async def test_only_the_sources_that_fit_are_cited() -> None:
             document_ids: Sequence[uuid.UUID],
             team_ids: Sequence[uuid.UUID] = (),
             on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
+            on_unavailable: Callable[[Sequence[str]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(document_id="best", snippet="best " * 5, score=0.9),
@@ -712,3 +729,54 @@ async def test_only_the_sources_that_fit_are_cited() -> None:
     saved = events[-1]
     assert isinstance(saved, AnswerSaved)
     assert [c["document_id"] for c in saved.message.citations] == ["best"]
+
+
+async def test_a_live_source_is_cited_with_its_connector_and_link() -> None:
+    live = chat_pb2.Citation(
+        document_title="Aisle 3",
+        snippet="40 boxes",
+        score=0.95,
+        connector="stock",
+        source_url="https://wms.example/aisle-3",
+    )
+    chat, repo, _, generator = make(retriever=FakeRetriever(results=[live]))
+    events = await collect(chat, repo)
+
+    assert "[1] Aisle 3 (live from stock):\n40 boxes" in generator.calls[0][1][0].content
+    saved = events[-1]
+    assert isinstance(saved, AnswerSaved)
+    assert saved.message.citations[0]["connector"] == "stock"
+    assert saved.message.citations[0]["source_url"] == "https://wms.example/aisle-3"
+
+
+async def test_sources_that_did_not_answer_are_reported_and_saved_with_the_answer() -> None:
+    chat, repo, _, _ = make(retriever=FakeRetriever(unavailable=["stock", "crm"]))
+    events = await collect(chat, repo)
+
+    assert isinstance(events[0], SourcesFound)
+    assert events[0].unavailable == ["stock", "crm"]
+    saved = events[-1]
+    assert isinstance(saved, AnswerSaved)
+    assert saved.message.unavailable_sources == ["stock", "crm"]
+
+
+async def test_sources_that_did_not_answer_are_saved_when_the_answer_is_stopped() -> None:
+    generator = HangingGenerator(("Par",))
+    chat, repo, _, _ = make(retriever=FakeRetriever(unavailable=["stock"]), generator=generator)
+    task = asyncio.create_task(collect(chat, repo))
+    await generator.waiting.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+    assert repo.messages[-1].status == STOPPED
+    assert repo.messages[-1].unavailable_sources == ["stock"]
+
+
+def test_progress_counts_live_snippets_as_passages_without_a_document() -> None:
+    found = [
+        chat_pb2.Citation(document_id="d1", score=0.9),
+        chat_pb2.Citation(connector="stock", score=0.8),
+        chat_pb2.Citation(manual_page="chat", score=0.7),
+    ]
+    progress = ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, found)
+    assert (progress.passages, progress.documents, progress.manual_sections) == (2, 1, 1)

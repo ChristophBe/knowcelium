@@ -81,6 +81,11 @@ class IngestionServiceStub:
                 request_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.SerializeToString,
                 response_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.FromString,
                 _registered_method=True)
+        self.SearchConnectors = channel.unary_unary(
+                '/knowcel.ingestion.v1.IngestionService/SearchConnectors',
+                request_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsRequest.SerializeToString,
+                response_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsResponse.FromString,
+                _registered_method=True)
 
 
 class IngestionServiceServicer:
@@ -168,6 +173,20 @@ class IngestionServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def SearchConnectors(self, request, context):
+        """SearchConnectors asks the connectors that allow live search for passages
+        matching a query, at question time and without copying their content into
+        documents. Only connectors the caller may read are asked: public ones and
+        those shared with one of the caller's teams. Connectors are asked
+        concurrently; one that fails or does not answer in time is left out and
+        named in unavailable_connectors, the others still answer. UNAVAILABLE when
+        the connector runtime (the ingestion worker) is not running, which callers
+        treat as "no connector snippets".
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_IngestionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -215,6 +234,11 @@ def add_IngestionServiceServicer_to_server(servicer, server):
                     servicer.GetConnector,
                     request_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.FromString,
                     response_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.SerializeToString,
+            ),
+            'SearchConnectors': grpc.unary_unary_rpc_method_handler(
+                    servicer.SearchConnectors,
+                    request_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsRequest.FromString,
+                    response_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -462,6 +486,33 @@ class IngestionService:
             '/knowcel.ingestion.v1.IngestionService/GetConnector',
             knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.SerializeToString,
             knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def SearchConnectors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/knowcel.ingestion.v1.IngestionService/SearchConnectors',
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsRequest.SerializeToString,
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.SearchConnectorsResponse.FromString,
             options,
             channel_credentials,
             insecure,

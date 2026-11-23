@@ -5,6 +5,7 @@ import {
   ChatErrorSchema,
   type ChatMessage,
   ChatMessageSchema,
+  CitationsSchema,
   ConversationSchema,
   GetConversationResponseSchema,
   MessageRole,
@@ -176,6 +177,30 @@ describe("Conversation", () => {
     expect(streamChat.mock.calls[1]?.[0]).toMatchObject({ content: "How did revenue develop?" });
     expect(await screen.findByText("It grew by 12 %.")).toBeTruthy();
     expect(screen.queryByRole("button", { name: "Retry" })).toBeNull();
+  });
+
+  it("says which sources were unavailable while the answer is written and once it is saved", async () => {
+    streamChat.mockImplementation(async function* (req: StreamChatRequest) {
+      saved.push(message(MessageRole.USER, req.content));
+      yield event({
+        case: "citations",
+        value: create(CitationsSchema, { items: [], unavailableSources: ["stock"] }),
+      });
+      yield event({ case: "delta", value: "From documents only." });
+      const done = create(ChatMessageSchema, {
+        id: "m-live",
+        role: MessageRole.ASSISTANT,
+        content: "From documents only.",
+        unavailableSources: ["stock"],
+      });
+      saved.push(done);
+      yield event({ case: "message", value: done });
+    });
+    await renderConversation();
+    await ask("How many boxes?");
+
+    expect(await screen.findByText("From documents only.")).toBeTruthy();
+    expect(screen.getByText(/Some sources were unavailable: stock/)).toBeTruthy();
   });
 
   it("shows a reloaded failed answer without an alert, and Retry only on the newest", async () => {

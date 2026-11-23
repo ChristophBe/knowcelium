@@ -5,6 +5,7 @@ import asyncio
 import pathlib
 import re
 import uuid
+from collections.abc import Sequence
 from typing import Any
 
 from alembic import command
@@ -80,6 +81,8 @@ messages = Table(
     Column("created_at", DateTime(timezone=True), nullable=False, server_default=func.now()),
     # knowcel.chat.v1.MessageStatus
     Column("status", SmallInteger, nullable=False, server_default="1"),
+    # Names of the live sources (connectors) that did not answer for this answer.
+    Column("unavailable_sources", JSONB, nullable=False, server_default="[]"),
 )
 
 
@@ -333,6 +336,7 @@ class SqlRepository:
         content: str,
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
+        unavailable_sources: Sequence[str] = (),
     ) -> MessageRow:
         async with self._engine.begin() as conn:
             result = await conn.execute(
@@ -344,6 +348,7 @@ class SqlRepository:
                     content=content,
                     citations=citations,
                     status=status,
+                    unavailable_sources=list(unavailable_sources),
                 )
                 .returning(messages)
             )

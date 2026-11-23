@@ -151,10 +151,11 @@ class Manual:
 def merge_sources(
     documents: Sequence[chat_pb2.Citation], manual: Sequence[chat_pb2.Citation]
 ) -> list[chat_pb2.Citation]:
-    """Adds manual sections to the document passages. Every document passage is
-    kept, in its order (reranking may put it out of score order): the manual
-    only adds its few best sections on top, each before the first passage
-    scoring lower, so it never takes a passage's place."""
+    """Adds sources that are not document passages (manual sections, snippets of
+    connectors) to the document passages. Every document passage is kept, in
+    its order (reranking may put it out of score order): the others only add
+    themselves, each before the first passage scoring lower, so they never take
+    a passage's place."""
     merged = list(documents)
     for section in sorted(manual, key=lambda c: c.score, reverse=True):
         at = next((i for i, c in enumerate(merged) if c.score < section.score), len(merged))

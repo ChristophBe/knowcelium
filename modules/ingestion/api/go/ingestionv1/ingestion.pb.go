@@ -1439,6 +1439,217 @@ func (x *GetConnectorResponse) GetConnector() *Connector {
 	return nil
 }
 
+type SearchConnectorsRequest struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The question or search words; required.
+	Query string `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	// Only these connectors (their names in the connectors file); empty asks all
+	// the caller may read. A name the caller may not read or that does not allow
+	// live search is ignored.
+	ConnectorIds []string `protobuf:"bytes,2,rep,name=connector_ids,json=connectorIds,proto3" json:"connector_ids,omitempty"`
+	// The most snippets to return in total, 1 to 20; 0 means 5. Each connector
+	// is asked for this many and the results are interleaved.
+	Limit int32 `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Only connectors shared with one of these teams (public ones are not
+	// asked); teams the caller does not belong to are ignored, and with none
+	// left nothing is searched. Empty means every connector the caller may read,
+	// public ones included.
+	TeamIds       []string `protobuf:"bytes,4,rep,name=team_ids,json=teamIds,proto3" json:"team_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *SearchConnectorsRequest) Reset() {
+	*x = SearchConnectorsRequest{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[20]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchConnectorsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchConnectorsRequest) ProtoMessage() {}
+
+func (x *SearchConnectorsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[20]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchConnectorsRequest.ProtoReflect.Descriptor instead.
+func (*SearchConnectorsRequest) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{20}
+}
+
+func (x *SearchConnectorsRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *SearchConnectorsRequest) GetConnectorIds() []string {
+	if x != nil {
+		return x.ConnectorIds
+	}
+	return nil
+}
+
+func (x *SearchConnectorsRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *SearchConnectorsRequest) GetTeamIds() []string {
+	if x != nil {
+		return x.TeamIds
+	}
+	return nil
+}
+
+type SearchConnectorsResponse struct {
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Snippets []*ConnectorSnippet    `protobuf:"bytes,1,rep,name=snippets,proto3" json:"snippets,omitempty"`
+	// The connectors that failed or did not answer in time, by name.
+	UnavailableConnectors []string `protobuf:"bytes,2,rep,name=unavailable_connectors,json=unavailableConnectors,proto3" json:"unavailable_connectors,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *SearchConnectorsResponse) Reset() {
+	*x = SearchConnectorsResponse{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[21]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *SearchConnectorsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SearchConnectorsResponse) ProtoMessage() {}
+
+func (x *SearchConnectorsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[21]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SearchConnectorsResponse.ProtoReflect.Descriptor instead.
+func (*SearchConnectorsResponse) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{21}
+}
+
+func (x *SearchConnectorsResponse) GetSnippets() []*ConnectorSnippet {
+	if x != nil {
+		return x.Snippets
+	}
+	return nil
+}
+
+func (x *SearchConnectorsResponse) GetUnavailableConnectors() []string {
+	if x != nil {
+		return x.UnavailableConnectors
+	}
+	return nil
+}
+
+// A passage a connector found when searched live.
+type ConnectorSnippet struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The name of the connector, as in the connectors file.
+	Connector string `protobuf:"bytes,1,opt,name=connector,proto3" json:"connector,omitempty"`
+	Title     string `protobuf:"bytes,2,opt,name=title,proto3" json:"title,omitempty"`
+	Text      string `protobuf:"bytes,3,opt,name=text,proto3" json:"text,omitempty"`
+	// Where to open the original.
+	SourceUrl string `protobuf:"bytes,4,opt,name=source_url,json=sourceUrl,proto3" json:"source_url,omitempty"`
+	// The item's id in the source system, when the connector gives one.
+	ExternalId    string `protobuf:"bytes,5,opt,name=external_id,json=externalId,proto3" json:"external_id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConnectorSnippet) Reset() {
+	*x = ConnectorSnippet{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[22]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorSnippet) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorSnippet) ProtoMessage() {}
+
+func (x *ConnectorSnippet) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[22]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorSnippet.ProtoReflect.Descriptor instead.
+func (*ConnectorSnippet) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{22}
+}
+
+func (x *ConnectorSnippet) GetConnector() string {
+	if x != nil {
+		return x.Connector
+	}
+	return ""
+}
+
+func (x *ConnectorSnippet) GetTitle() string {
+	if x != nil {
+		return x.Title
+	}
+	return ""
+}
+
+func (x *ConnectorSnippet) GetText() string {
+	if x != nil {
+		return x.Text
+	}
+	return ""
+}
+
+func (x *ConnectorSnippet) GetSourceUrl() string {
+	if x != nil {
+		return x.SourceUrl
+	}
+	return ""
+}
+
+func (x *ConnectorSnippet) GetExternalId() string {
+	if x != nil {
+		return x.ExternalId
+	}
+	return ""
+}
+
 var File_knowcel_ingestion_v1_ingestion_proto protoreflect.FileDescriptor
 
 const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
@@ -1530,7 +1741,23 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x13GetConnectorRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"U\n" +
 	"\x14GetConnectorResponse\x12=\n" +
-	"\tconnector\x18\x01 \x01(\v2\x1f.knowcel.ingestion.v1.ConnectorR\tconnector*D\n" +
+	"\tconnector\x18\x01 \x01(\v2\x1f.knowcel.ingestion.v1.ConnectorR\tconnector\"\x85\x01\n" +
+	"\x17SearchConnectorsRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12#\n" +
+	"\rconnector_ids\x18\x02 \x03(\tR\fconnectorIds\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x19\n" +
+	"\bteam_ids\x18\x04 \x03(\tR\ateamIds\"\x95\x01\n" +
+	"\x18SearchConnectorsResponse\x12B\n" +
+	"\bsnippets\x18\x01 \x03(\v2&.knowcel.ingestion.v1.ConnectorSnippetR\bsnippets\x125\n" +
+	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors\"\x9a\x01\n" +
+	"\x10ConnectorSnippet\x12\x1c\n" +
+	"\tconnector\x18\x01 \x01(\tR\tconnector\x12\x14\n" +
+	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +
+	"\x04text\x18\x03 \x01(\tR\x04text\x12\x1d\n" +
+	"\n" +
+	"source_url\x18\x04 \x01(\tR\tsourceUrl\x12\x1f\n" +
+	"\vexternal_id\x18\x05 \x01(\tR\n" +
+	"externalId*D\n" +
 	"\x06Access\x12\x16\n" +
 	"\x12ACCESS_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rACCESS_PUBLIC\x10\x01\x12\x0f\n" +
@@ -1554,7 +1781,7 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x19CONNECTOR_HEALTH_DEGRADED\x10\x02\x12\x1c\n" +
 	"\x18CONNECTOR_HEALTH_FAILING\x10\x03\x12\x1a\n" +
 	"\x16CONNECTOR_HEALTH_STALE\x10\x04\x12\x1c\n" +
-	"\x18CONNECTOR_HEALTH_UNKNOWN\x10\x052\x98\a\n" +
+	"\x18CONNECTOR_HEALTH_UNKNOWN\x10\x052\x8b\b\n" +
 	"\x10IngestionService\x12e\n" +
 	"\fCreateUpload\x12).knowcel.ingestion.v1.CreateUploadRequest\x1a*.knowcel.ingestion.v1.CreateUploadResponse\x12k\n" +
 	"\x0eCompleteUpload\x12+.knowcel.ingestion.v1.CompleteUploadRequest\x1a,.knowcel.ingestion.v1.CompleteUploadResponse\x12h\n" +
@@ -1564,7 +1791,8 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\bWatchJob\x12%.knowcel.ingestion.v1.WatchJobRequest\x1a&.knowcel.ingestion.v1.WatchJobResponse0\x01\x12e\n" +
 	"\fReprocessJob\x12).knowcel.ingestion.v1.ReprocessJobRequest\x1a*.knowcel.ingestion.v1.ReprocessJobResponse\x12k\n" +
 	"\x0eListConnectors\x12+.knowcel.ingestion.v1.ListConnectorsRequest\x1a,.knowcel.ingestion.v1.ListConnectorsResponse\x12e\n" +
-	"\fGetConnector\x12).knowcel.ingestion.v1.GetConnectorRequest\x1a*.knowcel.ingestion.v1.GetConnectorResponseBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
+	"\fGetConnector\x12).knowcel.ingestion.v1.GetConnectorRequest\x1a*.knowcel.ingestion.v1.GetConnectorResponse\x12q\n" +
+	"\x10SearchConnectors\x12-.knowcel.ingestion.v1.SearchConnectorsRequest\x1a..knowcel.ingestion.v1.SearchConnectorsResponseBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
 
 var (
 	file_knowcel_ingestion_v1_ingestion_proto_rawDescOnce sync.Once
@@ -1579,80 +1807,86 @@ func file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP() []byte {
 }
 
 var file_knowcel_ingestion_v1_ingestion_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_knowcel_ingestion_v1_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
+var file_knowcel_ingestion_v1_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
 var file_knowcel_ingestion_v1_ingestion_proto_goTypes = []any{
-	(Access)(0),                    // 0: knowcel.ingestion.v1.Access
-	(JobStatus)(0),                 // 1: knowcel.ingestion.v1.JobStatus
-	(JobStage)(0),                  // 2: knowcel.ingestion.v1.JobStage
-	(ConnectorHealth)(0),           // 3: knowcel.ingestion.v1.ConnectorHealth
-	(*Job)(nil),                    // 4: knowcel.ingestion.v1.Job
-	(*CreateUploadRequest)(nil),    // 5: knowcel.ingestion.v1.CreateUploadRequest
-	(*CreateUploadResponse)(nil),   // 6: knowcel.ingestion.v1.CreateUploadResponse
-	(*ReplaceUploadRequest)(nil),   // 7: knowcel.ingestion.v1.ReplaceUploadRequest
-	(*ReplaceUploadResponse)(nil),  // 8: knowcel.ingestion.v1.ReplaceUploadResponse
-	(*CompleteUploadRequest)(nil),  // 9: knowcel.ingestion.v1.CompleteUploadRequest
-	(*CompleteUploadResponse)(nil), // 10: knowcel.ingestion.v1.CompleteUploadResponse
-	(*GetJobRequest)(nil),          // 11: knowcel.ingestion.v1.GetJobRequest
-	(*GetJobResponse)(nil),         // 12: knowcel.ingestion.v1.GetJobResponse
-	(*ListJobsRequest)(nil),        // 13: knowcel.ingestion.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),       // 14: knowcel.ingestion.v1.ListJobsResponse
-	(*WatchJobRequest)(nil),        // 15: knowcel.ingestion.v1.WatchJobRequest
-	(*WatchJobResponse)(nil),       // 16: knowcel.ingestion.v1.WatchJobResponse
-	(*ReprocessJobRequest)(nil),    // 17: knowcel.ingestion.v1.ReprocessJobRequest
-	(*ReprocessJobResponse)(nil),   // 18: knowcel.ingestion.v1.ReprocessJobResponse
-	(*Connector)(nil),              // 19: knowcel.ingestion.v1.Connector
-	(*ListConnectorsRequest)(nil),  // 20: knowcel.ingestion.v1.ListConnectorsRequest
-	(*ListConnectorsResponse)(nil), // 21: knowcel.ingestion.v1.ListConnectorsResponse
-	(*GetConnectorRequest)(nil),    // 22: knowcel.ingestion.v1.GetConnectorRequest
-	(*GetConnectorResponse)(nil),   // 23: knowcel.ingestion.v1.GetConnectorResponse
-	(*timestamppb.Timestamp)(nil),  // 24: google.protobuf.Timestamp
-	(*commonv1.PageRequest)(nil),   // 25: knowcel.common.v1.PageRequest
-	(*commonv1.PageResponse)(nil),  // 26: knowcel.common.v1.PageResponse
+	(Access)(0),                      // 0: knowcel.ingestion.v1.Access
+	(JobStatus)(0),                   // 1: knowcel.ingestion.v1.JobStatus
+	(JobStage)(0),                    // 2: knowcel.ingestion.v1.JobStage
+	(ConnectorHealth)(0),             // 3: knowcel.ingestion.v1.ConnectorHealth
+	(*Job)(nil),                      // 4: knowcel.ingestion.v1.Job
+	(*CreateUploadRequest)(nil),      // 5: knowcel.ingestion.v1.CreateUploadRequest
+	(*CreateUploadResponse)(nil),     // 6: knowcel.ingestion.v1.CreateUploadResponse
+	(*ReplaceUploadRequest)(nil),     // 7: knowcel.ingestion.v1.ReplaceUploadRequest
+	(*ReplaceUploadResponse)(nil),    // 8: knowcel.ingestion.v1.ReplaceUploadResponse
+	(*CompleteUploadRequest)(nil),    // 9: knowcel.ingestion.v1.CompleteUploadRequest
+	(*CompleteUploadResponse)(nil),   // 10: knowcel.ingestion.v1.CompleteUploadResponse
+	(*GetJobRequest)(nil),            // 11: knowcel.ingestion.v1.GetJobRequest
+	(*GetJobResponse)(nil),           // 12: knowcel.ingestion.v1.GetJobResponse
+	(*ListJobsRequest)(nil),          // 13: knowcel.ingestion.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),         // 14: knowcel.ingestion.v1.ListJobsResponse
+	(*WatchJobRequest)(nil),          // 15: knowcel.ingestion.v1.WatchJobRequest
+	(*WatchJobResponse)(nil),         // 16: knowcel.ingestion.v1.WatchJobResponse
+	(*ReprocessJobRequest)(nil),      // 17: knowcel.ingestion.v1.ReprocessJobRequest
+	(*ReprocessJobResponse)(nil),     // 18: knowcel.ingestion.v1.ReprocessJobResponse
+	(*Connector)(nil),                // 19: knowcel.ingestion.v1.Connector
+	(*ListConnectorsRequest)(nil),    // 20: knowcel.ingestion.v1.ListConnectorsRequest
+	(*ListConnectorsResponse)(nil),   // 21: knowcel.ingestion.v1.ListConnectorsResponse
+	(*GetConnectorRequest)(nil),      // 22: knowcel.ingestion.v1.GetConnectorRequest
+	(*GetConnectorResponse)(nil),     // 23: knowcel.ingestion.v1.GetConnectorResponse
+	(*SearchConnectorsRequest)(nil),  // 24: knowcel.ingestion.v1.SearchConnectorsRequest
+	(*SearchConnectorsResponse)(nil), // 25: knowcel.ingestion.v1.SearchConnectorsResponse
+	(*ConnectorSnippet)(nil),         // 26: knowcel.ingestion.v1.ConnectorSnippet
+	(*timestamppb.Timestamp)(nil),    // 27: google.protobuf.Timestamp
+	(*commonv1.PageRequest)(nil),     // 28: knowcel.common.v1.PageRequest
+	(*commonv1.PageResponse)(nil),    // 29: knowcel.common.v1.PageResponse
 }
 var file_knowcel_ingestion_v1_ingestion_proto_depIdxs = []int32{
 	1,  // 0: knowcel.ingestion.v1.Job.status:type_name -> knowcel.ingestion.v1.JobStatus
-	24, // 1: knowcel.ingestion.v1.Job.create_time:type_name -> google.protobuf.Timestamp
-	24, // 2: knowcel.ingestion.v1.Job.update_time:type_name -> google.protobuf.Timestamp
+	27, // 1: knowcel.ingestion.v1.Job.create_time:type_name -> google.protobuf.Timestamp
+	27, // 2: knowcel.ingestion.v1.Job.update_time:type_name -> google.protobuf.Timestamp
 	2,  // 3: knowcel.ingestion.v1.Job.stage:type_name -> knowcel.ingestion.v1.JobStage
 	0,  // 4: knowcel.ingestion.v1.CreateUploadRequest.access:type_name -> knowcel.ingestion.v1.Access
 	4,  // 5: knowcel.ingestion.v1.CreateUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
 	4,  // 6: knowcel.ingestion.v1.ReplaceUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
 	4,  // 7: knowcel.ingestion.v1.CompleteUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
 	4,  // 8: knowcel.ingestion.v1.GetJobResponse.job:type_name -> knowcel.ingestion.v1.Job
-	25, // 9: knowcel.ingestion.v1.ListJobsRequest.page:type_name -> knowcel.common.v1.PageRequest
+	28, // 9: knowcel.ingestion.v1.ListJobsRequest.page:type_name -> knowcel.common.v1.PageRequest
 	4,  // 10: knowcel.ingestion.v1.ListJobsResponse.jobs:type_name -> knowcel.ingestion.v1.Job
-	26, // 11: knowcel.ingestion.v1.ListJobsResponse.page:type_name -> knowcel.common.v1.PageResponse
+	29, // 11: knowcel.ingestion.v1.ListJobsResponse.page:type_name -> knowcel.common.v1.PageResponse
 	4,  // 12: knowcel.ingestion.v1.WatchJobResponse.job:type_name -> knowcel.ingestion.v1.Job
 	4,  // 13: knowcel.ingestion.v1.ReprocessJobResponse.job:type_name -> knowcel.ingestion.v1.Job
 	3,  // 14: knowcel.ingestion.v1.Connector.health:type_name -> knowcel.ingestion.v1.ConnectorHealth
-	24, // 15: knowcel.ingestion.v1.Connector.last_sync_start_time:type_name -> google.protobuf.Timestamp
-	24, // 16: knowcel.ingestion.v1.Connector.last_sync_end_time:type_name -> google.protobuf.Timestamp
-	24, // 17: knowcel.ingestion.v1.Connector.last_success_time:type_name -> google.protobuf.Timestamp
+	27, // 15: knowcel.ingestion.v1.Connector.last_sync_start_time:type_name -> google.protobuf.Timestamp
+	27, // 16: knowcel.ingestion.v1.Connector.last_sync_end_time:type_name -> google.protobuf.Timestamp
+	27, // 17: knowcel.ingestion.v1.Connector.last_success_time:type_name -> google.protobuf.Timestamp
 	19, // 18: knowcel.ingestion.v1.ListConnectorsResponse.connectors:type_name -> knowcel.ingestion.v1.Connector
 	19, // 19: knowcel.ingestion.v1.GetConnectorResponse.connector:type_name -> knowcel.ingestion.v1.Connector
-	5,  // 20: knowcel.ingestion.v1.IngestionService.CreateUpload:input_type -> knowcel.ingestion.v1.CreateUploadRequest
-	9,  // 21: knowcel.ingestion.v1.IngestionService.CompleteUpload:input_type -> knowcel.ingestion.v1.CompleteUploadRequest
-	7,  // 22: knowcel.ingestion.v1.IngestionService.ReplaceUpload:input_type -> knowcel.ingestion.v1.ReplaceUploadRequest
-	11, // 23: knowcel.ingestion.v1.IngestionService.GetJob:input_type -> knowcel.ingestion.v1.GetJobRequest
-	13, // 24: knowcel.ingestion.v1.IngestionService.ListJobs:input_type -> knowcel.ingestion.v1.ListJobsRequest
-	15, // 25: knowcel.ingestion.v1.IngestionService.WatchJob:input_type -> knowcel.ingestion.v1.WatchJobRequest
-	17, // 26: knowcel.ingestion.v1.IngestionService.ReprocessJob:input_type -> knowcel.ingestion.v1.ReprocessJobRequest
-	20, // 27: knowcel.ingestion.v1.IngestionService.ListConnectors:input_type -> knowcel.ingestion.v1.ListConnectorsRequest
-	22, // 28: knowcel.ingestion.v1.IngestionService.GetConnector:input_type -> knowcel.ingestion.v1.GetConnectorRequest
-	6,  // 29: knowcel.ingestion.v1.IngestionService.CreateUpload:output_type -> knowcel.ingestion.v1.CreateUploadResponse
-	10, // 30: knowcel.ingestion.v1.IngestionService.CompleteUpload:output_type -> knowcel.ingestion.v1.CompleteUploadResponse
-	8,  // 31: knowcel.ingestion.v1.IngestionService.ReplaceUpload:output_type -> knowcel.ingestion.v1.ReplaceUploadResponse
-	12, // 32: knowcel.ingestion.v1.IngestionService.GetJob:output_type -> knowcel.ingestion.v1.GetJobResponse
-	14, // 33: knowcel.ingestion.v1.IngestionService.ListJobs:output_type -> knowcel.ingestion.v1.ListJobsResponse
-	16, // 34: knowcel.ingestion.v1.IngestionService.WatchJob:output_type -> knowcel.ingestion.v1.WatchJobResponse
-	18, // 35: knowcel.ingestion.v1.IngestionService.ReprocessJob:output_type -> knowcel.ingestion.v1.ReprocessJobResponse
-	21, // 36: knowcel.ingestion.v1.IngestionService.ListConnectors:output_type -> knowcel.ingestion.v1.ListConnectorsResponse
-	23, // 37: knowcel.ingestion.v1.IngestionService.GetConnector:output_type -> knowcel.ingestion.v1.GetConnectorResponse
-	29, // [29:38] is the sub-list for method output_type
-	20, // [20:29] is the sub-list for method input_type
-	20, // [20:20] is the sub-list for extension type_name
-	20, // [20:20] is the sub-list for extension extendee
-	0,  // [0:20] is the sub-list for field type_name
+	26, // 20: knowcel.ingestion.v1.SearchConnectorsResponse.snippets:type_name -> knowcel.ingestion.v1.ConnectorSnippet
+	5,  // 21: knowcel.ingestion.v1.IngestionService.CreateUpload:input_type -> knowcel.ingestion.v1.CreateUploadRequest
+	9,  // 22: knowcel.ingestion.v1.IngestionService.CompleteUpload:input_type -> knowcel.ingestion.v1.CompleteUploadRequest
+	7,  // 23: knowcel.ingestion.v1.IngestionService.ReplaceUpload:input_type -> knowcel.ingestion.v1.ReplaceUploadRequest
+	11, // 24: knowcel.ingestion.v1.IngestionService.GetJob:input_type -> knowcel.ingestion.v1.GetJobRequest
+	13, // 25: knowcel.ingestion.v1.IngestionService.ListJobs:input_type -> knowcel.ingestion.v1.ListJobsRequest
+	15, // 26: knowcel.ingestion.v1.IngestionService.WatchJob:input_type -> knowcel.ingestion.v1.WatchJobRequest
+	17, // 27: knowcel.ingestion.v1.IngestionService.ReprocessJob:input_type -> knowcel.ingestion.v1.ReprocessJobRequest
+	20, // 28: knowcel.ingestion.v1.IngestionService.ListConnectors:input_type -> knowcel.ingestion.v1.ListConnectorsRequest
+	22, // 29: knowcel.ingestion.v1.IngestionService.GetConnector:input_type -> knowcel.ingestion.v1.GetConnectorRequest
+	24, // 30: knowcel.ingestion.v1.IngestionService.SearchConnectors:input_type -> knowcel.ingestion.v1.SearchConnectorsRequest
+	6,  // 31: knowcel.ingestion.v1.IngestionService.CreateUpload:output_type -> knowcel.ingestion.v1.CreateUploadResponse
+	10, // 32: knowcel.ingestion.v1.IngestionService.CompleteUpload:output_type -> knowcel.ingestion.v1.CompleteUploadResponse
+	8,  // 33: knowcel.ingestion.v1.IngestionService.ReplaceUpload:output_type -> knowcel.ingestion.v1.ReplaceUploadResponse
+	12, // 34: knowcel.ingestion.v1.IngestionService.GetJob:output_type -> knowcel.ingestion.v1.GetJobResponse
+	14, // 35: knowcel.ingestion.v1.IngestionService.ListJobs:output_type -> knowcel.ingestion.v1.ListJobsResponse
+	16, // 36: knowcel.ingestion.v1.IngestionService.WatchJob:output_type -> knowcel.ingestion.v1.WatchJobResponse
+	18, // 37: knowcel.ingestion.v1.IngestionService.ReprocessJob:output_type -> knowcel.ingestion.v1.ReprocessJobResponse
+	21, // 38: knowcel.ingestion.v1.IngestionService.ListConnectors:output_type -> knowcel.ingestion.v1.ListConnectorsResponse
+	23, // 39: knowcel.ingestion.v1.IngestionService.GetConnector:output_type -> knowcel.ingestion.v1.GetConnectorResponse
+	25, // 40: knowcel.ingestion.v1.IngestionService.SearchConnectors:output_type -> knowcel.ingestion.v1.SearchConnectorsResponse
+	31, // [31:41] is the sub-list for method output_type
+	21, // [21:31] is the sub-list for method input_type
+	21, // [21:21] is the sub-list for extension type_name
+	21, // [21:21] is the sub-list for extension extendee
+	0,  // [0:21] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_ingestion_v1_ingestion_proto_init() }
@@ -1666,7 +1900,7 @@ func file_knowcel_ingestion_v1_ingestion_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_ingestion_v1_ingestion_proto_rawDesc), len(file_knowcel_ingestion_v1_ingestion_proto_rawDesc)),
 			NumEnums:      4,
-			NumMessages:   20,
+			NumMessages:   23,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

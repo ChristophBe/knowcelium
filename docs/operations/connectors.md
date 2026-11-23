@@ -14,6 +14,8 @@ connectors:
     team_ids: [8a1b...]     # who can read what it syncs ...
     # public: true          # ... or everyone; one of the two is required
     interval_seconds: 300   # time between the starts of two syncs, at least 10
+    sync: true              # copy the source into documents; false for a connector that is only searched live
+    live_search: false      # also search the source at question time (see below)
     enabled: true
     settings:               # specific to the kind
       path: /watch
@@ -24,6 +26,25 @@ connectors:
 - **Sharing.** The documents are shared with `team_ids` (the owner has to be a member of each) or public. The document module has no private mode for documents yet, so there is no default: a connector that sets neither is rejected.
 - **Invalid entries** never stop the others. The worker logs the problem and records it as that entry's error. The status of an entry that has no valid name is stored under `invalid.<name>-<hash>.status`; an entry whose name is also used by a valid one gets the suffix `(entry n)` in its name. Only valid entries claim a name, so a valid entry is not rejected because an earlier invalid one has the same name.
 
+## Live search
+
+A connector whose kind implements `search` can also be asked at question time, so that fast-changing data does not have to be synced. Chat asks every such connector the user may read while it searches documents, merges what they return with the document passages and cites it; the answer's sources show the connector's name, a **Live** label and a link to the original. See [Build a connector](../connectors.md#searchquery-limit-optional).
+
+```yaml
+  - name: stock
+    kind: folder            # kinds that implement search; the folder searches its text files
+    owner: 3f5c6d3e-...
+    public: true
+    sync: false             # live only: nothing is copied
+    live_search: true
+    settings: {path: /watch}
+```
+
+- **Opt in.** Live search is off until `live_search: true`. A live search runs with the connector's own access to the source, not the asking user's, and a connector cannot filter by user. So everyone who may read the connector (`public: true`, or a member of one of its `team_ids`) sees whatever its search returns, and you should only enable it for sources where that is fine. Only a platform admin can change this file, and the connector's owner must be a platform admin when it is searched (as for syncing). With iam down, only public connectors are searched.
+- **Scope.** A conversation limited to chosen documents does not ask connectors; one limited to teams asks only connectors shared with those teams.
+- **Failures.** Connectors are asked concurrently with a timeout (`KNOWCEL_CONNECTOR_SEARCH_TIMEOUT` of `ingestion-service`, 5 s). One that fails or is too slow is skipped; the answer then says **Some sources were unavailable** and names it, and the other sources still answer. With `ingestion-service` or the worker stopped, chat answers from documents alone. Chat asks with its own `KNOWCEL_CONNECTORS_TIMEOUT` (8 s), `KNOWCEL_CONNECTORS_TOP_K` snippets per connector and ranks them with `KNOWCEL_CONNECTORS_SCORE`; `KNOWCEL_CONNECTORS_ENABLED=false` turns live retrieval off. See [Configuration](../configuration.md).
+- **How it is reached.** Chat calls `IngestionService.SearchConnectors`; the service asks the worker over NATS (request/reply on `knowcel.connectors.search`), see [ADR 0015](../adr/0015-live-retrieval-through-connectors.md). Run at least one `ingestion-worker` for it to work.
+
 ## Watched folder (`kind: folder`)
 
 | Setting | Meaning |
@@ -31,7 +52,7 @@ connectors:
 | `path` | The directory, as the worker sees it. The compose stack mounts `KNOWCEL_WATCH_DIR` (default `modules/ingestion/watch/`) read-only as `/watch`. |
 | `recursive` | Also read subdirectories (default `true`). |
 
-It reads the file types the worker can process (PDF, Word, HTML, Markdown and plain text formats) and skips hidden files and directories and files that are links leading outside the folder (a warning in the log names them). A folder that cannot be read or is missing fails the run instead of counting as empty, and so does a path inside it that cannot be read: the documents are kept. A file's external id is its path inside the folder, so editing it replaces the document's file and removing it deletes the document. Renaming or moving a file removes the old document and adds a new one.
+It reads the file types the worker can process (PDF, Word, HTML, Markdown and plain text formats) and skips hidden files and directories and files that are links leading outside the folder (a warning in the log names them). A folder that cannot be read or is missing fails the run instead of counting as empty, and so does a path inside it that cannot be read: the documents are kept. Live search finds the paragraphs of its text, Markdown and HTML files that contain the words of the question (PDF and Word files are only found once synced). A file's external id is its path inside the folder, so editing it replaces the document's file and removing it deletes the document. Renaming or moving a file removes the old document and adds a new one.
 
 ## How a sync works
 

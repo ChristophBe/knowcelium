@@ -3,6 +3,7 @@ import contextlib
 import uuid
 from collections.abc import AsyncIterator, Callable, Sequence
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import Any
 
 import grpc
@@ -30,8 +31,10 @@ from knowcel_platform.pagination import Cursor
 ALICE, BOB = "alice", "bob"
 
 
-def servicer(repo: Any, documents: Any, llm: Any) -> ChatServicer:
-    chat = Chat(Settings(), repo, PeerRetriever(documents, llm), PeerGenerator(llm))
+def servicer(repo: Any, documents: Any, llm: Any, connectors: Any = None) -> ChatServicer:
+    chat = Chat(
+        Settings(), repo, PeerRetriever(documents, llm, connectors=connectors), PeerGenerator(llm)
+    )
     return ChatServicer(repo, chat)
 
 
@@ -69,12 +72,18 @@ Connect = Callable[..., chat_pb2_grpc.ChatServiceStub]
 
 @contextlib.asynccontextmanager
 async def running(
-    repo: Any, documents: Any, llm: Any, principals: PrincipalResolver | None = None
+    repo: Any,
+    documents: Any,
+    llm: Any,
+    principals: PrincipalResolver | None = None,
+    connectors: Any = None,
 ) -> AsyncIterator[Connect]:
     """Serves chat with the user interceptor of knowcel_platform.grpc.serve,
     resolving callers' teams with `principals` (none: they are unknown)."""
     server = grpc.aio.server(interceptors=[UserInterceptor(principals)])
-    chat_pb2_grpc.add_ChatServiceServicer_to_server(servicer(repo, documents, llm), server)
+    chat_pb2_grpc.add_ChatServiceServicer_to_server(
+        servicer(repo, documents, llm, connectors), server
+    )
     port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
     async with contextlib.AsyncExitStack() as channels:
@@ -189,9 +198,17 @@ class MemoryRepo:
         content: str,
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
+        unavailable_sources: Sequence[str] = (),
     ):
         msg = MessageRow(
-            uuid.uuid4(), conversation_id, role, content, datetime.now(UTC), citations, status
+            uuid.uuid4(),
+            conversation_id,
+            role,
+            content,
+            datetime.now(UTC),
+            citations,
+            status,
+            list(unavailable_sources),
         )
         self.messages.append(msg)
         conv = self.conversations[conversation_id]
@@ -1156,3 +1173,39 @@ async def test_stream_chat_reports_progress_before_the_first_word(env: Env) -> N
     cited = next(e for e in events if e.WhichOneof("event") == "citations").citations.items
     assert (progress[1].passages, progress[1].documents) == (len(cited), 1)
     assert kinds.index("delta") > max(i for i, k in enumerate(kinds) if k == "status")
+
+
+class LiveSources:
+    """A connector search that finds a stock level and reports that crm did not answer."""
+
+    async def search(self, query: str, limit: int, team_ids: Any) -> Any:
+        found = chat_pb2.Citation(
+            document_title="Aisle 3",
+            snippet="40 boxes in aisle 3",
+            score=0.99,
+            connector="stock",
+            source_url="https://wms.example/3",
+        )
+        return SimpleNamespace(citations=[found], unavailable=["crm"])
+
+
+async def test_live_sources_and_the_ones_that_did_not_answer_reach_the_client() -> None:
+    repo, llm, documents = MemoryRepo(), FakeLlm(), FakeDocuments()
+    async with running(repo, documents, llm, connectors=LiveSources()) as connect:
+        stub = connect()
+        conv = (await stub.CreateConversation(chat_pb2.CreateConversationRequest())).conversation
+        events = [
+            e
+            async for e in stub.StreamChat(
+                chat_pb2.StreamChatRequest(
+                    conversation_id=conv.id, content="Boxes [1]?", use_knowledge_base=True
+                )
+            )
+        ]
+        cited = next(e for e in events if e.WhichOneof("event") == "citations").citations
+        assert cited.items[0].connector == "stock"
+        assert cited.items[0].source_url == "https://wms.example/3"
+        assert list(cited.unavailable_sources) == ["crm"]
+        assert list(events[-1].message.unavailable_sources) == ["crm"]
+        got = await stub.GetConversation(chat_pb2.GetConversationRequest(id=conv.id))
+        assert list(got.messages[1].unavailable_sources) == ["crm"]
