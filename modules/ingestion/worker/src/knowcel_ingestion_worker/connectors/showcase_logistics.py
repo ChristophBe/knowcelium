@@ -2,6 +2,7 @@
 (`examples/showcase`) become documents, and shipments are found by live search, because their
 status changes faster than a sync would keep up with."""
 
+import asyncio
 import re
 from collections.abc import AsyncIterator, Callable
 from datetime import datetime
@@ -21,6 +22,7 @@ _STOP_WORDS = frozenset(
         *("shipment", "shipments", "status"),
     }
 )
+_SUPPLIER_ID = re.compile(r"sup-\d+")
 # Words of a question that are tried; more would only slow the search down.
 _MAX_TERMS = 6
 
@@ -113,9 +115,13 @@ class ShowcaseLogisticsConnector(Connector[ShowcaseLogisticsConfig]):
         terms = _terms(query)
         if limit < 1 or not terms:
             return []
+        suppliers = [t.upper() for t in terms if _SUPPLIER_ID.fullmatch(t)]
+        requests = [("/search", {"q": t, "type": "shipment", "limit": 100}) for t in terms]
+        # The search covers description, status and delay reason, not who supplies a shipment.
+        requests += [("/shipments", {"supplier_id": s, "limit": 100}) for s in suppliers]
+        pages = await asyncio.gather(*(self._client.get(path, params) for path, params in requests))
         found: dict[str, tuple[int, dict[str, Any]]] = {}
-        for term in terms:
-            body = await self._client.get("/search", {"q": term, "type": "shipment", "limit": 100})
+        for body in pages:
             for hit in body["items"]:
                 score, _ = found.get(hit["id"], (0, hit))
                 found[hit["id"]] = (score + 1, hit)

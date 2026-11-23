@@ -82,6 +82,7 @@ async def test_syncs_parts_specifications_and_change_requests(fake_system: FakeS
     part = found["part/P-1"]
     assert part.title == "Part P-1: Hub motor"
     assert part.metadata["supplier_id"] == "SUP-1001"
+    assert part.metadata["part_id"] == "P-1"
     assert part.version == "2026-09-01T08:00:00Z"
     assert part.source_url == f"{URL}/parts/P-1"
     assert b"Supplier: SUP-1001" in await part.read()
@@ -122,7 +123,7 @@ async def test_a_page_without_progress_is_an_error(fake_system: FakeSystems):
     def stuck(request: httpx.Request) -> httpx.Response:
         response = original(request)
         if request.url.path == "/parts":
-            return httpx.Response(200, json={"items": [], "next_offset": 5})
+            return httpx.Response(200, json={"items": [{"id": "x"}], "next_offset": 0})
         return response
 
     fake.transport = type(fake.transport)(stuck)
@@ -133,6 +134,9 @@ async def test_a_page_without_progress_is_an_error(fake_system: FakeSystems):
 def test_settings_are_validated():
     with pytest.raises(ValueError, match="http"):
         ShowcaseEngineeringConfig(base_url="engineering:8091")
+    for bad in ("http://host:abc", "http://host/?x=1"):
+        with pytest.raises(ValueError, match="http"):
+            ShowcaseEngineeringConfig(base_url=bad)
     with pytest.raises(ValueError, match="page_size"):
         ShowcaseEngineeringConfig(base_url=URL, page_size=500)
     assert ShowcaseEngineeringConfig(base_url=URL + "/").base_url == URL

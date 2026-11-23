@@ -56,16 +56,16 @@ It reads the file types the worker can process (PDF, Word, HTML, Markdown and pl
 
 ## Showcase connectors
 
-`showcase_engineering` and `showcase_logistics` sync the mock engineering and logistics systems of the fictional e-bike maker Velora Mobility (`examples/showcase/`). They are examples of the [connector SDK](../connectors.md) and are not started with the main stack. `task showcase:up` starts the stack with both mock systems and mounts `examples/showcase/connectors.yaml` (owner `alice@example.com`, who has to have signed in once; public documents, a sync every minute) instead of the default connectors file.
+`showcase_engineering` and `showcase_logistics` sync the mock engineering and logistics systems of the fictional e-bike maker Velora Mobility (`examples/showcase/`). They are examples of the [connector SDK](../connectors.md) and are not started with the main stack. `task showcase:up` starts the stack with both mock systems and mounts `examples/showcase/connectors.yaml` (public documents, a sync every minute) instead of the default connectors file, whatever `KNOWCEL_CONNECTORS_CONFIG` says in `.env`. The owner is the dev admin `alice@example.com` by her id; until she has signed in once every sync fails with "not a platform admin" and is retried at the next interval.
 
 | Setting | Meaning |
 |---|---|
 | `base_url` | The mock system as the worker reaches it (`http://showcase-engineering:8091`, `http://showcase-logistics:8092`). |
 | `page_size` | Records per request, 1 to 100 (default 50). |
-| `timeout_seconds` | Seconds a request may take (default 10). |
+| `timeout_seconds` | Seconds a request may wait for connecting, sending and each answer (default 10). |
 
 - **Engineering** creates a document per part, specification and change request. A document's metadata names the `supplier_id` (and `part_id` or `part_ids`), which links it to the logistics documents.
-- **Logistics** creates a document per supplier and stock record, with `supplier_id` and `part_id` in the metadata. Shipments are not copied: their status changes too quickly, so the connector answers `search` by asking the system (shipment status, delays). Live retrieval does not call it yet.
+- **Logistics** creates a document per supplier and stock record, with `supplier_id` and `part_id` in the metadata. Shipments are not copied: their status changes too quickly, so the connector answers `search` by asking the system (shipment status, delays, shipments of a supplier named by its ID). Live retrieval does not call it yet.
 - Both ask only for records updated since the last successful sync, so a second sync changes nothing and an edited record replaces its document. The mock systems never delete records, so nothing is deleted.
 
 ## How a sync works

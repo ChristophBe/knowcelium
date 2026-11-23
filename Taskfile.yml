@@ -313,7 +313,7 @@ tasks:
   showcase:up:
     desc: Start the whole stack with the mock engineering and logistics systems and their connectors (examples/showcase/README.md).
     env:
-      KNOWCEL_CONNECTORS_CONFIG: ../../examples/showcase/connectors.yaml
+      KNOWCEL_CONNECTORS_CONFIG: "{{.ROOT_DIR}}/examples/showcase/connectors.yaml"
     cmds:
       - . deploy/scripts/legacy-env.sh && docker compose --profile showcase {{.CLI_ARGS}} up -d --build --wait
 

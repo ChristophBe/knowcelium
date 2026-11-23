@@ -28,7 +28,16 @@ class ShowcaseConfig(BaseModel):
     @classmethod
     def _is_http_url(cls, value: str) -> str:
         parts = urlsplit(value)
-        if parts.scheme not in ("http", "https") or not parts.netloc:
+        try:
+            parts.port  # noqa: B018 (raises for a port that is not a number)
+        except ValueError:
+            raise ValueError(f"{value!r} has an invalid port") from None
+        if (
+            parts.scheme not in ("http", "https")
+            or not parts.netloc
+            or parts.query
+            or parts.fragment
+        ):
             raise ValueError(f"{value!r} is not an http(s) URL such as http://host:8091")
         return value.rstrip("/")
 
@@ -52,31 +61,29 @@ class ShowcaseClient:
                 response.raise_for_status()
                 body = response.json()
         except httpx.HTTPStatusError as err:
-            raise ConnectorError(
-                f"{self.base_url}{path} answered {err.response.status_code}; check base_url"
-            ) from err
+            code = err.response.status_code
+            hint = "; check base_url" if code == 404 else ""
+            raise ConnectorError(f"{self.base_url}{path} answered {code}{hint}") from err
         except (httpx.HTTPError, ValueError) as err:
             raise ConnectorError(f"cannot read {self.base_url}{path}: {err}") from err
         if not isinstance(body, dict) or not isinstance(body.get("items"), list):
             raise ConnectorError(f"{self.base_url}{path} did not answer a page of items")
         return body
 
-    async def records(
-        self, path: str, since: datetime | None, extra: dict[str, Any] | None = None
-    ) -> AsyncIterator[dict[str, Any]]:
+    async def records(self, path: str, since: datetime | None) -> AsyncIterator[dict[str, Any]]:
         """Every record of a list endpoint, following `next_offset`. `since` limits them to
         those updated at or after it."""
-        params: dict[str, Any] = {"limit": self._page_size, **(extra or {})}
+        params: dict[str, Any] = {"limit": self._page_size}
         if since is not None:
             params["updated_since"] = since.astimezone(UTC).isoformat()
         offset: int | None = 0
         while offset is not None:
             body = await self.get(path, {**params, "offset": offset})
+            previous, offset = offset, body.get("next_offset")
+            if offset is not None and (not body["items"] or offset <= previous):
+                raise ConnectorError(f"{self.base_url}{path} paged without making progress")
             for item in body["items"]:
                 yield item
-            offset = body.get("next_offset")
-            if offset is not None and not body["items"]:
-                raise ConnectorError(f"{self.base_url}{path} paged without making progress")
 
 
 def text(value: object) -> str:

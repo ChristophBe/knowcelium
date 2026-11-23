@@ -128,3 +128,13 @@ async def test_meets_the_connector_contract(fake_system: FakeSystems):
 def test_rejects_an_unknown_setting():
     with pytest.raises(ValueError, match="token"):
         ShowcaseLogisticsConfig.model_validate({"base_url": URL, "token": "x"})
+
+
+async def test_search_finds_the_shipments_of_a_named_supplier(fake_system: FakeSystems):
+    fake = system(fake_system)
+    snippets = await connector(fake).search("Where is the delivery from sup-1001?", 5)
+    assert {s.external_id for s in snippets} == {"shipment/SH-1", "shipment/SH-2"}
+    assert any(
+        r.url.path == "/shipments" and r.url.params["supplier_id"] == "SUP-1001"
+        for r in fake.requests
+    )

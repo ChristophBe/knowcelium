@@ -38,6 +38,8 @@ class FakeSystem:
             records = self.lists[path]
         else:
             return httpx.Response(404, json={"error": "not found"})
+        if "supplier_id" in query:
+            records = [r for r in records if r.get("supplier_id") == query["supplier_id"]]
         if "updated_since" in query:
             since = datetime.fromisoformat(query["updated_since"])
             records = [r for r in records if datetime.fromisoformat(r["updated_at"]) >= since]

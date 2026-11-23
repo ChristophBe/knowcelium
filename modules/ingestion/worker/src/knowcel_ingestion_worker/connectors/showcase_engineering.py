@@ -44,6 +44,8 @@ def _change_request(item: dict[str, Any]) -> str:
 
 def _metadata(item: dict[str, Any]) -> dict[str, str]:
     meta = {"system": "engineering", "id": item["id"], "updated_at": item["updated_at"]}
+    if "revision" in item:  # a part is its own part
+        meta["part_id"] = item["id"]
     for key in ("status", "supplier_id", "part_id", "revision", "requested_by"):
         if item.get(key):
             meta[key] = text(item[key])
