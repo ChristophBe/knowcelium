@@ -17,7 +17,7 @@ services:
   # S3-compatible object storage. Browsers upload to it directly through
   # presigned URLs, so its port must be reachable from the host.
   s3:
-    image: chrislusf/seaweedfs:4.51
+    image: chrislusf/seaweedfs:4.53
     command: server -ip.bind=0.0.0.0 -dir=/data -filer -s3 -s3.config=/etc/seaweedfs/s3.json
     ports: ["8333:8333"]
     volumes:
@@ -63,7 +63,7 @@ services:
   # scrapes every component's /metrics (docs/metrics.md); its UI is on
   # KNOWCEL_PROMETHEUS_PORT.
   otel-collector:
-    image: otel/opentelemetry-collector:0.164.0
+    image: otel/opentelemetry-collector:0.165.0
     profiles: [observability]
     command: ["--config=/etc/otelcol/collector.yaml"]
     ports: ["${KNOWCEL_OTEL_GRPC_PORT:-4317}:4317"]
@@ -71,12 +71,12 @@ services:
     depends_on: [jaeger]
 
   jaeger:
-    image: jaegertracing/jaeger:2.22.0
+    image: jaegertracing/jaeger:2.23.0
     profiles: [observability]
     ports: ["${KNOWCEL_JAEGER_PORT:-16686}:16686"]
 
   prometheus:
-    image: prom/prometheus:v3.15.1
+    image: prom/prometheus:v3.16.0
     profiles: [observability]
     # The scrape targets are generated from the module manifests (task gen).
     volumes:
