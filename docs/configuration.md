@@ -144,6 +144,7 @@ From `Config` in [modules/ingestion/service/cmd/ingestion-service](../modules/in
 | `KNOWCEL_DATABASE_URL` | `postgres://kb:kb@localhost:5432/kb?sslmode=disable` | The Postgres database holding the ingestion schema. |
 | `KNOWCEL_NATS_URL` | `nats://localhost:4222` | The NATS server with JetStream that carries the knowcel.ingestion.* events (comma-separated for a cluster). |
 | `KNOWCEL_DOCUMENT_ADDR` | `localhost:9001` | The document module (host:port), where uploads are created and their status is set. |
+| `KNOWCEL_IAM_ADDR` | `localhost:9006` | The iam module (host:port), which tells whether a caller is a platform admin, who alone can read the connectors' status. |
 
 ## ingestion-worker
 

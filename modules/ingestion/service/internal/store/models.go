@@ -9,6 +9,20 @@ import (
 	"github.com/jackc/pgx/v5/pgtype"
 )
 
+type IngestionConnectorStatus struct {
+	Name            string
+	Kind            string
+	Enabled         bool
+	IntervalSeconds int32
+	LastOutcome     int16
+	LastStart       pgtype.Timestamptz
+	LastEnd         pgtype.Timestamptz
+	LastSuccess     pgtype.Timestamptz
+	Documents       int32
+	LastError       string
+	UpdatedAt       pgtype.Timestamptz
+}
+
 type IngestionJob struct {
 	ID          uuid.UUID
 	DocumentID  uuid.UUID

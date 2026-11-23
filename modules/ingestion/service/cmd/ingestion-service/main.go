@@ -15,11 +15,14 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	documentv1 "github.com/ChristophBe/knowcelium/modules/document/api/go/documentv1"
+	iamv1 "github.com/ChristophBe/knowcelium/modules/iam/api/go/iamv1"
 	ingestionv1 "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/migrations"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/app"
+	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/connectors"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/documents"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/events"
+	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/iamclient"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/server"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/store"
 	"github.com/ChristophBe/knowcelium/platform/go/config"
@@ -41,6 +44,9 @@ type Config struct {
 	// DocumentAddr is the document module (host:port), where uploads are
 	// created and their status is set.
 	DocumentAddr string `env:"DOCUMENT_ADDR" envDefault:"localhost:9001"`
+	// IAMAddr is the iam module (host:port), which tells whether a caller is
+	// a platform admin, who alone can read the connectors' status.
+	IAMAddr string `env:"IAM_ADDR" envDefault:"localhost:9006"`
 }
 
 func (c Config) Validate(p *config.Problems) {
@@ -51,6 +57,7 @@ func (c Config) Validate(p *config.Problems) {
 		p.URL("KNOWCEL_NATS_URL", strings.TrimSpace(server), "nats", "tls", "ws", "wss")
 	}
 	p.Addr("KNOWCEL_DOCUMENT_ADDR", c.DocumentAddr)
+	p.Addr("KNOWCEL_IAM_ADDR", c.IAMAddr)
 }
 
 // loadConfig reads the configuration with the ports of module.yaml as defaults.
@@ -111,6 +118,14 @@ func run(cfg Config) error {
 	}
 	defer conn.Close()
 
+	// Resolves who is a platform admin, cached briefly; lazy like document's.
+	iamConn, err := grpcserver.Dial(cfg.IAMAddr)
+	if err != nil {
+		return err
+	}
+	defer iamConn.Close()
+	callers := grpcserver.NewResolver(iamclient.Resolve(iamv1.NewIamServiceClient(iamConn)), grpcserver.DefaultPrincipalTTL, log)
+
 	queries := store.New(pool)
 	prometheus.MustRegister(store.NewJobsCollector(queries))
 	service := app.New(
@@ -118,11 +133,13 @@ func run(cfg Config) error {
 		documents.New(documentv1.NewDocumentServiceClient(conn)),
 		events.NewPublisher(events.NewJetStream(js)),
 	)
+	status := connectors.New(store.NewConnectors(queries))
 	srv := grpcserver.New(log)
-	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log))
+	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log).WithConnectors(status, callers))
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return events.Consume(ctx, js, service, log) })
+	g.Go(func() error { return events.ConsumeConnectors(ctx, js, status, log) })
 	g.Go(func() error { return events.ConsumeReindex(ctx, js, service, log) })
 	g.Go(func() error { return srv.Run(ctx, cfg.GRPCPort) })
 	return g.Wait()

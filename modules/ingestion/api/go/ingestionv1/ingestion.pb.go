@@ -194,6 +194,72 @@ func (JobStage) EnumDescriptor() ([]byte, []int) {
 	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{2}
 }
 
+// ConnectorHealth says whether a connector keeps its documents up to date. It
+// is derived when the connector is read, from its last sync and its interval.
+type ConnectorHealth int32
+
+const (
+	ConnectorHealth_CONNECTOR_HEALTH_UNSPECIFIED ConnectorHealth = 0
+	// The last sync succeeded, within the expected interval.
+	ConnectorHealth_CONNECTOR_HEALTH_HEALTHY ConnectorHealth = 1
+	// The last sync had partial failures: some items synced, others did not.
+	ConnectorHealth_CONNECTOR_HEALTH_DEGRADED ConnectorHealth = 2
+	// The last sync failed.
+	ConnectorHealth_CONNECTOR_HEALTH_FAILING ConnectorHealth = 3
+	// The last sync ended more than twice the connector's interval ago,
+	// whatever its outcome: syncs have stopped (the worker is down or stuck).
+	ConnectorHealth_CONNECTOR_HEALTH_STALE ConnectorHealth = 4
+	// The connector has not synced yet.
+	ConnectorHealth_CONNECTOR_HEALTH_UNKNOWN ConnectorHealth = 5
+)
+
+// Enum value maps for ConnectorHealth.
+var (
+	ConnectorHealth_name = map[int32]string{
+		0: "CONNECTOR_HEALTH_UNSPECIFIED",
+		1: "CONNECTOR_HEALTH_HEALTHY",
+		2: "CONNECTOR_HEALTH_DEGRADED",
+		3: "CONNECTOR_HEALTH_FAILING",
+		4: "CONNECTOR_HEALTH_STALE",
+		5: "CONNECTOR_HEALTH_UNKNOWN",
+	}
+	ConnectorHealth_value = map[string]int32{
+		"CONNECTOR_HEALTH_UNSPECIFIED": 0,
+		"CONNECTOR_HEALTH_HEALTHY":     1,
+		"CONNECTOR_HEALTH_DEGRADED":    2,
+		"CONNECTOR_HEALTH_FAILING":     3,
+		"CONNECTOR_HEALTH_STALE":       4,
+		"CONNECTOR_HEALTH_UNKNOWN":     5,
+	}
+)
+
+func (x ConnectorHealth) Enum() *ConnectorHealth {
+	p := new(ConnectorHealth)
+	*p = x
+	return p
+}
+
+func (x ConnectorHealth) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (ConnectorHealth) Descriptor() protoreflect.EnumDescriptor {
+	return file_knowcel_ingestion_v1_ingestion_proto_enumTypes[3].Descriptor()
+}
+
+func (ConnectorHealth) Type() protoreflect.EnumType {
+	return &file_knowcel_ingestion_v1_ingestion_proto_enumTypes[3]
+}
+
+func (x ConnectorHealth) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use ConnectorHealth.Descriptor instead.
+func (ConnectorHealth) EnumDescriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{3}
+}
+
 type Job struct {
 	state       protoimpl.MessageState `protogen:"open.v1"`
 	Id          string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
@@ -1067,6 +1133,312 @@ func (x *ReprocessJobResponse) GetJob() *Job {
 	return nil
 }
 
+// Connector is an external system whose content is synced into documents on a
+// schedule (see docs/operations/connectors.md). Connectors are configured in
+// the worker's connectors file; this is what the worker reported about them.
+type Connector struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The connector's configured name, which is unique and does not change.
+	Id   string `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name string `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The kind of source (for example "folder"); empty when the connector's
+	// configuration is invalid.
+	Kind    string          `protobuf:"bytes,3,opt,name=kind,proto3" json:"kind,omitempty"`
+	Enabled bool            `protobuf:"varint,4,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	Health  ConnectorHealth `protobuf:"varint,5,opt,name=health,proto3,enum=knowcel.ingestion.v1.ConnectorHealth" json:"health,omitempty"`
+	// Seconds between the starts of two syncs, 0 when the configuration is
+	// invalid.
+	IntervalSeconds int32 `protobuf:"varint,6,opt,name=interval_seconds,json=intervalSeconds,proto3" json:"interval_seconds,omitempty"`
+	// Start and end of the last sync, unset until one ran.
+	LastSyncStartTime *timestamppb.Timestamp `protobuf:"bytes,7,opt,name=last_sync_start_time,json=lastSyncStartTime,proto3" json:"last_sync_start_time,omitempty"`
+	LastSyncEndTime   *timestamppb.Timestamp `protobuf:"bytes,8,opt,name=last_sync_end_time,json=lastSyncEndTime,proto3" json:"last_sync_end_time,omitempty"`
+	// End of the last successful sync, unset until one succeeded.
+	LastSuccessTime *timestamppb.Timestamp `protobuf:"bytes,9,opt,name=last_success_time,json=lastSuccessTime,proto3" json:"last_success_time,omitempty"`
+	// Documents the connector keeps in sync, as of its last sync.
+	DocumentsSynced int32 `protobuf:"varint,10,opt,name=documents_synced,json=documentsSynced,proto3" json:"documents_synced,omitempty"`
+	// Why the last sync failed, or a note about it (items skipped); empty when
+	// it went through cleanly.
+	LastError     string `protobuf:"bytes,11,opt,name=last_error,json=lastError,proto3" json:"last_error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Connector) Reset() {
+	*x = Connector{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[15]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Connector) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Connector) ProtoMessage() {}
+
+func (x *Connector) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[15]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Connector.ProtoReflect.Descriptor instead.
+func (*Connector) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{15}
+}
+
+func (x *Connector) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *Connector) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *Connector) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *Connector) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *Connector) GetHealth() ConnectorHealth {
+	if x != nil {
+		return x.Health
+	}
+	return ConnectorHealth_CONNECTOR_HEALTH_UNSPECIFIED
+}
+
+func (x *Connector) GetIntervalSeconds() int32 {
+	if x != nil {
+		return x.IntervalSeconds
+	}
+	return 0
+}
+
+func (x *Connector) GetLastSyncStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSyncStartTime
+	}
+	return nil
+}
+
+func (x *Connector) GetLastSyncEndTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSyncEndTime
+	}
+	return nil
+}
+
+func (x *Connector) GetLastSuccessTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.LastSuccessTime
+	}
+	return nil
+}
+
+func (x *Connector) GetDocumentsSynced() int32 {
+	if x != nil {
+		return x.DocumentsSynced
+	}
+	return 0
+}
+
+func (x *Connector) GetLastError() string {
+	if x != nil {
+		return x.LastError
+	}
+	return ""
+}
+
+type ListConnectorsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListConnectorsRequest) Reset() {
+	*x = ListConnectorsRequest{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[16]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListConnectorsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListConnectorsRequest) ProtoMessage() {}
+
+func (x *ListConnectorsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[16]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListConnectorsRequest.ProtoReflect.Descriptor instead.
+func (*ListConnectorsRequest) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{16}
+}
+
+type ListConnectorsResponse struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// Ordered by name.
+	Connectors    []*Connector `protobuf:"bytes,1,rep,name=connectors,proto3" json:"connectors,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ListConnectorsResponse) Reset() {
+	*x = ListConnectorsResponse{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[17]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ListConnectorsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ListConnectorsResponse) ProtoMessage() {}
+
+func (x *ListConnectorsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[17]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ListConnectorsResponse.ProtoReflect.Descriptor instead.
+func (*ListConnectorsResponse) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{17}
+}
+
+func (x *ListConnectorsResponse) GetConnectors() []*Connector {
+	if x != nil {
+		return x.Connectors
+	}
+	return nil
+}
+
+type GetConnectorRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConnectorRequest) Reset() {
+	*x = GetConnectorRequest{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[18]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConnectorRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConnectorRequest) ProtoMessage() {}
+
+func (x *GetConnectorRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[18]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConnectorRequest.ProtoReflect.Descriptor instead.
+func (*GetConnectorRequest) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{18}
+}
+
+func (x *GetConnectorRequest) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+type GetConnectorResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Connector     *Connector             `protobuf:"bytes,1,opt,name=connector,proto3" json:"connector,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetConnectorResponse) Reset() {
+	*x = GetConnectorResponse{}
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[19]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetConnectorResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetConnectorResponse) ProtoMessage() {}
+
+func (x *GetConnectorResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_ingestion_proto_msgTypes[19]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetConnectorResponse.ProtoReflect.Descriptor instead.
+func (*GetConnectorResponse) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP(), []int{19}
+}
+
+func (x *GetConnectorResponse) GetConnector() *Connector {
+	if x != nil {
+		return x.Connector
+	}
+	return nil
+}
+
 var File_knowcel_ingestion_v1_ingestion_proto protoreflect.FileDescriptor
 
 const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
@@ -1135,7 +1507,30 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x13ReprocessJobRequest\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\"C\n" +
 	"\x14ReprocessJobResponse\x12+\n" +
-	"\x03job\x18\x01 \x01(\v2\x19.knowcel.ingestion.v1.JobR\x03job*D\n" +
+	"\x03job\x18\x01 \x01(\v2\x19.knowcel.ingestion.v1.JobR\x03job\"\xef\x03\n" +
+	"\tConnector\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12\x12\n" +
+	"\x04kind\x18\x03 \x01(\tR\x04kind\x12\x18\n" +
+	"\aenabled\x18\x04 \x01(\bR\aenabled\x12=\n" +
+	"\x06health\x18\x05 \x01(\x0e2%.knowcel.ingestion.v1.ConnectorHealthR\x06health\x12)\n" +
+	"\x10interval_seconds\x18\x06 \x01(\x05R\x0fintervalSeconds\x12K\n" +
+	"\x14last_sync_start_time\x18\a \x01(\v2\x1a.google.protobuf.TimestampR\x11lastSyncStartTime\x12G\n" +
+	"\x12last_sync_end_time\x18\b \x01(\v2\x1a.google.protobuf.TimestampR\x0flastSyncEndTime\x12F\n" +
+	"\x11last_success_time\x18\t \x01(\v2\x1a.google.protobuf.TimestampR\x0flastSuccessTime\x12)\n" +
+	"\x10documents_synced\x18\n" +
+	" \x01(\x05R\x0fdocumentsSynced\x12\x1d\n" +
+	"\n" +
+	"last_error\x18\v \x01(\tR\tlastError\"\x17\n" +
+	"\x15ListConnectorsRequest\"Y\n" +
+	"\x16ListConnectorsResponse\x12?\n" +
+	"\n" +
+	"connectors\x18\x01 \x03(\v2\x1f.knowcel.ingestion.v1.ConnectorR\n" +
+	"connectors\"%\n" +
+	"\x13GetConnectorRequest\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"U\n" +
+	"\x14GetConnectorResponse\x12=\n" +
+	"\tconnector\x18\x01 \x01(\v2\x1f.knowcel.ingestion.v1.ConnectorR\tconnector*D\n" +
 	"\x06Access\x12\x16\n" +
 	"\x12ACCESS_UNSPECIFIED\x10\x00\x12\x11\n" +
 	"\rACCESS_PUBLIC\x10\x01\x12\x0f\n" +
@@ -1152,7 +1547,14 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x14JOB_STAGE_EXTRACTING\x10\x01\x12\x16\n" +
 	"\x12JOB_STAGE_CHUNKING\x10\x02\x12\x17\n" +
 	"\x13JOB_STAGE_EMBEDDING\x10\x03\x12\x15\n" +
-	"\x11JOB_STAGE_STORING\x10\x042\xc4\x05\n" +
+	"\x11JOB_STAGE_STORING\x10\x04*\xc8\x01\n" +
+	"\x0fConnectorHealth\x12 \n" +
+	"\x1cCONNECTOR_HEALTH_UNSPECIFIED\x10\x00\x12\x1c\n" +
+	"\x18CONNECTOR_HEALTH_HEALTHY\x10\x01\x12\x1d\n" +
+	"\x19CONNECTOR_HEALTH_DEGRADED\x10\x02\x12\x1c\n" +
+	"\x18CONNECTOR_HEALTH_FAILING\x10\x03\x12\x1a\n" +
+	"\x16CONNECTOR_HEALTH_STALE\x10\x04\x12\x1c\n" +
+	"\x18CONNECTOR_HEALTH_UNKNOWN\x10\x052\x98\a\n" +
 	"\x10IngestionService\x12e\n" +
 	"\fCreateUpload\x12).knowcel.ingestion.v1.CreateUploadRequest\x1a*.knowcel.ingestion.v1.CreateUploadResponse\x12k\n" +
 	"\x0eCompleteUpload\x12+.knowcel.ingestion.v1.CompleteUploadRequest\x1a,.knowcel.ingestion.v1.CompleteUploadResponse\x12h\n" +
@@ -1160,7 +1562,9 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x06GetJob\x12#.knowcel.ingestion.v1.GetJobRequest\x1a$.knowcel.ingestion.v1.GetJobResponse\x12Y\n" +
 	"\bListJobs\x12%.knowcel.ingestion.v1.ListJobsRequest\x1a&.knowcel.ingestion.v1.ListJobsResponse\x12[\n" +
 	"\bWatchJob\x12%.knowcel.ingestion.v1.WatchJobRequest\x1a&.knowcel.ingestion.v1.WatchJobResponse0\x01\x12e\n" +
-	"\fReprocessJob\x12).knowcel.ingestion.v1.ReprocessJobRequest\x1a*.knowcel.ingestion.v1.ReprocessJobResponseBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
+	"\fReprocessJob\x12).knowcel.ingestion.v1.ReprocessJobRequest\x1a*.knowcel.ingestion.v1.ReprocessJobResponse\x12k\n" +
+	"\x0eListConnectors\x12+.knowcel.ingestion.v1.ListConnectorsRequest\x1a,.knowcel.ingestion.v1.ListConnectorsResponse\x12e\n" +
+	"\fGetConnector\x12).knowcel.ingestion.v1.GetConnectorRequest\x1a*.knowcel.ingestion.v1.GetConnectorResponseBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
 
 var (
 	file_knowcel_ingestion_v1_ingestion_proto_rawDescOnce sync.Once
@@ -1174,65 +1578,81 @@ func file_knowcel_ingestion_v1_ingestion_proto_rawDescGZIP() []byte {
 	return file_knowcel_ingestion_v1_ingestion_proto_rawDescData
 }
 
-var file_knowcel_ingestion_v1_ingestion_proto_enumTypes = make([]protoimpl.EnumInfo, 3)
-var file_knowcel_ingestion_v1_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 15)
+var file_knowcel_ingestion_v1_ingestion_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
+var file_knowcel_ingestion_v1_ingestion_proto_msgTypes = make([]protoimpl.MessageInfo, 20)
 var file_knowcel_ingestion_v1_ingestion_proto_goTypes = []any{
 	(Access)(0),                    // 0: knowcel.ingestion.v1.Access
 	(JobStatus)(0),                 // 1: knowcel.ingestion.v1.JobStatus
 	(JobStage)(0),                  // 2: knowcel.ingestion.v1.JobStage
-	(*Job)(nil),                    // 3: knowcel.ingestion.v1.Job
-	(*CreateUploadRequest)(nil),    // 4: knowcel.ingestion.v1.CreateUploadRequest
-	(*CreateUploadResponse)(nil),   // 5: knowcel.ingestion.v1.CreateUploadResponse
-	(*ReplaceUploadRequest)(nil),   // 6: knowcel.ingestion.v1.ReplaceUploadRequest
-	(*ReplaceUploadResponse)(nil),  // 7: knowcel.ingestion.v1.ReplaceUploadResponse
-	(*CompleteUploadRequest)(nil),  // 8: knowcel.ingestion.v1.CompleteUploadRequest
-	(*CompleteUploadResponse)(nil), // 9: knowcel.ingestion.v1.CompleteUploadResponse
-	(*GetJobRequest)(nil),          // 10: knowcel.ingestion.v1.GetJobRequest
-	(*GetJobResponse)(nil),         // 11: knowcel.ingestion.v1.GetJobResponse
-	(*ListJobsRequest)(nil),        // 12: knowcel.ingestion.v1.ListJobsRequest
-	(*ListJobsResponse)(nil),       // 13: knowcel.ingestion.v1.ListJobsResponse
-	(*WatchJobRequest)(nil),        // 14: knowcel.ingestion.v1.WatchJobRequest
-	(*WatchJobResponse)(nil),       // 15: knowcel.ingestion.v1.WatchJobResponse
-	(*ReprocessJobRequest)(nil),    // 16: knowcel.ingestion.v1.ReprocessJobRequest
-	(*ReprocessJobResponse)(nil),   // 17: knowcel.ingestion.v1.ReprocessJobResponse
-	(*timestamppb.Timestamp)(nil),  // 18: google.protobuf.Timestamp
-	(*commonv1.PageRequest)(nil),   // 19: knowcel.common.v1.PageRequest
-	(*commonv1.PageResponse)(nil),  // 20: knowcel.common.v1.PageResponse
+	(ConnectorHealth)(0),           // 3: knowcel.ingestion.v1.ConnectorHealth
+	(*Job)(nil),                    // 4: knowcel.ingestion.v1.Job
+	(*CreateUploadRequest)(nil),    // 5: knowcel.ingestion.v1.CreateUploadRequest
+	(*CreateUploadResponse)(nil),   // 6: knowcel.ingestion.v1.CreateUploadResponse
+	(*ReplaceUploadRequest)(nil),   // 7: knowcel.ingestion.v1.ReplaceUploadRequest
+	(*ReplaceUploadResponse)(nil),  // 8: knowcel.ingestion.v1.ReplaceUploadResponse
+	(*CompleteUploadRequest)(nil),  // 9: knowcel.ingestion.v1.CompleteUploadRequest
+	(*CompleteUploadResponse)(nil), // 10: knowcel.ingestion.v1.CompleteUploadResponse
+	(*GetJobRequest)(nil),          // 11: knowcel.ingestion.v1.GetJobRequest
+	(*GetJobResponse)(nil),         // 12: knowcel.ingestion.v1.GetJobResponse
+	(*ListJobsRequest)(nil),        // 13: knowcel.ingestion.v1.ListJobsRequest
+	(*ListJobsResponse)(nil),       // 14: knowcel.ingestion.v1.ListJobsResponse
+	(*WatchJobRequest)(nil),        // 15: knowcel.ingestion.v1.WatchJobRequest
+	(*WatchJobResponse)(nil),       // 16: knowcel.ingestion.v1.WatchJobResponse
+	(*ReprocessJobRequest)(nil),    // 17: knowcel.ingestion.v1.ReprocessJobRequest
+	(*ReprocessJobResponse)(nil),   // 18: knowcel.ingestion.v1.ReprocessJobResponse
+	(*Connector)(nil),              // 19: knowcel.ingestion.v1.Connector
+	(*ListConnectorsRequest)(nil),  // 20: knowcel.ingestion.v1.ListConnectorsRequest
+	(*ListConnectorsResponse)(nil), // 21: knowcel.ingestion.v1.ListConnectorsResponse
+	(*GetConnectorRequest)(nil),    // 22: knowcel.ingestion.v1.GetConnectorRequest
+	(*GetConnectorResponse)(nil),   // 23: knowcel.ingestion.v1.GetConnectorResponse
+	(*timestamppb.Timestamp)(nil),  // 24: google.protobuf.Timestamp
+	(*commonv1.PageRequest)(nil),   // 25: knowcel.common.v1.PageRequest
+	(*commonv1.PageResponse)(nil),  // 26: knowcel.common.v1.PageResponse
 }
 var file_knowcel_ingestion_v1_ingestion_proto_depIdxs = []int32{
 	1,  // 0: knowcel.ingestion.v1.Job.status:type_name -> knowcel.ingestion.v1.JobStatus
-	18, // 1: knowcel.ingestion.v1.Job.create_time:type_name -> google.protobuf.Timestamp
-	18, // 2: knowcel.ingestion.v1.Job.update_time:type_name -> google.protobuf.Timestamp
+	24, // 1: knowcel.ingestion.v1.Job.create_time:type_name -> google.protobuf.Timestamp
+	24, // 2: knowcel.ingestion.v1.Job.update_time:type_name -> google.protobuf.Timestamp
 	2,  // 3: knowcel.ingestion.v1.Job.stage:type_name -> knowcel.ingestion.v1.JobStage
 	0,  // 4: knowcel.ingestion.v1.CreateUploadRequest.access:type_name -> knowcel.ingestion.v1.Access
-	3,  // 5: knowcel.ingestion.v1.CreateUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
-	3,  // 6: knowcel.ingestion.v1.ReplaceUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
-	3,  // 7: knowcel.ingestion.v1.CompleteUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
-	3,  // 8: knowcel.ingestion.v1.GetJobResponse.job:type_name -> knowcel.ingestion.v1.Job
-	19, // 9: knowcel.ingestion.v1.ListJobsRequest.page:type_name -> knowcel.common.v1.PageRequest
-	3,  // 10: knowcel.ingestion.v1.ListJobsResponse.jobs:type_name -> knowcel.ingestion.v1.Job
-	20, // 11: knowcel.ingestion.v1.ListJobsResponse.page:type_name -> knowcel.common.v1.PageResponse
-	3,  // 12: knowcel.ingestion.v1.WatchJobResponse.job:type_name -> knowcel.ingestion.v1.Job
-	3,  // 13: knowcel.ingestion.v1.ReprocessJobResponse.job:type_name -> knowcel.ingestion.v1.Job
-	4,  // 14: knowcel.ingestion.v1.IngestionService.CreateUpload:input_type -> knowcel.ingestion.v1.CreateUploadRequest
-	8,  // 15: knowcel.ingestion.v1.IngestionService.CompleteUpload:input_type -> knowcel.ingestion.v1.CompleteUploadRequest
-	6,  // 16: knowcel.ingestion.v1.IngestionService.ReplaceUpload:input_type -> knowcel.ingestion.v1.ReplaceUploadRequest
-	10, // 17: knowcel.ingestion.v1.IngestionService.GetJob:input_type -> knowcel.ingestion.v1.GetJobRequest
-	12, // 18: knowcel.ingestion.v1.IngestionService.ListJobs:input_type -> knowcel.ingestion.v1.ListJobsRequest
-	14, // 19: knowcel.ingestion.v1.IngestionService.WatchJob:input_type -> knowcel.ingestion.v1.WatchJobRequest
-	16, // 20: knowcel.ingestion.v1.IngestionService.ReprocessJob:input_type -> knowcel.ingestion.v1.ReprocessJobRequest
-	5,  // 21: knowcel.ingestion.v1.IngestionService.CreateUpload:output_type -> knowcel.ingestion.v1.CreateUploadResponse
-	9,  // 22: knowcel.ingestion.v1.IngestionService.CompleteUpload:output_type -> knowcel.ingestion.v1.CompleteUploadResponse
-	7,  // 23: knowcel.ingestion.v1.IngestionService.ReplaceUpload:output_type -> knowcel.ingestion.v1.ReplaceUploadResponse
-	11, // 24: knowcel.ingestion.v1.IngestionService.GetJob:output_type -> knowcel.ingestion.v1.GetJobResponse
-	13, // 25: knowcel.ingestion.v1.IngestionService.ListJobs:output_type -> knowcel.ingestion.v1.ListJobsResponse
-	15, // 26: knowcel.ingestion.v1.IngestionService.WatchJob:output_type -> knowcel.ingestion.v1.WatchJobResponse
-	17, // 27: knowcel.ingestion.v1.IngestionService.ReprocessJob:output_type -> knowcel.ingestion.v1.ReprocessJobResponse
-	21, // [21:28] is the sub-list for method output_type
-	14, // [14:21] is the sub-list for method input_type
-	14, // [14:14] is the sub-list for extension type_name
-	14, // [14:14] is the sub-list for extension extendee
-	0,  // [0:14] is the sub-list for field type_name
+	4,  // 5: knowcel.ingestion.v1.CreateUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
+	4,  // 6: knowcel.ingestion.v1.ReplaceUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
+	4,  // 7: knowcel.ingestion.v1.CompleteUploadResponse.job:type_name -> knowcel.ingestion.v1.Job
+	4,  // 8: knowcel.ingestion.v1.GetJobResponse.job:type_name -> knowcel.ingestion.v1.Job
+	25, // 9: knowcel.ingestion.v1.ListJobsRequest.page:type_name -> knowcel.common.v1.PageRequest
+	4,  // 10: knowcel.ingestion.v1.ListJobsResponse.jobs:type_name -> knowcel.ingestion.v1.Job
+	26, // 11: knowcel.ingestion.v1.ListJobsResponse.page:type_name -> knowcel.common.v1.PageResponse
+	4,  // 12: knowcel.ingestion.v1.WatchJobResponse.job:type_name -> knowcel.ingestion.v1.Job
+	4,  // 13: knowcel.ingestion.v1.ReprocessJobResponse.job:type_name -> knowcel.ingestion.v1.Job
+	3,  // 14: knowcel.ingestion.v1.Connector.health:type_name -> knowcel.ingestion.v1.ConnectorHealth
+	24, // 15: knowcel.ingestion.v1.Connector.last_sync_start_time:type_name -> google.protobuf.Timestamp
+	24, // 16: knowcel.ingestion.v1.Connector.last_sync_end_time:type_name -> google.protobuf.Timestamp
+	24, // 17: knowcel.ingestion.v1.Connector.last_success_time:type_name -> google.protobuf.Timestamp
+	19, // 18: knowcel.ingestion.v1.ListConnectorsResponse.connectors:type_name -> knowcel.ingestion.v1.Connector
+	19, // 19: knowcel.ingestion.v1.GetConnectorResponse.connector:type_name -> knowcel.ingestion.v1.Connector
+	5,  // 20: knowcel.ingestion.v1.IngestionService.CreateUpload:input_type -> knowcel.ingestion.v1.CreateUploadRequest
+	9,  // 21: knowcel.ingestion.v1.IngestionService.CompleteUpload:input_type -> knowcel.ingestion.v1.CompleteUploadRequest
+	7,  // 22: knowcel.ingestion.v1.IngestionService.ReplaceUpload:input_type -> knowcel.ingestion.v1.ReplaceUploadRequest
+	11, // 23: knowcel.ingestion.v1.IngestionService.GetJob:input_type -> knowcel.ingestion.v1.GetJobRequest
+	13, // 24: knowcel.ingestion.v1.IngestionService.ListJobs:input_type -> knowcel.ingestion.v1.ListJobsRequest
+	15, // 25: knowcel.ingestion.v1.IngestionService.WatchJob:input_type -> knowcel.ingestion.v1.WatchJobRequest
+	17, // 26: knowcel.ingestion.v1.IngestionService.ReprocessJob:input_type -> knowcel.ingestion.v1.ReprocessJobRequest
+	20, // 27: knowcel.ingestion.v1.IngestionService.ListConnectors:input_type -> knowcel.ingestion.v1.ListConnectorsRequest
+	22, // 28: knowcel.ingestion.v1.IngestionService.GetConnector:input_type -> knowcel.ingestion.v1.GetConnectorRequest
+	6,  // 29: knowcel.ingestion.v1.IngestionService.CreateUpload:output_type -> knowcel.ingestion.v1.CreateUploadResponse
+	10, // 30: knowcel.ingestion.v1.IngestionService.CompleteUpload:output_type -> knowcel.ingestion.v1.CompleteUploadResponse
+	8,  // 31: knowcel.ingestion.v1.IngestionService.ReplaceUpload:output_type -> knowcel.ingestion.v1.ReplaceUploadResponse
+	12, // 32: knowcel.ingestion.v1.IngestionService.GetJob:output_type -> knowcel.ingestion.v1.GetJobResponse
+	14, // 33: knowcel.ingestion.v1.IngestionService.ListJobs:output_type -> knowcel.ingestion.v1.ListJobsResponse
+	16, // 34: knowcel.ingestion.v1.IngestionService.WatchJob:output_type -> knowcel.ingestion.v1.WatchJobResponse
+	18, // 35: knowcel.ingestion.v1.IngestionService.ReprocessJob:output_type -> knowcel.ingestion.v1.ReprocessJobResponse
+	21, // 36: knowcel.ingestion.v1.IngestionService.ListConnectors:output_type -> knowcel.ingestion.v1.ListConnectorsResponse
+	23, // 37: knowcel.ingestion.v1.IngestionService.GetConnector:output_type -> knowcel.ingestion.v1.GetConnectorResponse
+	29, // [29:38] is the sub-list for method output_type
+	20, // [20:29] is the sub-list for method input_type
+	20, // [20:20] is the sub-list for extension type_name
+	20, // [20:20] is the sub-list for extension extendee
+	0,  // [0:20] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_ingestion_v1_ingestion_proto_init() }
@@ -1245,8 +1665,8 @@ func file_knowcel_ingestion_v1_ingestion_proto_init() {
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_ingestion_v1_ingestion_proto_rawDesc), len(file_knowcel_ingestion_v1_ingestion_proto_rawDesc)),
-			NumEnums:      3,
-			NumMessages:   15,
+			NumEnums:      4,
+			NumMessages:   20,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

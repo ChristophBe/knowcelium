@@ -2,6 +2,7 @@ syntax = "proto3";
 
 package knowcel.ingestion.v1;
 
+import "google/protobuf/timestamp.proto";
 import "knowcel/ingestion/v1/ingestion.proto";
 
 option go_package = "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1";
@@ -64,4 +65,65 @@ message ProcessingFailed {
   string document_id = 2;
   string error = 3;
   int32 run = 4;
+}
+
+// SyncOutcome is how a connector's sync run ended.
+enum SyncOutcome {
+  SYNC_OUTCOME_UNSPECIFIED = 0;
+  // Every item synced (items skipped as empty do not count as failures).
+  SYNC_OUTCOME_SUCCEEDED = 1;
+  // Some items synced, others failed.
+  SYNC_OUTCOME_PARTIAL = 2;
+  // The run failed as a whole (bad settings, source unreachable) or no item
+  // synced.
+  SYNC_OUTCOME_FAILED = 3;
+}
+
+// Subject: knowcel.ingestion.connector_synced
+// Published by the worker after each sync run of a connector, for the
+// connector status of the ingestion service (ListConnectors). The service
+// keeps the newest report per connector (by end_time); a lost report only
+// delays the status until the next run. It carries the connector's
+// configuration too, so that a connector appears even when
+// ConnectorsConfigured was lost.
+message ConnectorSynced {
+  // The connector's configured name.
+  string name = 1;
+  SyncOutcome outcome = 2;
+  google.protobuf.Timestamp start_time = 3;
+  google.protobuf.Timestamp end_time = 4;
+  // Documents the connector keeps in sync after the run; unset when the
+  // worker could not tell (its state store failed), which keeps the last count.
+  optional int32 documents = 5;
+  // Why the run failed, or a note about it; empty for a clean run.
+  string error = 6;
+  string kind = 7;
+  bool enabled = 8;
+  // Seconds between syncs.
+  int32 interval_seconds = 9;
+}
+
+// ConnectorConfig is one entry of the connectors file.
+message ConnectorConfig {
+  // The connector's name; "#<position>" for an entry that has none.
+  string name = 1;
+  // Empty when the entry is invalid.
+  string kind = 2;
+  bool enabled = 3;
+  // Seconds between syncs, 0 when the entry is invalid.
+  int32 interval_seconds = 4;
+  // What is wrong with the entry; empty when it is valid. The connector then
+  // reports FAILING with this message.
+  string error = 5;
+}
+
+// Subject: knowcel.ingestion.connectors_configured
+// Published by the worker at start and every few minutes after, with every
+// entry of its connectors file (an empty list when it has none). The service
+// adds the connectors it does not know, updates the others' configuration and
+// forgets the ones no longer listed, so that a removed connector disappears
+// and a connector that never synced is UNKNOWN.
+message ConnectorsConfigured {
+  repeated ConnectorConfig connectors = 1;
+  google.protobuf.Timestamp time = 2;
 }

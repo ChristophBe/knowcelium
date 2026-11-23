@@ -17,6 +17,7 @@ import (
 
 	ingestionv1 "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/app"
+	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/connectors"
 	commonv1 "github.com/ChristophBe/knowcelium/platform/api/go/commonv1"
 	"github.com/ChristophBe/knowcelium/platform/go/grpcserver"
 	"github.com/ChristophBe/knowcelium/platform/go/postgres"
@@ -34,14 +35,25 @@ const (
 // user's as not found.
 type Server struct {
 	ingestionv1.UnimplementedIngestionServiceServer
-	app *app.Service
-	log *slog.Logger
+	app        *app.Service
+	connectors *connectors.Service
+	// callers tells who is a platform admin; only the connector RPCs ask, so
+	// the other calls do not depend on iam.
+	callers *grpcserver.Resolver
+	log     *slog.Logger
 	// PollInterval controls how often WatchJob checks for changes.
 	PollInterval time.Duration
 }
 
 func New(service *app.Service, log *slog.Logger) *Server {
 	return &Server{app: service, log: log, PollInterval: 500 * time.Millisecond}
+}
+
+// WithConnectors serves the connectors' status from c to the platform admins
+// callers knows. Without it ListConnectors and GetConnector are unimplemented.
+func (s *Server) WithConnectors(c *connectors.Service, callers *grpcserver.Resolver) *Server {
+	s.connectors, s.callers = c, callers
+	return s
 }
 
 func (s *Server) CreateUpload(ctx context.Context, req *ingestionv1.CreateUploadRequest) (*ingestionv1.CreateUploadResponse, error) {

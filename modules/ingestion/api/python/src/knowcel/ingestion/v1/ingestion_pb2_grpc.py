@@ -71,6 +71,16 @@ class IngestionServiceStub:
                 request_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobRequest.SerializeToString,
                 response_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobResponse.FromString,
                 _registered_method=True)
+        self.ListConnectors = channel.unary_unary(
+                '/knowcel.ingestion.v1.IngestionService/ListConnectors',
+                request_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsRequest.SerializeToString,
+                response_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsResponse.FromString,
+                _registered_method=True)
+        self.GetConnector = channel.unary_unary(
+                '/knowcel.ingestion.v1.IngestionService/GetConnector',
+                request_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.SerializeToString,
+                response_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.FromString,
+                _registered_method=True)
 
 
 class IngestionServiceServicer:
@@ -141,6 +151,23 @@ class IngestionServiceServicer:
         context.set_details('Method not implemented!')
         raise NotImplementedError('Method not implemented!')
 
+    def ListConnectors(self, request, context):
+        """ListConnectors returns every configured connector with its health.
+        Platform admins only (PERMISSION_DENIED otherwise; UNAVAILABLE while iam,
+        which tells who is one, is down).
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
+    def GetConnector(self, request, context):
+        """GetConnector returns one connector by id (NOT_FOUND when none is
+        configured under it). Platform admins only, like ListConnectors.
+        """
+        context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+        context.set_details('Method not implemented!')
+        raise NotImplementedError('Method not implemented!')
+
 
 def add_IngestionServiceServicer_to_server(servicer, server):
     rpc_method_handlers = {
@@ -178,6 +205,16 @@ def add_IngestionServiceServicer_to_server(servicer, server):
                     servicer.ReprocessJob,
                     request_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobRequest.FromString,
                     response_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobResponse.SerializeToString,
+            ),
+            'ListConnectors': grpc.unary_unary_rpc_method_handler(
+                    servicer.ListConnectors,
+                    request_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsRequest.FromString,
+                    response_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsResponse.SerializeToString,
+            ),
+            'GetConnector': grpc.unary_unary_rpc_method_handler(
+                    servicer.GetConnector,
+                    request_deserializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.FromString,
+                    response_serializer=knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.SerializeToString,
             ),
     }
     generic_handler = grpc.method_handlers_generic_handler(
@@ -371,6 +408,60 @@ class IngestionService:
             '/knowcel.ingestion.v1.IngestionService/ReprocessJob',
             knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobRequest.SerializeToString,
             knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ReprocessJobResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def ListConnectors(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/knowcel.ingestion.v1.IngestionService/ListConnectors',
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsRequest.SerializeToString,
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.ListConnectorsResponse.FromString,
+            options,
+            channel_credentials,
+            insecure,
+            call_credentials,
+            compression,
+            wait_for_ready,
+            timeout,
+            metadata,
+            _registered_method=True)
+
+    @staticmethod
+    def GetConnector(request,
+            target,
+            options=(),
+            channel_credentials=None,
+            call_credentials=None,
+            insecure=False,
+            compression=None,
+            wait_for_ready=None,
+            timeout=None,
+            metadata=None):
+        return grpc.experimental.unary_unary(
+            request,
+            target,
+            '/knowcel.ingestion.v1.IngestionService/GetConnector',
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorRequest.SerializeToString,
+            knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2.GetConnectorResponse.FromString,
             options,
             channel_credentials,
             insecure,

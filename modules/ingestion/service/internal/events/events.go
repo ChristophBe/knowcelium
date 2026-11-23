@@ -17,6 +17,7 @@ import (
 	documentv1 "github.com/ChristophBe/knowcelium/modules/document/api/go/documentv1"
 	ingestionv1 "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/app"
+	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/connectors"
 	"github.com/ChristophBe/knowcelium/platform/go/natsx"
 )
 
@@ -28,6 +29,10 @@ const (
 	SubjectProgress  = "knowcel.ingestion.progress"
 	SubjectProcessed = "knowcel.ingestion.processed"
 	SubjectFailed    = "knowcel.ingestion.failed"
+
+	SubjectConnectorSynced      = "knowcel.ingestion.connector_synced"
+	SubjectConnectorsConfigured = "knowcel.ingestion.connectors_configured"
+	connectorsConsumerName      = "ingestion-service-connectors"
 
 	consumerName = "ingestion-service"
 
@@ -166,6 +171,90 @@ func apply(ctx context.Context, jobs Jobs, subject string, data []byte) error {
 			return nil //nolint:nilerr // malformed events can never succeed; drop them
 		}
 		return jobs.ApplyFailed(ctx, id, ev.GetRun(), ev.GetError())
+	default:
+		return fmt.Errorf("unexpected subject %q", subject)
+	}
+}
+
+// ConnectorStatus receives the worker's connector reports.
+type ConnectorStatus interface {
+	ApplyConfigured(ctx context.Context, configs []connectors.Config, at time.Time) error
+	ApplySynced(ctx context.Context, sync connectors.Sync) error
+}
+
+// ConsumeConnectors applies the connector reports of the worker until ctx
+// ends. It has a consumer of its own, so that reports and job events do not
+// wait for each other.
+func ConsumeConnectors(ctx context.Context, js jetstream.JetStream, status ConnectorStatus, log *slog.Logger) error {
+	cons, err := js.CreateOrUpdateConsumer(ctx, Stream, jetstream.ConsumerConfig{
+		Durable:        connectorsConsumerName,
+		FilterSubjects: []string{SubjectConnectorsConfigured, SubjectConnectorSynced},
+		AckPolicy:      jetstream.AckExplicitPolicy,
+	})
+	if err != nil {
+		return err
+	}
+	cc, err := cons.Consume(func(msg jetstream.Msg) {
+		ctx, end := natsx.Receive(ctx, msg)
+		err := applyConnector(ctx, status, msg.Subject(), msg.Data())
+		end(err)
+		if err != nil {
+			log.ErrorContext(ctx, "apply event", "subject", msg.Subject(), "error", err)
+			_ = msg.Nak()
+			return
+		}
+		_ = msg.Ack()
+	})
+	if err != nil {
+		return err
+	}
+	<-ctx.Done()
+	cc.Stop()
+	return nil
+}
+
+func applyConnector(ctx context.Context, status ConnectorStatus, subject string, data []byte) error {
+	switch subject {
+	case SubjectConnectorsConfigured:
+		var ev ingestionv1.ConnectorsConfigured
+		if err := proto.Unmarshal(data, &ev); err != nil {
+			return err
+		}
+		configs := make([]connectors.Config, 0, len(ev.GetConnectors()))
+		for _, c := range ev.GetConnectors() {
+			configs = append(configs, connectors.Config{
+				Name:     c.GetName(),
+				Kind:     c.GetKind(),
+				Enabled:  c.GetEnabled(),
+				Interval: time.Duration(c.GetIntervalSeconds()) * time.Second,
+				Error:    c.GetError(),
+			})
+		}
+		return status.ApplyConfigured(ctx, configs, ev.GetTime().AsTime())
+	case SubjectConnectorSynced:
+		var ev ingestionv1.ConnectorSynced
+		if err := proto.Unmarshal(data, &ev); err != nil {
+			return err
+		}
+		if ev.GetName() == "" || ev.GetEndTime() == nil {
+			return nil // malformed events can never succeed; drop them
+		}
+		sync := connectors.Sync{
+			Name:     ev.GetName(),
+			Outcome:  ev.GetOutcome(),
+			End:      ev.GetEndTime().AsTime(),
+			Error:    ev.GetError(),
+			Kind:     ev.GetKind(),
+			Enabled:  ev.GetEnabled(),
+			Interval: time.Duration(ev.GetIntervalSeconds()) * time.Second,
+		}
+		if ev.Documents != nil {
+			sync.Documents = ev.Documents
+		}
+		if ev.GetStartTime() != nil {
+			sync.Start = ev.GetStartTime().AsTime()
+		}
+		return status.ApplySynced(ctx, sync)
 	default:
 		return fmt.Errorf("unexpected subject %q", subject)
 	}

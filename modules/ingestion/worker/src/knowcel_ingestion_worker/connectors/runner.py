@@ -20,6 +20,7 @@ import grpc
 from .library import DocumentGoneError, Library
 from .model import ConnectorError, Record
 from .registry import KINDS
+from .reporting import NullReporter, Reporter, SyncReport, SyncResult
 from .spec import ConnectorSpec, describe
 from .state import State, item_key, lease_key, status_key
 
@@ -57,9 +58,11 @@ class Runner:
         state: State,
         clock: Callable[[], datetime] = now,
         holder: str | None = None,
+        reporter: Reporter | None = None,
     ) -> None:
         self._library = library
         self._state = state
+        self._reporter = reporter or NullReporter()
         self._clock = clock
         self._holder = holder or uuid.uuid4().hex
         self._renewed = clock()
@@ -80,22 +83,27 @@ class Runner:
         started = self._renewed
         status: dict[str, Any] | None = None
         outcome = None
+        failure = ""  # why the run failed as a whole
+        ended = started
         try:
             status = await self._state.get(status_key(spec.name)) or {}
             status["last_start"] = started.isoformat()
             outcome = await self._run(spec, status, started)
         except ConnectorError as err:
             log.warning("connector %s cannot sync: %s", spec.name, err)
+            failure = str(err)
             if status is not None:
-                status["last_error"] = str(err)
+                status["last_error"] = failure
         except Exception as err:
             log.exception("connector %s failed", spec.name)
+            failure = _brief(err)
             if status is not None:
-                status["last_error"] = _brief(err)
+                status["last_error"] = failure
         finally:
             try:
+                ended = self._clock()
                 if status is not None:
-                    status["last_end"] = self._clock().isoformat()
+                    status["last_end"] = ended.isoformat()
                     await self._state.put(status_key(spec.name), status)
             except Exception:
                 log.exception("connector %s: cannot record its status", spec.name)
@@ -105,6 +113,7 @@ class Runner:
                 except Exception:
                     # The lease expires on its own.
                     log.exception("connector %s: cannot release its lease", spec.name)
+        await self._reporter.synced(_report(spec, started, ended, outcome, failure, status))
         return outcome
 
     async def _keep_lease(self, spec: ConnectorSpec) -> None:
@@ -261,6 +270,40 @@ class Runner:
                 continue
             await self._state.delete(key)
             outcome.deleted += 1
+
+
+def _report(
+    spec: ConnectorSpec,
+    started: datetime,
+    ended: datetime,
+    outcome: Outcome | None,
+    failure: str,
+    status: dict[str, Any] | None,
+) -> SyncReport:
+    """What a sync run says about its connector: it failed as a whole, failed
+    in part (some items synced, others did not) or went through."""
+    if outcome is None:
+        result, error = SyncResult.FAILED, failure
+    else:
+        error = (status or {}).get("last_error", "")
+        if not outcome.failed:
+            result = SyncResult.SUCCEEDED
+        elif outcome.created + outcome.updated + outcome.deleted + outcome.unchanged:
+            result = SyncResult.PARTIAL
+        else:
+            result = SyncResult.FAILED
+    documents = status.get("documents") if status else None
+    return SyncReport(
+        spec.name,
+        result,
+        started,
+        ended,
+        None if documents is None else int(documents),
+        error,
+        spec.kind,
+        spec.enabled,
+        spec.interval_seconds,
+    )
 
 
 def _parse(value: str | None) -> datetime | None:

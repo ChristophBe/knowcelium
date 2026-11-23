@@ -5,13 +5,16 @@ import (
 	"errors"
 	"slices"
 	"testing"
+	"time"
 
 	"github.com/google/uuid"
 	"google.golang.org/protobuf/proto"
+	"google.golang.org/protobuf/types/known/timestamppb"
 
 	documentv1 "github.com/ChristophBe/knowcelium/modules/document/api/go/documentv1"
 	ingestionv1 "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/app"
+	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/connectors"
 )
 
 type fakeJobs struct {
@@ -175,5 +178,93 @@ func TestReindexDropsMalformedEvents(t *testing.T) {
 	}
 	if f.calls != 0 {
 		t.Errorf("reindexer called %d times", f.calls)
+	}
+}
+
+type fakeStatus struct {
+	configs []connectors.Config
+	at      time.Time
+	synced  []connectors.Sync
+	err     error
+}
+
+func (f *fakeStatus) ApplyConfigured(_ context.Context, c []connectors.Config, at time.Time) error {
+	f.configs, f.at = c, at
+	return f.err
+}
+
+func (f *fakeStatus) ApplySynced(_ context.Context, s connectors.Sync) error {
+	f.synced = append(f.synced, s)
+	return f.err
+}
+
+func TestApplyConnectorDecodesConfiguredEvents(t *testing.T) {
+	status := &fakeStatus{}
+	at := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	ev := &ingestionv1.ConnectorsConfigured{Time: timestamppb.New(at), Connectors: []*ingestionv1.ConnectorConfig{
+		{Name: "docs", Kind: "folder", Enabled: true, IntervalSeconds: 300},
+		{Name: "#2", Error: "unknown kind"},
+	}}
+	if err := applyConnector(t.Context(), status, SubjectConnectorsConfigured, marshal(t, ev)); err != nil {
+		t.Fatal(err)
+	}
+	want := []connectors.Config{{Name: "docs", Kind: "folder", Enabled: true, Interval: 5 * time.Minute}, {Name: "#2", Error: "unknown kind"}}
+	if !slices.Equal(status.configs, want) || !status.at.Equal(at) {
+		t.Errorf("configs = %+v at %v", status.configs, status.at)
+	}
+}
+
+func TestApplyConnectorDecodesSyncEvents(t *testing.T) {
+	status := &fakeStatus{}
+	start := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	docs := int32(4)
+	ev := &ingestionv1.ConnectorSynced{
+		Name: "docs", Outcome: ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL, Documents: &docs, Error: "1 items failed",
+		StartTime: timestamppb.New(start), EndTime: timestamppb.New(start.Add(time.Minute)),
+		Kind: "folder", Enabled: true, IntervalSeconds: 300,
+	}
+	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil {
+		t.Fatal(err)
+	}
+	got := status.synced[0]
+	if len(status.synced) != 1 || got.Name != "docs" || got.Outcome != ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL ||
+		!got.Start.Equal(start) || !got.End.Equal(start.Add(time.Minute)) || got.Documents == nil || *got.Documents != 4 ||
+		got.Error != "1 items failed" || got.Kind != "folder" || !got.Enabled || got.Interval != 5*time.Minute {
+		t.Errorf("synced = %+v", status.synced)
+	}
+	// A run that failed before it started has no start time.
+	// An unknown document count stays unknown.
+	ev.StartTime, ev.Documents = nil, nil
+	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil ||
+		!status.synced[1].Start.IsZero() || status.synced[1].Documents != nil {
+		t.Errorf("without start: %+v, %v", status.synced, err)
+	}
+}
+
+func TestApplyConnectorDropsMalformedAndReturnsErrors(t *testing.T) {
+	status := &fakeStatus{}
+	noEnd := &ingestionv1.ConnectorSynced{Name: "docs"}
+	noName := &ingestionv1.ConnectorSynced{EndTime: timestamppb.Now()}
+	for _, ev := range []*ingestionv1.ConnectorSynced{noEnd, noName} {
+		if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil {
+			t.Errorf("malformed event: err = %v, want it dropped", err)
+		}
+	}
+	if len(status.synced) != 0 {
+		t.Errorf("synced = %+v", status.synced)
+	}
+	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, []byte{0xff}); err == nil {
+		t.Error("garbage payload was accepted")
+	}
+	if err := applyConnector(t.Context(), status, SubjectConnectorsConfigured, []byte{0xff}); err == nil {
+		t.Error("garbage payload was accepted")
+	}
+	if err := applyConnector(t.Context(), status, SubjectUploaded, nil); err == nil {
+		t.Error("unexpected subject was accepted")
+	}
+	status.err = errors.New("db down")
+	ev := &ingestionv1.ConnectorSynced{Name: "docs", EndTime: timestamppb.Now()}
+	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err == nil {
+		t.Error("a failing store must fail the event so it is redelivered")
 	}
 }

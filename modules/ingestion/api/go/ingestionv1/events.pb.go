@@ -9,6 +9,7 @@ package ingestionv1
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -20,6 +21,63 @@ const (
 	// Verify that runtime/protoimpl is sufficiently up-to-date.
 	_ = protoimpl.EnforceVersion(protoimpl.MaxVersion - 20)
 )
+
+// SyncOutcome is how a connector's sync run ended.
+type SyncOutcome int32
+
+const (
+	SyncOutcome_SYNC_OUTCOME_UNSPECIFIED SyncOutcome = 0
+	// Every item synced (items skipped as empty do not count as failures).
+	SyncOutcome_SYNC_OUTCOME_SUCCEEDED SyncOutcome = 1
+	// Some items synced, others failed.
+	SyncOutcome_SYNC_OUTCOME_PARTIAL SyncOutcome = 2
+	// The run failed as a whole (bad settings, source unreachable) or no item
+	// synced.
+	SyncOutcome_SYNC_OUTCOME_FAILED SyncOutcome = 3
+)
+
+// Enum value maps for SyncOutcome.
+var (
+	SyncOutcome_name = map[int32]string{
+		0: "SYNC_OUTCOME_UNSPECIFIED",
+		1: "SYNC_OUTCOME_SUCCEEDED",
+		2: "SYNC_OUTCOME_PARTIAL",
+		3: "SYNC_OUTCOME_FAILED",
+	}
+	SyncOutcome_value = map[string]int32{
+		"SYNC_OUTCOME_UNSPECIFIED": 0,
+		"SYNC_OUTCOME_SUCCEEDED":   1,
+		"SYNC_OUTCOME_PARTIAL":     2,
+		"SYNC_OUTCOME_FAILED":      3,
+	}
+)
+
+func (x SyncOutcome) Enum() *SyncOutcome {
+	p := new(SyncOutcome)
+	*p = x
+	return p
+}
+
+func (x SyncOutcome) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (SyncOutcome) Descriptor() protoreflect.EnumDescriptor {
+	return file_knowcel_ingestion_v1_events_proto_enumTypes[0].Descriptor()
+}
+
+func (SyncOutcome) Type() protoreflect.EnumType {
+	return &file_knowcel_ingestion_v1_events_proto_enumTypes[0]
+}
+
+func (x SyncOutcome) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use SyncOutcome.Descriptor instead.
+func (SyncOutcome) EnumDescriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{0}
+}
 
 // Subject: knowcel.ingestion.uploaded
 type DocumentUploaded struct {
@@ -399,11 +457,271 @@ func (x *ProcessingFailed) GetRun() int32 {
 	return 0
 }
 
+// Subject: knowcel.ingestion.connector_synced
+// Published by the worker after each sync run of a connector, for the
+// connector status of the ingestion service (ListConnectors). The service
+// keeps the newest report per connector (by end_time); a lost report only
+// delays the status until the next run. It carries the connector's
+// configuration too, so that a connector appears even when
+// ConnectorsConfigured was lost.
+type ConnectorSynced struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The connector's configured name.
+	Name      string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Outcome   SyncOutcome            `protobuf:"varint,2,opt,name=outcome,proto3,enum=knowcel.ingestion.v1.SyncOutcome" json:"outcome,omitempty"`
+	StartTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
+	EndTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
+	// Documents the connector keeps in sync after the run; unset when the
+	// worker could not tell (its state store failed), which keeps the last count.
+	Documents *int32 `protobuf:"varint,5,opt,name=documents,proto3,oneof" json:"documents,omitempty"`
+	// Why the run failed, or a note about it; empty for a clean run.
+	Error   string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Kind    string `protobuf:"bytes,7,opt,name=kind,proto3" json:"kind,omitempty"`
+	Enabled bool   `protobuf:"varint,8,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Seconds between syncs.
+	IntervalSeconds int32 `protobuf:"varint,9,opt,name=interval_seconds,json=intervalSeconds,proto3" json:"interval_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
+}
+
+func (x *ConnectorSynced) Reset() {
+	*x = ConnectorSynced{}
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[5]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorSynced) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorSynced) ProtoMessage() {}
+
+func (x *ConnectorSynced) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[5]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorSynced.ProtoReflect.Descriptor instead.
+func (*ConnectorSynced) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{5}
+}
+
+func (x *ConnectorSynced) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ConnectorSynced) GetOutcome() SyncOutcome {
+	if x != nil {
+		return x.Outcome
+	}
+	return SyncOutcome_SYNC_OUTCOME_UNSPECIFIED
+}
+
+func (x *ConnectorSynced) GetStartTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.StartTime
+	}
+	return nil
+}
+
+func (x *ConnectorSynced) GetEndTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.EndTime
+	}
+	return nil
+}
+
+func (x *ConnectorSynced) GetDocuments() int32 {
+	if x != nil && x.Documents != nil {
+		return *x.Documents
+	}
+	return 0
+}
+
+func (x *ConnectorSynced) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+func (x *ConnectorSynced) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ConnectorSynced) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ConnectorSynced) GetIntervalSeconds() int32 {
+	if x != nil {
+		return x.IntervalSeconds
+	}
+	return 0
+}
+
+// ConnectorConfig is one entry of the connectors file.
+type ConnectorConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The connector's name; "#<position>" for an entry that has none.
+	Name string `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	// Empty when the entry is invalid.
+	Kind    string `protobuf:"bytes,2,opt,name=kind,proto3" json:"kind,omitempty"`
+	Enabled bool   `protobuf:"varint,3,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Seconds between syncs, 0 when the entry is invalid.
+	IntervalSeconds int32 `protobuf:"varint,4,opt,name=interval_seconds,json=intervalSeconds,proto3" json:"interval_seconds,omitempty"`
+	// What is wrong with the entry; empty when it is valid. The connector then
+	// reports FAILING with this message.
+	Error         string `protobuf:"bytes,5,opt,name=error,proto3" json:"error,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConnectorConfig) Reset() {
+	*x = ConnectorConfig{}
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[6]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorConfig) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorConfig) ProtoMessage() {}
+
+func (x *ConnectorConfig) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[6]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorConfig.ProtoReflect.Descriptor instead.
+func (*ConnectorConfig) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{6}
+}
+
+func (x *ConnectorConfig) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ConnectorConfig) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ConnectorConfig) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ConnectorConfig) GetIntervalSeconds() int32 {
+	if x != nil {
+		return x.IntervalSeconds
+	}
+	return 0
+}
+
+func (x *ConnectorConfig) GetError() string {
+	if x != nil {
+		return x.Error
+	}
+	return ""
+}
+
+// Subject: knowcel.ingestion.connectors_configured
+// Published by the worker at start and every few minutes after, with every
+// entry of its connectors file (an empty list when it has none). The service
+// adds the connectors it does not know, updates the others' configuration and
+// forgets the ones no longer listed, so that a removed connector disappears
+// and a connector that never synced is UNKNOWN.
+type ConnectorsConfigured struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Connectors    []*ConnectorConfig     `protobuf:"bytes,1,rep,name=connectors,proto3" json:"connectors,omitempty"`
+	Time          *timestamppb.Timestamp `protobuf:"bytes,2,opt,name=time,proto3" json:"time,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ConnectorsConfigured) Reset() {
+	*x = ConnectorsConfigured{}
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[7]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorsConfigured) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorsConfigured) ProtoMessage() {}
+
+func (x *ConnectorsConfigured) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[7]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorsConfigured.ProtoReflect.Descriptor instead.
+func (*ConnectorsConfigured) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{7}
+}
+
+func (x *ConnectorsConfigured) GetConnectors() []*ConnectorConfig {
+	if x != nil {
+		return x.Connectors
+	}
+	return nil
+}
+
+func (x *ConnectorsConfigured) GetTime() *timestamppb.Timestamp {
+	if x != nil {
+		return x.Time
+	}
+	return nil
+}
+
 var File_knowcel_ingestion_v1_events_proto protoreflect.FileDescriptor
 
 const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
 	"\n" +
-	"!knowcel/ingestion/v1/events.proto\x12\x14knowcel.ingestion.v1\x1a$knowcel/ingestion/v1/ingestion.proto\"\xb6\x01\n" +
+	"!knowcel/ingestion/v1/events.proto\x12\x14knowcel.ingestion.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a$knowcel/ingestion/v1/ingestion.proto\"\xb6\x01\n" +
 	"\x10DocumentUploaded\x12\x15\n" +
 	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n" +
 	"\vdocument_id\x18\x02 \x01(\tR\n" +
@@ -437,7 +755,36 @@ const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
 	"\vdocument_id\x18\x02 \x01(\tR\n" +
 	"documentId\x12\x14\n" +
 	"\x05error\x18\x03 \x01(\tR\x05error\x12\x10\n" +
-	"\x03run\x18\x04 \x01(\x05R\x03runBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
+	"\x03run\x18\x04 \x01(\x05R\x03run\"\xf4\x02\n" +
+	"\x0fConnectorSynced\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
+	"\aoutcome\x18\x02 \x01(\x0e2!.knowcel.ingestion.v1.SyncOutcomeR\aoutcome\x129\n" +
+	"\n" +
+	"start_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
+	"\bend_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12!\n" +
+	"\tdocuments\x18\x05 \x01(\x05H\x00R\tdocuments\x88\x01\x01\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x12\x12\n" +
+	"\x04kind\x18\a \x01(\tR\x04kind\x12\x18\n" +
+	"\aenabled\x18\b \x01(\bR\aenabled\x12)\n" +
+	"\x10interval_seconds\x18\t \x01(\x05R\x0fintervalSecondsB\f\n" +
+	"\n" +
+	"_documents\"\x94\x01\n" +
+	"\x0fConnectorConfig\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
+	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x18\n" +
+	"\aenabled\x18\x03 \x01(\bR\aenabled\x12)\n" +
+	"\x10interval_seconds\x18\x04 \x01(\x05R\x0fintervalSeconds\x12\x14\n" +
+	"\x05error\x18\x05 \x01(\tR\x05error\"\x8d\x01\n" +
+	"\x14ConnectorsConfigured\x12E\n" +
+	"\n" +
+	"connectors\x18\x01 \x03(\v2%.knowcel.ingestion.v1.ConnectorConfigR\n" +
+	"connectors\x12.\n" +
+	"\x04time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04time*z\n" +
+	"\vSyncOutcome\x12\x1c\n" +
+	"\x18SYNC_OUTCOME_UNSPECIFIED\x10\x00\x12\x1a\n" +
+	"\x16SYNC_OUTCOME_SUCCEEDED\x10\x01\x12\x18\n" +
+	"\x14SYNC_OUTCOME_PARTIAL\x10\x02\x12\x17\n" +
+	"\x13SYNC_OUTCOME_FAILED\x10\x03BTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3"
 
 var (
 	file_knowcel_ingestion_v1_events_proto_rawDescOnce sync.Once
@@ -451,22 +798,33 @@ func file_knowcel_ingestion_v1_events_proto_rawDescGZIP() []byte {
 	return file_knowcel_ingestion_v1_events_proto_rawDescData
 }
 
-var file_knowcel_ingestion_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 5)
+var file_knowcel_ingestion_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
+var file_knowcel_ingestion_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_knowcel_ingestion_v1_events_proto_goTypes = []any{
-	(*DocumentUploaded)(nil),   // 0: knowcel.ingestion.v1.DocumentUploaded
-	(*ProcessingStarted)(nil),  // 1: knowcel.ingestion.v1.ProcessingStarted
-	(*ProcessingProgress)(nil), // 2: knowcel.ingestion.v1.ProcessingProgress
-	(*DocumentProcessed)(nil),  // 3: knowcel.ingestion.v1.DocumentProcessed
-	(*ProcessingFailed)(nil),   // 4: knowcel.ingestion.v1.ProcessingFailed
-	(JobStage)(0),              // 5: knowcel.ingestion.v1.JobStage
+	(SyncOutcome)(0),              // 0: knowcel.ingestion.v1.SyncOutcome
+	(*DocumentUploaded)(nil),      // 1: knowcel.ingestion.v1.DocumentUploaded
+	(*ProcessingStarted)(nil),     // 2: knowcel.ingestion.v1.ProcessingStarted
+	(*ProcessingProgress)(nil),    // 3: knowcel.ingestion.v1.ProcessingProgress
+	(*DocumentProcessed)(nil),     // 4: knowcel.ingestion.v1.DocumentProcessed
+	(*ProcessingFailed)(nil),      // 5: knowcel.ingestion.v1.ProcessingFailed
+	(*ConnectorSynced)(nil),       // 6: knowcel.ingestion.v1.ConnectorSynced
+	(*ConnectorConfig)(nil),       // 7: knowcel.ingestion.v1.ConnectorConfig
+	(*ConnectorsConfigured)(nil),  // 8: knowcel.ingestion.v1.ConnectorsConfigured
+	(JobStage)(0),                 // 9: knowcel.ingestion.v1.JobStage
+	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
 }
 var file_knowcel_ingestion_v1_events_proto_depIdxs = []int32{
-	5, // 0: knowcel.ingestion.v1.ProcessingProgress.stage:type_name -> knowcel.ingestion.v1.JobStage
-	1, // [1:1] is the sub-list for method output_type
-	1, // [1:1] is the sub-list for method input_type
-	1, // [1:1] is the sub-list for extension type_name
-	1, // [1:1] is the sub-list for extension extendee
-	0, // [0:1] is the sub-list for field type_name
+	9,  // 0: knowcel.ingestion.v1.ProcessingProgress.stage:type_name -> knowcel.ingestion.v1.JobStage
+	0,  // 1: knowcel.ingestion.v1.ConnectorSynced.outcome:type_name -> knowcel.ingestion.v1.SyncOutcome
+	10, // 2: knowcel.ingestion.v1.ConnectorSynced.start_time:type_name -> google.protobuf.Timestamp
+	10, // 3: knowcel.ingestion.v1.ConnectorSynced.end_time:type_name -> google.protobuf.Timestamp
+	7,  // 4: knowcel.ingestion.v1.ConnectorsConfigured.connectors:type_name -> knowcel.ingestion.v1.ConnectorConfig
+	10, // 5: knowcel.ingestion.v1.ConnectorsConfigured.time:type_name -> google.protobuf.Timestamp
+	6,  // [6:6] is the sub-list for method output_type
+	6,  // [6:6] is the sub-list for method input_type
+	6,  // [6:6] is the sub-list for extension type_name
+	6,  // [6:6] is the sub-list for extension extendee
+	0,  // [0:6] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_ingestion_v1_events_proto_init() }
@@ -475,18 +833,20 @@ func file_knowcel_ingestion_v1_events_proto_init() {
 		return
 	}
 	file_knowcel_ingestion_v1_ingestion_proto_init()
+	file_knowcel_ingestion_v1_events_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_ingestion_v1_events_proto_rawDesc), len(file_knowcel_ingestion_v1_events_proto_rawDesc)),
-			NumEnums:      0,
-			NumMessages:   5,
+			NumEnums:      1,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   0,
 		},
 		GoTypes:           file_knowcel_ingestion_v1_events_proto_goTypes,
 		DependencyIndexes: file_knowcel_ingestion_v1_events_proto_depIdxs,
+		EnumInfos:         file_knowcel_ingestion_v1_events_proto_enumTypes,
 		MessageInfos:      file_knowcel_ingestion_v1_events_proto_msgTypes,
 	}.Build()
 	File_knowcel_ingestion_v1_events_proto = out.File
