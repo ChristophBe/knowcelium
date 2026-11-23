@@ -32,6 +32,8 @@ The two systems are linked by supplier IDs (`SUP-1001` to `SUP-1008`): engineeri
 name a `supplier_id` that exists in logistics, and logistics stock and shipments name the `part_id` they cover.
 Several shipments are delayed (`status: delayed`, with `delay_days` and `delay_reason`).
 
+The `showcase_engineering` and `showcase_logistics` connectors sync them into documents (see [Connectors](../../docs/operations/connectors.md#showcase-connectors)); `task showcase:up` starts the stack with the mocks and both connectors enabled.
+
 ```sh
 uv run pytest -q --rootdir examples/showcase examples/showcase   # unit tests
 ```

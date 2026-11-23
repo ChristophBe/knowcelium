@@ -1,6 +1,6 @@
 # Connectors
 
-A connector keeps documents in step with an external system. The ingestion worker runs the connectors listed in its connectors file on a schedule: it lists what the source has, adds documents for new items, replaces the file of changed ones and deletes the documents of items that are gone. Everything it creates goes through the same upload, processing and access rules as a user's upload. The first connector, `folder`, watches a directory. To write one, see [Build a connector](../connectors.md). The runtime lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`.
+A connector keeps documents in step with an external system. The ingestion worker runs the connectors listed in its connectors file on a schedule: it lists what the source has, adds documents for new items, replaces the file of changed ones and deletes the documents of items that are gone. Everything it creates goes through the same upload, processing and access rules as a user's upload. The `folder` connector watches a directory; two more, `showcase_engineering` and `showcase_logistics`, read the mock systems of the [showcase](#showcase-connectors). To write one, see [Build a connector](../connectors.md). The runtime lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`.
 
 ## Configure a connector
 
@@ -53,6 +53,20 @@ A connector whose kind implements `search` can also be asked at question time, s
 | `recursive` | Also read subdirectories (default `true`). |
 
 It reads the file types the worker can process (PDF, Word, HTML, Markdown and plain text formats) and skips hidden files and directories and files that are links leading outside the folder (a warning in the log names them). A folder that cannot be read or is missing fails the run instead of counting as empty, and so does a path inside it that cannot be read: the documents are kept. Live search finds the paragraphs of its text, Markdown and HTML files that contain the words of the question (PDF and Word files are only found once synced). A file's external id is its path inside the folder, so editing it replaces the document's file and removing it deletes the document. Renaming or moving a file removes the old document and adds a new one.
+
+## Showcase connectors
+
+`showcase_engineering` and `showcase_logistics` sync the mock engineering and logistics systems of the fictional e-bike maker Velora Mobility (`examples/showcase/`). They are examples of the [connector SDK](../connectors.md) and are not started with the main stack. `task showcase:up` starts the stack with both mock systems and mounts `examples/showcase/connectors.yaml` (public documents, a sync every minute) instead of the default connectors file, whatever `KNOWCEL_CONNECTORS_CONFIG` says in `.env`. The owner is the dev admin `alice@example.com` by her id; until she has signed in once every sync fails with "not a platform admin" and is retried at the next interval.
+
+| Setting | Meaning |
+|---|---|
+| `base_url` | The mock system as the worker reaches it (`http://showcase-engineering:8091`, `http://showcase-logistics:8092`). |
+| `page_size` | Records per request, 1 to 100 (default 50). |
+| `timeout_seconds` | Seconds a request may wait for connecting, sending and each answer (default 10). |
+
+- **Engineering** creates a document per part, specification and change request. A document's metadata names the `supplier_id` (and `part_id` or `part_ids`), which links it to the logistics documents.
+- **Logistics** creates a document per supplier and stock record, with `supplier_id` and `part_id` in the metadata. Shipments are not copied: their status changes too quickly, so the connector answers `search` by asking the system (shipment status, delays, shipments of a supplier named by its ID). Live retrieval does not call it yet.
+- Both ask only for records updated since the last successful sync, so a second sync changes nothing and an edited record replaces its document. The mock systems never delete records, so nothing is deleted.
 
 ## How a sync works
 
