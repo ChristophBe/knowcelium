@@ -100,10 +100,12 @@ class FolderConnector(Connector[FolderConfig]):
         words = set(re.findall(r"\w{3,}", query.lower()))
         if not words:
             return []
+        # A folder that is not mounted is an error, not a search without hits.
         try:
-            files, _ = await asyncio.to_thread(self._files)
+            await asyncio.to_thread(self._check_readable)
         except OSError as err:
             raise ConnectorError(f"cannot read the folder {self._root}: {err}") from err
+        files, _ = await asyncio.to_thread(self._files)
         found: list[tuple[int, Snippet]] = []
         for relative, path in files:
             if pathlib.PurePath(relative).suffix.lower() not in TEXT_SUFFIXES | HTML_SUFFIXES:

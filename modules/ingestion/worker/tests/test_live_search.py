@@ -205,7 +205,8 @@ async def test_the_folder_finds_paragraphs_with_the_words(tmp_path: pathlib.Path
     assert await folder.search("unrelated words", 5) == []
 
 
-async def test_a_vanished_folder_has_nothing_to_find(tmp_path: pathlib.Path):
+async def test_a_vanished_folder_is_an_error_not_an_empty_result(tmp_path: pathlib.Path):
     folder = FolderConnector(FolderConfig(path=str(tmp_path)))
     await asyncio.to_thread(tmp_path.rmdir)
-    assert await folder.search("anything", 5) == []
+    with pytest.raises(ConnectorError, match="cannot read the folder"):
+        await folder.search("anything", 5)

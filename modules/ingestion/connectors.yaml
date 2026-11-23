@@ -10,4 +10,17 @@
 #     interval_seconds: 60
 #     settings:
 #       path: /watch
+#
+# A connector that is only searched live, at question time (see "Live search"
+# in docs/operations/connectors.md); everyone who may read it sees what its
+# search returns, so enable it only for sources where that is fine:
+#
+#   - name: stock
+#     kind: folder
+#     owner: 3f5c6d3e-0000-0000-0000-000000000000
+#     public: true
+#     sync: false
+#     live_search: true
+#     settings:
+#       path: /watch
 connectors: []
