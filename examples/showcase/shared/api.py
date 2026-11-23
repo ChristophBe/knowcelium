@@ -14,7 +14,7 @@ from collections.abc import Callable, Iterable, Mapping, Sequence
 from datetime import UTC, datetime
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
-from urllib.parse import parse_qs, urlsplit
+from urllib.parse import parse_qs, unquote, urlsplit
 
 type Record = Mapping[str, Any]
 type Query = Mapping[str, str]
@@ -22,6 +22,7 @@ type Handler = Callable[[Query, re.Match[str]], Any]
 
 DEFAULT_LIMIT = 20
 MAX_LIMIT = 100
+PAGING_PARAMS = ("limit", "offset", "updated_since")
 
 log = logging.getLogger("showcase")
 
@@ -35,8 +36,13 @@ class ApiError(Exception):
         self.message = message
 
 
+_SPACED_OFFSET = re.compile(r"(T[\d:.]+) (\d{2}:\d{2})$")
+
+
 def parse_time(value: str) -> datetime:
     """Parse an ISO 8601 timestamp; one without an offset is taken as UTC."""
+    # An unencoded `+` in a query string arrives as a space: `T10:00:00+01:00` -> `T10:00:00 01:00`.
+    value = _SPACED_OFFSET.sub(r"\1+\2", value)
     try:
         parsed = datetime.fromisoformat(value)
     except ValueError:
@@ -98,11 +104,13 @@ class Router:
     """GET routes by path pattern; a handler returns the JSON body."""
 
     def __init__(self) -> None:
-        self._routes: list[tuple[re.Pattern[str], Handler]] = []
+        self._routes: list[tuple[re.Pattern[str], frozenset[str], Handler]] = []
 
-    def get(self, pattern: str) -> Callable[[Handler], Handler]:
+    def get(self, pattern: str, *, params: Iterable[str] = ()) -> Callable[[Handler], Handler]:
+        """Register a handler; `params` are the query parameters it accepts (others are a 400)."""
+
         def register(handler: Handler) -> Handler:
-            self._routes.append((re.compile(pattern), handler))
+            self._routes.append((re.compile(pattern), frozenset(params), handler))
             return handler
 
         return register
@@ -110,14 +118,30 @@ class Router:
     def dispatch(self, target: str) -> tuple[int, Any]:
         """The status and JSON body for a request target (path and query string)."""
         parts = urlsplit(target)
-        query = {k: v[-1] for k, v in parse_qs(parts.query).items()}
+        # Decode each segment, so an encoded ID (`P%2D1001`) matches; `%2F` stays a separator.
+        path = "/".join(unquote(seg) for seg in parts.path.split("/")).rstrip("/") or "/"
+        query = {k: v[-1] for k, v in parse_qs(parts.query, keep_blank_values=True).items()}
         try:
-            for pattern, handler in self._routes:
-                if match := pattern.fullmatch(parts.path.rstrip("/") or "/"):
+            for pattern, allowed, handler in self._routes:
+                if match := pattern.fullmatch(path):
+                    _check_params(query, allowed)
                     return 200, handler(query, match)
         except ApiError as err:
             return err.status, {"error": err.message}
+        except Exception:
+            log.exception("unhandled error for %s", target)
+            return 500, {"error": "internal server error"}
         return 404, {"error": "not found"}
+
+
+def _check_params(query: Query, allowed: frozenset[str]) -> None:
+    unknown = sorted(set(query) - allowed)
+    if unknown:
+        accepted = ", ".join(sorted(allowed)) or "none"
+        raise ApiError(400, f"unknown query parameter {', '.join(unknown)} (accepted: {accepted})")
+    blank = sorted(k for k, v in query.items() if not v.strip())
+    if blank:
+        raise ApiError(400, f"query parameter {', '.join(blank)} must not be empty")
 
 
 def lookup(records: Iterable[Record], record_id: str) -> Record:

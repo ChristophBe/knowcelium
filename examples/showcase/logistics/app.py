@@ -6,7 +6,7 @@ import re
 from collections.abc import Sequence
 from typing import Any
 
-from shared.api import ApiError, Query, Record, Router, lookup, paginate, search
+from shared.api import PAGING_PARAMS, ApiError, Query, Record, Router, lookup, paginate, search
 
 from . import data
 
@@ -34,7 +34,7 @@ def health(_query: Query, _match: re.Match[str]) -> Any:
     return {"status": "ok"}
 
 
-@router.get("/suppliers")
+@router.get("/suppliers", params=PAGING_PARAMS)
 def list_suppliers(query: Query, _match: re.Match[str]) -> Any:
     return paginate(SUPPLIERS, query)
 
@@ -44,14 +44,19 @@ def get_supplier(_query: Query, match: re.Match[str]) -> Any:
     return lookup(SUPPLIERS, match["id"])
 
 
-@router.get("/stock")
+@router.get("/stock", params=(*PAGING_PARAMS, "supplier_id", "part_id"))
 def list_stock(query: Query, _match: re.Match[str]) -> Any:
     return paginate(_where(STOCK, query, "supplier_id", "part_id"), query)
 
 
-@router.get("/shipments")
+@router.get("/shipments", params=(*PAGING_PARAMS, "supplier_id", "status"))
 def list_shipments(query: Query, _match: re.Match[str]) -> Any:
     return paginate(_where(SHIPMENTS, query, "supplier_id", "status"), query)
+
+
+@router.get("/stock/(?P<id>[^/]+)")
+def get_stock(_query: Query, match: re.Match[str]) -> Any:
+    return lookup(STOCK, match["id"])
 
 
 @router.get("/shipments/(?P<id>[^/]+)")
@@ -59,7 +64,7 @@ def get_shipment(_query: Query, match: re.Match[str]) -> Any:
     return lookup(SHIPMENTS, match["id"])
 
 
-@router.get("/search")
+@router.get("/search", params=(*PAGING_PARAMS, "q", "type"))
 def search_all(query: Query, _match: re.Match[str]) -> Any:
     """Full-text search over suppliers, stock and shipments; each hit carries its `type`.
 
