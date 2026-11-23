@@ -57,13 +57,22 @@ async def run(
         )
         search = LiveSearch(loaded.specs, library.ensure_admin)
 
-        async def answer(msg: Msg) -> None:
+        tasks: set[asyncio.Task[None]] = set()
+
+        async def reply(msg: Msg) -> None:
             try:
                 request = events_pb2.ConnectorSearchRequest.FromString(msg.data)
                 await msg.respond(await search.handle(request))
             except Exception:
                 # No reply: the asker times out and counts the search as unavailable.
                 log.exception("a live search failed")
+
+        async def answer(msg: Msg) -> None:
+            # One task per request: the callback handles messages one at a time,
+            # and a slow connector must not hold up other users' searches.
+            task = asyncio.create_task(reply(msg))
+            tasks.add(task)
+            task.add_done_callback(tasks.discard)
 
         subscription = await nc.subscribe(SUBJECT, queue=QUEUE, cb=answer)
         try:
@@ -90,6 +99,8 @@ async def run(
                 announcing.cancel()
         finally:
             await subscription.unsubscribe()
+            for task in tasks:
+                task.cancel()
 
 
 async def announce(

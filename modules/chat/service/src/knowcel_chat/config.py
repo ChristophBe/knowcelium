@@ -41,7 +41,8 @@ class Settings(PlatformSettings):
     # the answer is written without them. Above KNOWCEL_CONNECTOR_SEARCH_TIMEOUT
     # of the ingestion service, so that it can name the connectors that were too slow.
     connectors_timeout: float = 8
-    # Snippets asked of each connector per question.
+    # Snippets of connectors an answer may use per question, in total: each
+    # connector is asked for this many and the results are interleaved.
     connectors_top_k: int = 3
     # The rank of a live snippet, as a similarity (-1 to 1) it is sorted among
     # passages by: the first snippet gets this, each next one 0.01 less. A

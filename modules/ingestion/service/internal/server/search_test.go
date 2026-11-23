@@ -120,9 +120,13 @@ func TestSearchConnectorsReportsAMissingRuntimeAsUnavailable(t *testing.T) {
 			t.Errorf("%v: code = %v, want Unavailable", err, status.Code(got))
 		}
 	}
-	_, got := searchServer(&fakeSearcher{err: context.Canceled}).SearchConnectors(as(t, alice), &ingestionv1.SearchConnectorsRequest{Query: "q"})
+	_, got := searchServer(&fakeSearcher{err: errors.New("boom")}).SearchConnectors(as(t, alice), &ingestionv1.SearchConnectorsRequest{Query: "q"})
 	if status.Code(got) != codes.Internal {
 		t.Errorf("code = %v, want Internal", status.Code(got))
+	}
+	_, got = searchServer(&fakeSearcher{err: context.Canceled}).SearchConnectors(as(t, alice), &ingestionv1.SearchConnectorsRequest{Query: "q"})
+	if status.Code(got) != codes.Canceled {
+		t.Errorf("code = %v, want Canceled", status.Code(got))
 	}
 	_, got = New(nil, slog.Default()).SearchConnectors(as(t, alice), &ingestionv1.SearchConnectorsRequest{Query: "q"})
 	if status.Code(got) != codes.Unavailable {

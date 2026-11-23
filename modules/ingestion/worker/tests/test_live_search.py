@@ -196,13 +196,18 @@ async def test_the_folder_finds_paragraphs_with_the_words(tmp_path: pathlib.Path
     (tmp_path / "other.txt").write_text("Nothing relevant here.\n\nBoxes and bolts together.")
     (tmp_path / "scan.pdf").write_bytes(b"%PDF boxes")
     folder = FolderConnector(FolderConfig(path=str(tmp_path)))
-    hits = await folder.search("how many boxes and bolts", 5)
+    hits = await folder.search("boxes bolts", 5)
     assert hits[0].text == "Boxes and bolts together."
     assert {h.external_id for h in hits} == {"stock.md", "other.txt"}
+    # Half of the words of 4 letters or more have to be there: many, boxes, bolts need two.
+    assert [h.text for h in await folder.search("how many boxes and bolts", 5)] == [
+        "Boxes and bolts together."
+    ]
     assert hits[0].source_url.startswith("file://")
     assert len(await folder.search("boxes", 1)) == 1
     assert await folder.search("zz", 5) == []
     assert await folder.search("unrelated words", 5) == []
+    assert await folder.search("location shelf boxes", 5) == []
 
 
 async def test_a_vanished_folder_is_an_error_not_an_empty_result(tmp_path: pathlib.Path):

@@ -20,9 +20,10 @@ log = logging.getLogger(__name__)
 
 SUPPORTED_SUFFIXES = TEXT_SUFFIXES | HTML_SUFFIXES | {".pdf", ".docx"}
 # mimetypes has no entry for these on every platform.
+_CONTENT_TYPES = {".md": "text/markdown", ".markdown": "text/markdown", ".rst": "text/x-rst"}
+
 # Longest passage a live search returns.
 _SNIPPET_CHARS = 1000
-_CONTENT_TYPES = {".md": "text/markdown", ".markdown": "text/markdown", ".rst": "text/x-rst"}
 
 
 class FolderConfig(BaseModel):
@@ -93,11 +94,12 @@ class FolderConnector(Connector[FolderConfig]):
             )
 
     async def search(self, query: str, limit: int) -> list[Snippet]:
-        """The paragraphs of the text files that contain most of the words of
-        `query` (words of at least 3 letters, ignoring case), best first.
-        Searching reads the files as they are now, so it also finds what has
-        not been synced yet; PDF and Word files are not searched."""
-        words = set(re.findall(r"\w{3,}", query.lower()))
+        """The paragraphs of the text files that contain at least half of the
+        words of `query` (words of at least 4 letters, ignoring case), the ones
+        with most words first. Searching reads the files as they are now, so it
+        also finds what has not been synced yet; PDF and Word files are not
+        searched."""
+        words = set(re.findall(r"\w{4,}", query.lower()))
         if not words:
             return []
         # A folder that is not mounted is an error, not a search without hits.
@@ -105,29 +107,30 @@ class FolderConnector(Connector[FolderConfig]):
             await asyncio.to_thread(self._check_readable)
         except OSError as err:
             raise ConnectorError(f"cannot read the folder {self._root}: {err}") from err
-        files, _ = await asyncio.to_thread(self._files)
+        return await asyncio.to_thread(self._search, words, limit)
+
+    def _search(self, words: set[str], limit: int) -> list[Snippet]:
+        files, _ = self._files()
+        needed = (len(words) + 1) // 2
         found: list[tuple[int, Snippet]] = []
         for relative, path in files:
             if pathlib.PurePath(relative).suffix.lower() not in TEXT_SUFFIXES | HTML_SUFFIXES:
                 continue
             try:
-                text = (await asyncio.to_thread(path.read_bytes)).decode("utf-8", "replace")
+                text = path.read_bytes().decode("utf-8", "replace")
             except OSError:
                 continue  # removed or unreadable since it was listed
             for paragraph in re.split(r"\n\s*\n", text):
-                matched = sum(1 for w in words if w in paragraph.lower())
-                if matched:
-                    found.append(
-                        (
-                            matched,
-                            Snippet(
-                                text=paragraph.strip()[:_SNIPPET_CHARS],
-                                source_url=(self._root / relative).as_uri(),
-                                title=pathlib.PurePosixPath(relative).stem,
-                                external_id=relative,
-                            ),
-                        )
+                lowered = paragraph.lower()
+                matched = sum(1 for w in words if w in lowered)
+                if matched >= needed:
+                    snippet = Snippet(
+                        text=paragraph.strip()[:_SNIPPET_CHARS],
+                        source_url=(self._root / relative).as_uri(),
+                        title=pathlib.PurePosixPath(relative).stem,
+                        external_id=relative,
                     )
+                    found.append((matched, snippet))
         found.sort(key=lambda hit: hit[0], reverse=True)
         return [snippet for _, snippet in found[:limit]]
 

@@ -54,6 +54,11 @@ From `Settings` in [modules/chat/service/src/knowcel_chat/config.py](../modules/
 | `KNOWCEL_CURATION_ENABLED` | `true` | Use curation scores in retrieval: passages of documents that are replaced by a newer one, deprecated or archived are left out, and the rest are ranked down by their document's score. Off ranks by similarity alone. |
 | `KNOWCEL_CURATION_TIMEOUT` | `3` | Seconds the curation module may take to answer before passages are ranked by similarity alone. |
 | `KNOWCEL_CURATION_WEIGHT` | `0.3` | How far a document's curation score can rank its passages down, between 0 (not at all) and 1 (a score of 0 puts a passage at the end). |
+| `KNOWCEL_INGESTION_ADDR` | `localhost:9002` | The ingestion module (host:port), whose connectors are searched live at question time. While it is down, answers use documents only. |
+| `KNOWCEL_CONNECTORS_ENABLED` | `true` | Search the connectors that allow live search (their `live_search` setting) when answering. Off uses documents only. |
+| `KNOWCEL_CONNECTORS_TIMEOUT` | `8` | Seconds the ingestion module may take to search its connectors before the answer is written without them. Above KNOWCEL_CONNECTOR_SEARCH_TIMEOUT of the ingestion service, so that it can name the connectors that were too slow. |
+| `KNOWCEL_CONNECTORS_TOP_K` | `3` | Snippets of connectors an answer may use per question, in total: each connector is asked for this many and the results are interleaved. |
+| `KNOWCEL_CONNECTORS_SCORE` | `0.8` | The rank of a live snippet, as a similarity (-1 to 1) it is sorted among passages by: the first snippet gets this, each next one 0.01 less. A connector's own search found it relevant, so it ranks above the passages of weak similarity and the prompt only drops it when it is out of room. |
 | `KNOWCEL_RAG_TOP_K` | `5` | Number of chunks retrieved for grounding an answer. |
 | `KNOWCEL_RAG_MIN_SCORE` | `0.5` | Cosine similarity (-1 to 1) a chunk needs to count as related to the question. Measured with nomic-embed-text: the passage answering a question scores about 0.67-0.84, the best chunk for an unrelated question at most 0.44. Tune it together with the embedding model. |
 | `KNOWCEL_RERANK_ENABLED` | `true` | Rerank the retrieved chunks with the llm module's chat model: more candidates are fetched, rated against the question, and the best KNOWCEL_RAG_TOP_K are kept. Costs one extra model call per question; if it fails, the answer uses the similarity order. |
@@ -144,7 +149,8 @@ From `Config` in [modules/ingestion/service/cmd/ingestion-service](../modules/in
 | `KNOWCEL_DATABASE_URL` | `postgres://kb:kb@localhost:5432/kb?sslmode=disable` | The Postgres database holding the ingestion schema. |
 | `KNOWCEL_NATS_URL` | `nats://localhost:4222` | The NATS server with JetStream that carries the knowcel.ingestion.* events (comma-separated for a cluster). |
 | `KNOWCEL_DOCUMENT_ADDR` | `localhost:9001` | The document module (host:port), where uploads are created and their status is set. |
-| `KNOWCEL_IAM_ADDR` | `localhost:9006` | The iam module (host:port), which tells whether a caller is a platform admin, who alone can read the connectors' status. |
+| `KNOWCEL_IAM_ADDR` | `localhost:9006` | The iam module (host:port), which tells whether a caller is a platform admin, who alone can read the connectors' status, and the teams of a caller, so that a live search asks only the connectors they may read. While it is down, only public connectors are searched. |
+| `KNOWCEL_CONNECTOR_SEARCH_TIMEOUT` | `5s` | Bounds a live connector search; a connector that has not answered by then is reported as unavailable. |
 
 ## ingestion-worker
 

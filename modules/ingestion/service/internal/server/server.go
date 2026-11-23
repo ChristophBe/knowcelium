@@ -313,6 +313,8 @@ func (s *Server) SearchConnectors(ctx context.Context, req *ingestionv1.SearchCo
 	case errors.Is(err, connectors.ErrUnavailable), errors.Is(err, connectors.ErrTimeout):
 		s.log.WarnContext(ctx, "search connectors", "error", err)
 		return nil, status.Error(codes.Unavailable, err.Error())
+	case errors.Is(err, context.Canceled):
+		return nil, status.FromContextError(err).Err()
 	case err != nil:
 		s.log.ErrorContext(ctx, "search connectors", "error", err)
 		return nil, status.Error(codes.Internal, "search connectors failed")
