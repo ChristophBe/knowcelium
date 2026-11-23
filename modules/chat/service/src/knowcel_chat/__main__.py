@@ -5,6 +5,7 @@ from knowcel.chat.v1 import chat_pb2, chat_pb2_grpc
 from knowcel.curation.v1 import curation_pb2_grpc
 from knowcel.document.v1 import document_pb2_grpc
 from knowcel.iam.v1 import iam_pb2_grpc
+from knowcel.ingestion.v1 import ingestion_pb2_grpc
 from knowcel.llm.v1 import llm_pb2_grpc
 from knowcel_platform.config import load_settings
 from knowcel_platform.grpc import PrincipalResolver, channel, serve
@@ -18,7 +19,14 @@ from .chat import Chat
 from .config import Settings
 from .db import SqlRepository, migrate
 from .manual import Manual, load_sections
-from .peers import PeerCuration, PeerEmbedder, PeerGenerator, PeerReranker, PeerRetriever
+from .peers import (
+    PeerConnectors,
+    PeerCuration,
+    PeerEmbedder,
+    PeerGenerator,
+    PeerReranker,
+    PeerRetriever,
+)
 from .server import ChatServicer
 
 log = logging.getLogger("knowcel_chat")
@@ -38,6 +46,7 @@ async def run() -> None:
             channel(settings.llm_addr) as llm_ch,
             channel(settings.iam_addr) as iam_ch,
             channel(settings.curation_addr) as curation_ch,
+            channel(settings.ingestion_addr) as ingestion_ch,
         ):
             repo = SqlRepository(engine)
             documents = document_pb2_grpc.DocumentServiceStub(doc_ch)
@@ -59,6 +68,16 @@ async def run() -> None:
                 if settings.curation_enabled
                 else None
             )
+            # Soft dependency: while ingestion is down, answers use documents only.
+            connectors = (
+                PeerConnectors(
+                    ingestion_pb2_grpc.IngestionServiceStub(ingestion_ch),
+                    settings.connectors_score,
+                    settings.connectors_timeout,
+                )
+                if settings.connectors_enabled
+                else None
+            )
             reranker = PeerReranker(llm, settings.rerank_model) if settings.rerank_enabled else None
             retriever = PeerRetriever(
                 documents,
@@ -69,6 +88,8 @@ async def run() -> None:
                 settings.rerank_candidates,
                 curation,
                 settings.curation_weight,
+                connectors,
+                settings.connectors_top_k,
             )
             chat = Chat(settings, repo, retriever, PeerGenerator(llm))
             servicer = ChatServicer(repo, chat)

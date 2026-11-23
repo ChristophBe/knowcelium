@@ -6,7 +6,7 @@ import functools
 import logging
 import uuid
 from collections.abc import AsyncGenerator, Callable, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any, Protocol, Self
 
@@ -32,6 +32,7 @@ class Peer(StrEnum):
 
     DOCUMENT = "document"
     LLM = "llm"
+    INGESTION = "ingestion"
 
 
 class PeerError(Exception):
@@ -61,8 +62,10 @@ class PromptMessage:
 class Retriever(Protocol):
     """Finds the passages most relevant to a question, only in `document_ids`
     and only in documents of `team_ids`, each unless empty. `on_rating` is called
-    with the passages found when they are about to be rated. Failures are raised as
-    PeerError."""
+    with the passages found when they are about to be rated. `on_unavailable` is
+    called with the names of the live sources (connectors) that did not answer,
+    when there are any; their absence never fails the retrieval. Failures are
+    raised as PeerError."""
 
     async def retrieve(
         self,
@@ -71,6 +74,7 @@ class Retriever(Protocol):
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
+        on_unavailable: Callable[[Sequence[str]], None] | None = None,
     ) -> list[chat_pb2.Citation]: ...
 
 
@@ -84,6 +88,8 @@ class Generator(Protocol):
 @dataclass(frozen=True)
 class SourcesFound:
     citations: list[chat_pb2.Citation]
+    # Live sources (connectors) that did not answer, so the answer may lack their content.
+    unavailable: list[str] = field(default_factory=list)
 
 
 @dataclass(frozen=True)
@@ -113,12 +119,13 @@ class ProgressChanged:
     @classmethod
     def of(cls, stage: chat_pb2.ProgressStage, found: Sequence[chat_pb2.Citation] = ()) -> Self:
         """`stage` with what `found` consists of."""
-        in_documents = [c for c in found if not c.manual_page]
+        in_knowledge = [c for c in found if not c.manual_page]
         return cls(
             stage,
-            passages=len(in_documents),
-            documents=len({c.document_id for c in in_documents}),
-            manual_sections=len(found) - len(in_documents),
+            passages=len(in_knowledge),
+            # Snippets of connectors belong to no document.
+            documents=len({c.document_id for c in in_knowledge if c.document_id}),
+            manual_sections=len(found) - len(in_knowledge),
         )
 
 
@@ -187,6 +194,7 @@ class Chat:
 
         answer: list[str] = []
         citations: list[chat_pb2.Citation] = []
+        unavailable: list[str] = []
         status = chat_pb2.MESSAGE_STATUS_COMPLETE
         try:
             retrieved: list[chat_pb2.Citation] = []
@@ -206,6 +214,7 @@ class Chat:
                             on_rating=lambda found: stages.put_nowait(
                                 ProgressChanged.of(chat_pb2.PROGRESS_STAGE_RATING, found)
                             ),
+                            on_unavailable=unavailable.extend,
                         )
                     finally:
                         stages.put_nowait(None)
@@ -232,7 +241,7 @@ class Chat:
             # Only the sources that made it into the prompt are cited, numbered as there.
             citations = context.sources
             if use_knowledge_base:
-                yield SourcesFound(citations)
+                yield SourcesFound(citations, unavailable)
 
             yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
             prompt = _prompt(
@@ -252,11 +261,13 @@ class Chat:
             # the generator stream has cancelled the generation. Keep the text so
             # far; shielded, so a repeated cancel can't lose it halfway.
             await asyncio.shield(
-                self._save(conv.id, answer, citations, chat_pb2.MESSAGE_STATUS_STOPPED)
+                self._save(conv.id, answer, citations, chat_pb2.MESSAGE_STATUS_STOPPED, unavailable)
             )
             raise
 
-        yield AnswerSaved(await asyncio.shield(self._save(conv.id, answer, citations, status)))
+        yield AnswerSaved(
+            await asyncio.shield(self._save(conv.id, answer, citations, status, unavailable))
+        )
 
     async def _prompts(self, conv: ConversationRow) -> "_Prompts":
         """The templates for an answer in `conv`: its own system prompt, else the
@@ -278,6 +289,7 @@ class Chat:
         answer: list[str],
         citations: list[chat_pb2.Citation],
         status: chat_pb2.MessageStatus,
+        unavailable: Sequence[str] = (),
     ) -> MessageRow:
         # Only the sources the text refers to are kept, numbered as it uses them.
         text, used = used_sources("".join(answer), citations)
@@ -287,6 +299,7 @@ class Chat:
             text,
             [_citation_to_dict(c) for c in used],
             status,
+            list(dict.fromkeys(unavailable)),
         )
 
 
@@ -352,8 +365,13 @@ def _transcript(history: Sequence[MessageRow]) -> str:
 
 
 def _source_name(c: chat_pb2.Citation) -> str:
-    # Tells the model that a source explains the tool, not the user's documents.
-    return f"User manual, {c.document_title}" if c.manual_page else c.document_title
+    # Tells the model that a source explains the tool, not the user's documents,
+    # or that it comes live from a connected system.
+    if c.manual_page:
+        return f"User manual, {c.document_title}"
+    if c.connector:
+        return f"{c.document_title} (live from {c.connector})"
+    return c.document_title
 
 
 def _citation_to_dict(c: chat_pb2.Citation) -> dict[str, Any]:
@@ -365,4 +383,6 @@ def _citation_to_dict(c: chat_pb2.Citation) -> dict[str, Any]:
         "score": c.score,
         "manual_page": c.manual_page,
         "manual_section": c.manual_section,
+        "connector": c.connector,
+        "source_url": c.source_url,
     }

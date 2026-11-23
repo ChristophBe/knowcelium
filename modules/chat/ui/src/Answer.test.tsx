@@ -4,7 +4,7 @@ import { defineManifest, SlotsProvider } from "@knowcel/module-sdk";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { describe, expect, it, vi } from "vitest";
-import { Answer } from "./Answer.tsx";
+import { Answer, safeUrl } from "./Answer.tsx";
 
 const citation = (documentId: string, documentTitle: string, chunkIndex: number) =>
   create(CitationSchema, { documentId, documentTitle, chunkIndex, snippet: "a snippet" });
@@ -249,5 +249,94 @@ describe("Answer", () => {
     const rows = container.querySelectorAll("ul[aria-label='Sources'] li > div");
     expect([...rows].every((row) => row.innerHTML === "")).toBe(true);
     expect([...rows].every((row) => row.className.includes("empty:hidden"))).toBe(true);
+  });
+
+  describe("live sources", () => {
+    const live = create(CitationSchema, {
+      documentTitle: "Aisle 3",
+      snippet: "40 boxes in aisle 3",
+      connector: "stock",
+      sourceUrl: "https://wms.example/aisle-3",
+    });
+
+    it("links a marker to the original in a new tab, named after the connector", () => {
+      renderAnswer("There are 40 boxes [1].", [live]);
+      const marker = screen.getByRole("link", {
+        name: "Source 1: Aisle 3, live from stock (opens in a new tab)",
+      });
+      expect(marker.getAttribute("href")).toBe("https://wms.example/aisle-3");
+      expect(marker.getAttribute("target")).toBe("_blank");
+      expect(marker.getAttribute("rel")).toBe("noopener noreferrer");
+    });
+
+    it("lists the connector as a live group, apart from documents", () => {
+      renderAnswer("No markers.", [live, ...sources]);
+      const list = within(screen.getByRole("list", { name: "Sources" }));
+      const group = list.getByRole("button", { name: /stock/ });
+      expect(group.textContent).toContain("Live");
+      expect(group.textContent).toContain("1 snippet");
+      expect(list.getByRole("button", { name: /Report\.pdf/ }).textContent).not.toContain("Live");
+      fireEvent.click(group);
+      const link = list.getByRole("link", {
+        name: "Aisle 3, live from stock (opens in a new tab)",
+      });
+      expect(link.getAttribute("href")).toBe("https://wms.example/aisle-3");
+      expect(link.closest("li")?.textContent).toContain("40 boxes in aisle 3");
+      expect(list.getAllByText("live from stock").length).toBeGreaterThan(0);
+    });
+
+    it("offers no document actions on a live snippet", async () => {
+      const rate = defineManifest({
+        id: "curation",
+        title: "Curation",
+        icon: () => null,
+        slots: [
+          {
+            slot: "chat.citation.actions",
+            load: async () => ({ default: () => <button type="button">Rate</button> }),
+          },
+        ],
+      });
+      render(
+        <SlotsProvider modules={[rate]}>
+          <MemoryRouter>
+            <Answer content="x" citations={[live, ...sources]} />
+          </MemoryRouter>
+        </SlotsProvider>,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /stock/ }));
+      fireEvent.click(screen.getByRole("button", { name: /Report\.pdf/ }));
+      expect(await screen.findByRole("button", { name: "Rate" })).toBeTruthy();
+      expect(screen.getAllByRole("button", { name: "Rate" })).toHaveLength(1);
+    });
+
+    it("only follows web addresses", () => {
+      const unsafe = create(CitationSchema, {
+        documentTitle: "Local",
+        connector: "folder",
+        sourceUrl: "javascript:alert(1)",
+        snippet: "x",
+      });
+      const { container } = renderAnswer("See [1].", [unsafe]);
+      expect(container.innerHTML).not.toContain("javascript:");
+      expect(screen.queryByRole("link", { name: /Source 1/ })).toBeNull();
+      expect(safeUrl("file:///etc/passwd")).toBeUndefined();
+      expect(safeUrl("not a url")).toBeUndefined();
+      expect(safeUrl("http://wms.example/a")).toBe("http://wms.example/a");
+    });
+
+    it("says which sources were unavailable", () => {
+      render(
+        <MemoryRouter>
+          <Answer content="Partial." citations={[]} unavailableSources={["stock", "crm"]} />
+        </MemoryRouter>,
+      );
+      expect(screen.getByText(/Some sources were unavailable: stock, crm/)).toBeTruthy();
+    });
+
+    it("says nothing when every source answered", () => {
+      renderAnswer("Complete.", sources);
+      expect(screen.queryByText(/unavailable/)).toBeNull();
+    });
   });
 });

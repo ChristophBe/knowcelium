@@ -1,7 +1,24 @@
 import type { Citation } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import { Slot } from "@knowcel/module-sdk";
-import { Check, ChevronLeft, Copy, cn, IconButton, SourceNote } from "@knowcel/ui";
-import { type ComponentProps, useCallback, useId, useMemo, useRef, useState } from "react";
+import {
+  Badge,
+  Check,
+  ChevronLeft,
+  Copy,
+  cn,
+  IconButton,
+  SourceNote,
+  TriangleAlert,
+} from "@knowcel/ui";
+import {
+  type ComponentProps,
+  type ReactNode,
+  useCallback,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import Markdown, { type Components } from "react-markdown";
 import { Link } from "react-router";
 import rehypeSanitize from "rehype-sanitize";
@@ -57,13 +74,70 @@ function sourcePath(c: Citation) {
   return `/m/document/${c.documentId}#chunk-${c.chunkIndex}`;
 }
 
-/** What the source is within its title: "user manual" or the passage, numbered from 1 as in search. */
+/**
+ * The address a live source links to. A connector reports it, so only web
+ * addresses are followed: anything else (`javascript:`, `file:`) is shown as
+ * text.
+ */
+export function safeUrl(url: string): string | undefined {
+  try {
+    const { protocol } = new URL(url);
+    return protocol === "https:" || protocol === "http:" ? url : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/** What the source is within its title: "user manual", the connector it came live from, or the passage, numbered from 1 as in search. */
 function sourceDetail(c: Citation) {
+  if (c.connector) return `live from ${c.connector}`;
   return c.manualPage ? "user manual" : `passage ${c.chunkIndex + 1}`;
 }
 
 function citationName(n: number, c: Citation) {
   return `Source ${n}: ${c.documentTitle}, ${sourceDetail(c)}`;
+}
+
+/** Opens the original of a live source in a new tab; without a web address it is only text. */
+function LiveSourceLink({
+  citation,
+  label,
+  className,
+  children,
+  ...handlers
+}: {
+  citation: Citation;
+  label: string;
+  className?: string;
+  children: ReactNode;
+} & Omit<ComponentProps<"a">, "href" | "children">) {
+  const href = safeUrl(citation.sourceUrl);
+  if (!href) return <span className={className}>{children}</span>;
+  return (
+    <a
+      {...handlers}
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      aria-label={`${label} (opens in a new tab)`}
+      className={className}
+    >
+      {children}
+    </a>
+  );
+}
+
+/** Tells that connectors that were asked live at question time did not answer. */
+function UnavailableNotice({ sources }: { sources: string[] }) {
+  return (
+    <p className="flex items-start gap-2 text-xs text-warning">
+      <TriangleAlert className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
+      <span>
+        Some sources were unavailable: {sources.join(", ")}. The answer may be missing what they
+        know.
+      </span>
+    </p>
+  );
 }
 
 function CodeBlock(props: ComponentProps<"pre">) {
@@ -119,9 +193,12 @@ export function Answer({
   citations,
   conversationId,
   streaming = false,
+  unavailableSources = [],
 }: {
   content: string;
   citations: Citation[];
+  /** Connectors that were asked live and did not answer, by name. */
+  unavailableSources?: string[];
   /** Given to what other modules add to the sources. */
   conversationId?: string;
   /** The answer isn't final yet: its sources are not listed until they are. */
@@ -149,6 +226,19 @@ export function Answer({
       a: ({ href, children }) => {
         const n = href?.startsWith(CITATION_HREF) ? Number(href.slice(CITATION_HREF.length)) : 0;
         const citation = citations[n - 1];
+        if (citation?.connector) {
+          return (
+            <LiveSourceLink
+              citation={citation}
+              label={citationName(n, citation)}
+              className="font-mono text-xs hover:underline"
+              onClick={() => toggle(groupKey(citation), true)}
+              {...linked(n)}
+            >
+              {children}
+            </LiveSourceLink>
+          );
+        }
         if (citation) {
           return (
             <Link
@@ -183,6 +273,7 @@ export function Answer({
           {content}
         </Markdown>
       </div>
+      {unavailableSources.length > 0 && <UnavailableNotice sources={unavailableSources} />}
       {!streaming && groups.length > 0 && (
         <ul aria-label="Sources" className="space-y-1 border-t border-border pt-2">
           {groups.map((group) => (
@@ -202,26 +293,37 @@ export function Answer({
   );
 }
 
-/** The passages an answer used from one document, or from the user manual as a whole. */
+/** The passages an answer used from one document, from the user manual as a whole, or live from one connector. */
 interface SourceGroup {
   key: string;
   title: string;
-  manual: boolean;
+  kind: "document" | "manual" | "connector";
   /** Each with its number in the answer. */
   passages: { n: number; citation: Citation }[];
 }
 
-const groupKey = (c: Citation) => (c.manualPage ? "user-manual" : `document-${c.documentId}`);
+const groupKey = (c: Citation) =>
+  c.connector
+    ? `connector-${c.connector}`
+    : c.manualPage
+      ? "user-manual"
+      : `document-${c.documentId}`;
 
-/** One group per document, in the order the answer first uses them; manual sections share one. */
+/** One group per document or connector, in the order the answer first uses them; manual sections share one. */
 function groupSources(citations: Citation[]): SourceGroup[] {
   const groups = new Map<string, SourceGroup>();
   citations.forEach((citation, i) => {
     const key = groupKey(citation);
-    const manual = Boolean(citation.manualPage);
+    const kind = citation.connector ? "connector" : citation.manualPage ? "manual" : "document";
     let group = groups.get(key);
     if (!group) {
-      group = { key, title: manual ? "User manual" : citation.documentTitle, manual, passages: [] };
+      const title =
+        kind === "connector"
+          ? citation.connector
+          : kind === "manual"
+            ? "User manual"
+            : citation.documentTitle;
+      group = { key, title, kind, passages: [] };
       groups.set(key, group);
     }
     group.passages.push({ n: i + 1, citation });
@@ -246,7 +348,7 @@ function SourceGroupRow({
 }) {
   const listId = useId();
   const count = group.passages.length;
-  const unit = group.manual ? "section" : "passage";
+  const unit = { document: "passage", manual: "section", connector: "snippet" }[group.kind];
   const highlighted = group.passages.some((p) => p.n === active);
   return (
     <li
@@ -266,7 +368,15 @@ function SourceGroupRow({
           className={cn("size-4 shrink-0 transition-transform", open ? "-rotate-90" : "rotate-180")}
           aria-hidden="true"
         />
-        <span className="min-w-0 flex-1 font-medium wrap-anywhere text-fg">{group.title}</span>
+        <span className="min-w-0 flex-1 font-medium wrap-anywhere text-fg">
+          {group.title}
+          {group.kind === "connector" && (
+            <>
+              {" "}
+              <Badge tone="info">Live</Badge>
+            </>
+          )}
+        </span>
         <span className="shrink-0 font-mono text-fg-muted">
           {count} {unit}
           {count === 1 ? "" : "s"}
@@ -275,19 +385,15 @@ function SourceGroupRow({
       <ul id={listId} hidden={!open} className="space-y-3 pb-2">
         {group.passages.map(({ n, citation: c }) => (
           <SourceNote
-            key={
-              c.manualPage
-                ? `${c.manualPage}#${c.manualSection}`
-                : `${c.documentId}-${c.chunkIndex}`
-            }
+            key={sourceKey(c, n)}
             n={n}
             active={active === n}
             detail={sourceDetail(c)}
             snippet={c.snippet}
             title={<SourceLink citation={c} {...linked(n)} />}
-            // Only documents can be acted on, not sections of the user manual.
+            // Only documents can be acted on, not sections of the user manual or live snippets.
             actions={
-              c.manualPage ? undefined : (
+              c.manualPage || c.connector ? undefined : (
                 <Slot
                   name="chat.citation.actions"
                   documentId={c.documentId}
@@ -304,10 +410,28 @@ function SourceGroupRow({
   );
 }
 
+/** Distinct for every source of an answer; a live snippet has no passage number. */
+function sourceKey(c: Citation, n: number) {
+  if (c.connector) return `${c.connector}-${n}`;
+  return c.manualPage ? `${c.manualPage}#${c.manualSection}` : `${c.documentId}-${c.chunkIndex}`;
+}
+
 function SourceLink({
   citation,
   ...handlers
 }: { citation: Citation } & Omit<ComponentProps<typeof Link>, "to">) {
+  if (citation.connector) {
+    return (
+      <LiveSourceLink
+        citation={citation}
+        label={`${citation.documentTitle}, ${sourceDetail(citation)}`}
+        className="hover:underline"
+        {...(handlers as Omit<ComponentProps<"a">, "href">)}
+      >
+        {citation.documentTitle}
+      </LiveSourceLink>
+    );
+  }
   return (
     <Link
       to={sourcePath(citation)}

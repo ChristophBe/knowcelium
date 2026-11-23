@@ -47,7 +47,7 @@ DEFAULT_SEARCH_LIMIT = 20
 MAX_SEARCH_LIMIT = 50
 
 # The peers' titles in the UI (their module.yaml), for error messages.
-_PEER_TITLES = {Peer.DOCUMENT: "Documents", Peer.LLM: "Models"}
+_PEER_TITLES = {Peer.DOCUMENT: "Documents", Peer.LLM: "Models", Peer.INGESTION: "Connectors"}
 
 
 class ChatServicer(chat_pb2_grpc.ChatServiceServicer):
@@ -422,13 +422,16 @@ def _message(m: MessageRow) -> chat_pb2.ChatMessage:
         citations=[chat_pb2.Citation(**c) for c in m.citations],
         create_time=_ts(m.created_at),
         status=m.status,
+        unavailable_sources=m.unavailable_sources,
     )
 
 
 def _response(event: AnswerEvent) -> chat_pb2.StreamChatResponse:
     match event:
-        case SourcesFound(citations):
-            return chat_pb2.StreamChatResponse(citations=chat_pb2.Citations(items=citations))
+        case SourcesFound(citations, unavailable):
+            return chat_pb2.StreamChatResponse(
+                citations=chat_pb2.Citations(items=citations, unavailable_sources=unavailable)
+            )
         case ProgressChanged(stage, passages, documents, manual_sections):
             return chat_pb2.StreamChatResponse(
                 status=chat_pb2.Progress(

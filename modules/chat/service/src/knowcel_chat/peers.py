@@ -1,6 +1,7 @@
 """The document and llm modules behind the ports of the answer use case. Their
 gRPC statuses end here: callers only see PeerError."""
 
+import asyncio
 import contextlib
 import logging
 import uuid
@@ -12,6 +13,7 @@ import grpc
 from knowcel.chat.v1 import chat_pb2
 from knowcel.curation.v1 import curation_pb2, curation_pb2_grpc
 from knowcel.document.v1 import document_pb2, document_pb2_grpc
+from knowcel.ingestion.v1 import ingestion_pb2, ingestion_pb2_grpc
 from knowcel.llm.v1 import llm_pb2, llm_pb2_grpc
 
 from .chat import Peer, PeerError, PeerUnavailableError, PromptMessage, PromptRole
@@ -119,6 +121,58 @@ class PeerCuration:
         return found
 
 
+@dataclass(frozen=True)
+class LiveSources:
+    """What the connectors found at question time."""
+
+    citations: list[chat_pb2.Citation]
+    # The connectors that did not answer in time or failed, by name.
+    unavailable: list[str]
+
+
+class PeerConnectors:
+    """Live retrieval through the ingestion module: the connectors that allow it
+    are searched at question time. They only add sources, so any failure of
+    ingestion (it is down, slow, or its worker is) is logged and answered with
+    nothing found, and the answer is written from documents alone."""
+
+    def __init__(
+        self,
+        ingestion: ingestion_pb2_grpc.IngestionServiceStub,
+        score: float,
+        timeout: float = 8.0,
+    ) -> None:
+        self._ingestion = ingestion
+        self._score = score
+        self._timeout = timeout
+
+    async def search(self, query: str, limit: int, team_ids: Sequence[uuid.UUID]) -> LiveSources:
+        try:
+            with _peer_errors(Peer.INGESTION):
+                found = await self._ingestion.SearchConnectors(
+                    ingestion_pb2.SearchConnectorsRequest(
+                        query=query, limit=limit, team_ids=[str(i) for i in team_ids]
+                    ),
+                    timeout=self._timeout,
+                )
+        except PeerError as err:
+            log.warning("connectors unavailable, answering from documents: %s", err)
+            return LiveSources([], [])
+        citations = [
+            chat_pb2.Citation(
+                document_title=s.title or s.connector,
+                snippet=s.text,
+                # Snippets come best first, as the connector ranked them; they have
+                # no similarity, so they rank after each other from a fixed start.
+                score=self._score - 0.01 * rank,
+                connector=s.connector,
+                source_url=s.source_url,
+            )
+            for rank, s in enumerate(found.snippets)
+        ]
+        return LiveSources(citations, list(found.unavailable_connectors))
+
+
 class PeerRetriever:
     """Finds document passages and, with a manual, the manual sections that
     match the question; the question is embedded once for both. Passages
@@ -129,7 +183,9 @@ class PeerRetriever:
     from curation the order stays as found. With a `reranker`, `candidates`
     passages are fetched and the `limit` best by the reranker's rating are
     kept (passages rated alike keep the order before); if it fails, the best by
-    the order before are."""
+    the order before are. With `connectors`, the connectors that allow live search
+    are asked at the same time (unless the question is limited to documents) and
+    their snippets are cited next to the passages; they are not reranked."""
 
     def __init__(
         self,
@@ -141,7 +197,11 @@ class PeerRetriever:
         candidates: int = 0,
         curation: PeerCuration | None = None,
         curation_weight: float = 0.0,
+        connectors: PeerConnectors | None = None,
+        connector_limit: int = 3,
     ) -> None:
+        self._connectors = connectors
+        self._connector_limit = connector_limit
         self._documents = documents
         self._embedder = PeerEmbedder(llm)
         self._manual = manual
@@ -158,6 +218,32 @@ class PeerRetriever:
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
+        on_unavailable: Callable[[Sequence[str]], None] | None = None,
+    ) -> list[chat_pb2.Citation]:
+        # Asked while the documents are searched; a question limited to chosen
+        # documents is about those, not about connected systems.
+        live = (
+            asyncio.create_task(self._connectors.search(query, self._connector_limit, team_ids))
+            if self._connectors and not document_ids
+            else None
+        )
+        try:
+            found = await self._retrieve_documents(query, limit, document_ids, team_ids, on_rating)
+            sources = await live if live else LiveSources([], [])
+        finally:
+            if live:
+                live.cancel()
+        if sources.unavailable and on_unavailable:
+            on_unavailable(sources.unavailable)
+        return merge_sources(found, sources.citations)
+
+    async def _retrieve_documents(
+        self,
+        query: str,
+        limit: int,
+        document_ids: Sequence[uuid.UUID],
+        team_ids: Sequence[uuid.UUID],
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None,
     ) -> list[chat_pb2.Citation]:
         (embedding,) = await self._embedder.embed([query])
         fetch = max(limit, self._candidates) if self._reranker else limit

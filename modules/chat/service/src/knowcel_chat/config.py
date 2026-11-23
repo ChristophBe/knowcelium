@@ -31,6 +31,23 @@ class Settings(PlatformSettings):
     # How far a document's curation score can rank its passages down, between 0
     # (not at all) and 1 (a score of 0 puts a passage at the end).
     curation_weight: float = 0.3
+    # The ingestion module (host:port), whose connectors are searched live at
+    # question time. While it is down, answers use documents only.
+    ingestion_addr: str = "localhost:9002"
+    # Search the connectors that allow live search (their `live_search` setting)
+    # when answering. Off uses documents only.
+    connectors_enabled: bool = True
+    # Seconds the ingestion module may take to search its connectors before
+    # the answer is written without them. Above KNOWCEL_CONNECTOR_SEARCH_TIMEOUT
+    # of the ingestion service, so that it can name the connectors that were too slow.
+    connectors_timeout: float = 8
+    # Snippets asked of each connector per question.
+    connectors_top_k: int = 3
+    # The rank of a live snippet, as a similarity (-1 to 1) it is sorted among
+    # passages by: the first snippet gets this, each next one 0.01 less. A
+    # connector's own search found it relevant, so it ranks above the passages
+    # of weak similarity and the prompt only drops it when it is out of room.
+    connectors_score: float = 0.8
     # Number of chunks retrieved for grounding an answer.
     rag_top_k: int = 5
     # Cosine similarity (-1 to 1) a chunk needs to count as related to the
@@ -71,6 +88,11 @@ class Settings(PlatformSettings):
         problems.addr("llm_addr", self.llm_addr)
         problems.addr("iam_addr", self.iam_addr)
         problems.addr("curation_addr", self.curation_addr)
+        problems.addr("ingestion_addr", self.ingestion_addr)
+        if not self.connectors_timeout > 0:
+            problems.add("connectors_timeout", f"must be positive, got {self.connectors_timeout}")
+        problems.at_least("connectors_top_k", self.connectors_top_k, 1)
+        problems.between("connectors_score", self.connectors_score, -1, 1)
         problems.between("curation_weight", self.curation_weight, 0, 1)
         if not self.curation_timeout > 0:
             problems.add("curation_timeout", f"must be positive, got {self.curation_timeout}")

@@ -41,6 +41,8 @@ interface Pending {
   question: string;
   answer: string;
   citations: Citation[];
+  /** Connectors that were asked live and did not answer, by name. */
+  unavailable: string[];
   /** What the system is doing until the first words arrive. */
   stage: Stage;
   /** The reason from the stream's error event, once the answer failed. */
@@ -191,7 +193,7 @@ export function Conversation() {
       manualSections: 0,
       searched: useKnowledgeBase,
     };
-    let state: Pending = { question, answer: "", citations: [], stage };
+    let state: Pending = { question, answer: "", citations: [], unavailable: [], stage };
     setPending(state);
     setStatus(stageLabel(stage));
     const controller = new AbortController();
@@ -213,7 +215,13 @@ export function Conversation() {
       queryClient.invalidateQueries({ queryKey: ACTIVITY_KEY });
       for await (const res of stream) {
         const event = res.event;
-        if (event.case === "citations") state = { ...state, citations: event.value.items };
+        if (event.case === "citations") {
+          state = {
+            ...state,
+            citations: event.value.items,
+            unavailable: event.value.unavailableSources,
+          };
+        }
         if (event.case === "status") {
           const { stage, passages, documents, manualSections } = event.value;
           const next = { ...state.stage, stage, passages, documents, manualSections };
@@ -318,6 +326,7 @@ export function Conversation() {
               role={m.role}
               content={m.content}
               citations={m.citations}
+              unavailableSources={m.unavailableSources}
               conversationId={id}
               failure={m.status === MessageStatus.FAILED ? (failures[m.id] ?? "") : undefined}
               stopped={m.status === MessageStatus.STOPPED}
@@ -333,6 +342,7 @@ export function Conversation() {
                 role={MessageRole.ASSISTANT}
                 content={stopped.answer}
                 citations={stopped.citations}
+                unavailableSources={stopped.unavailable}
                 stopped
                 streaming
               />
@@ -346,6 +356,7 @@ export function Conversation() {
                   role={MessageRole.ASSISTANT}
                   content={pending.answer}
                   citations={pending.citations}
+                  unavailableSources={pending.unavailable}
                   failure={pending.failure}
                   streaming
                 />
@@ -442,6 +453,7 @@ function Bubble({
   role,
   content,
   citations,
+  unavailableSources,
   conversationId,
   failure,
   stopped = false,
@@ -450,6 +462,8 @@ function Bubble({
   streaming = false,
   onRetry,
 }: Pick<ChatMessage, "role" | "content" | "citations"> & {
+  /** Connectors that were asked live and did not answer, by name. */
+  unavailableSources?: string[];
   /** The conversation the answer is in, for what other modules add to its sources. */
   conversationId?: string;
   /** Set when the answer failed: the reason, or "" when it isn't known. */
@@ -479,6 +493,7 @@ function Bubble({
         <Answer
           content={content}
           citations={citations}
+          unavailableSources={unavailableSources}
           conversationId={conversationId}
           streaming={streaming}
         />

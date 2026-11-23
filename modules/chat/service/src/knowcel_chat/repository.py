@@ -1,6 +1,7 @@
 """The persistence the chat module needs; db.py implements it."""
 
 import uuid
+from collections.abc import Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, Protocol
@@ -54,6 +55,8 @@ class MessageRow:
     created_at: datetime
     citations: list[dict[str, Any]] = field(default_factory=list)
     status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE
+    # The live sources (connectors) that did not answer while this was written.
+    unavailable_sources: list[str] = field(default_factory=list)
 
 
 class Repository(Protocol):
@@ -112,6 +115,7 @@ class Repository(Protocol):
         content: str,
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
+        unavailable_sources: Sequence[str] = (),
     ) -> MessageRow: ...
 
     async def get_prompt_templates(self) -> dict[str, str]:
