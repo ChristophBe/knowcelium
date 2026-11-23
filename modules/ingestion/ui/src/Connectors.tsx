@@ -48,7 +48,6 @@ const health: Record<ConnectorHealth, { label: string; tone: Tone; icon: IconCom
   [ConnectorHealth.FAILING]: { label: "Failing", tone: "danger", icon: CircleAlert },
   [ConnectorHealth.STALE]: { label: "Stale", tone: "warning", icon: Clock },
   [ConnectorHealth.UNKNOWN]: { label: "Not synced yet", tone: "neutral", icon: CircleHelp },
-  [ConnectorHealth.UNSPECIFIED]: { label: "Not synced yet", tone: "neutral", icon: CircleHelp },
 };
 
 /** A connector's health as an icon and a word, never colour alone. */
@@ -175,7 +174,15 @@ function ConnectorList() {
   return (
     <div className="flex min-w-0 flex-col gap-4">
       {/* A refresh that fails keeps the last list on screen. */}
-      <ErrorMessage error={connectorsError(connectors.error)} />
+      {connectors.error && (
+        <div className="flex flex-col items-start gap-3">
+          <ErrorMessage error={connectorsError(connectors.error)} />
+          <p className="text-sm text-fg-muted">The list below may be out of date.</p>
+          <Button variant="secondary" onClick={() => connectors.refetch()}>
+            Try again
+          </Button>
+        </div>
+      )}
       <Card className="overflow-x-auto">
         <table aria-label="Connectors" className="w-full min-w-160 text-sm">
           <thead className="border-b border-border text-left text-xs text-fg-muted uppercase">
@@ -210,7 +217,9 @@ function ConnectorList() {
 
 function ConnectorRow({ connector: c }: { connector: Connector }) {
   const name = c.name || c.id;
-  const healthy = c.health === ConnectorHealth.HEALTHY;
+  // A disabled connector or one with invalid settings has nothing to fix in the health states:
+  // the label under its name says why it does not sync.
+  const needsHelp = c.health !== ConnectorHealth.HEALTHY && c.enabled && c.kind !== "";
   return (
     <tr className="border-b border-border align-top last:border-0">
       <th scope="row" className="px-4 py-2 text-left font-medium">
@@ -223,7 +232,7 @@ function ConnectorRow({ connector: c }: { connector: Connector }) {
       <td className="px-4 py-2">
         <div className="flex flex-col items-start gap-1">
           <HealthBadge value={c.health} />
-          {!healthy && (
+          {needsHelp && (
             <Link
               to={FIX_HREF}
               aria-label={`What to do about ${name}`}

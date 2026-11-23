@@ -102,6 +102,25 @@ describe("Connectors", () => {
     expect(row.getByText("Never")).toBeTruthy();
     expect(row.getByText(/Invalid settings/)).toBeTruthy();
     expect(row.getByText(/Disabled/)).toBeTruthy();
+    expect(row.queryByRole("link", { name: /What to do/ })).toBeNull();
+  });
+
+  it("keeps the last list and offers to retry when a refresh fails", async () => {
+    let fail = false;
+    const listConnectors = vi.fn(() => {
+      if (fail) throw new ConnectError("down", Code.Unavailable);
+      return { connectors: [connector("a", Health.HEALTHY)] };
+    });
+    const transport = createRouterTransport(({ service }) =>
+      service(IngestionService, { listConnectors }),
+    );
+    const { queryClient } = renderModule(ingestion, transport, "/connectors", admin);
+    await screen.findByRole("table", { name: "Connectors" });
+    fail = true;
+    await queryClient.refetchQueries({ queryKey: ["connectors"] });
+    expect(await screen.findByText(/may be out of date/)).toBeTruthy();
+    expect(screen.getByRole("table", { name: "Connectors" })).toBeTruthy();
+    expect(screen.getByRole("button", { name: "Try again" })).toBeTruthy();
   });
 
   it("keeps the table in its own scroll container", async () => {

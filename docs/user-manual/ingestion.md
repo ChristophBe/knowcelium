@@ -84,7 +84,7 @@ A connector keeps your documents in step with an external system, such as a wiki
 
 Each row shows:
 
-- **Connector**: its name and the kind of system it reads. A connector whose settings are invalid shows **Invalid settings**, and one that is switched off shows **Disabled**.
+- **Connector**: its name and the kind of system it reads. A connector that is switched off shows **Disabled**, and it does not sync. A connector whose settings are invalid shows **Invalid settings** and does not sync until your administrator corrects them. Neither has a **What to do** link.
 - **Health**: one of the states below, as an icon and a word. Unless a connector is healthy, a **What to do** link takes you to [Fix an unhealthy connector](#fix-an-unhealthy-connector).
 - **Last successful sync**: how long ago the connector last synced without failing (hover for the exact time), or **Never**.
 - **Documents**: how many documents the connector keeps in sync.
