@@ -48,6 +48,7 @@ const health: Record<ConnectorHealth, { label: string; tone: Tone; icon: IconCom
   [ConnectorHealth.FAILING]: { label: "Failing", tone: "danger", icon: CircleAlert },
   [ConnectorHealth.STALE]: { label: "Stale", tone: "warning", icon: Clock },
   [ConnectorHealth.UNKNOWN]: { label: "Not synced yet", tone: "neutral", icon: CircleHelp },
+  [ConnectorHealth.UNSPECIFIED]: { label: "Not synced yet", tone: "neutral", icon: CircleHelp },
 };
 
 /** A connector's health as an icon and a word, never colour alone. */
