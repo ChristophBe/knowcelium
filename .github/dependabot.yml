@@ -57,6 +57,11 @@ updates:
     ignore:
       - dependency-name: node
         update-types: ["version-update:semver-major"]
+      # The Python image tracks .python-version: uv would otherwise download the pinned
+      # interpreter into the build stage, where the `nobody` user cannot run it. Bump
+      # both together by hand.
+      - dependency-name: python
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   # Infrastructure images pinned in compose files (deploy/*.compose.yaml, the ollama
   # profile). Module compose files and the generated root compose.yaml only build.
