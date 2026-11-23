@@ -1,7 +1,7 @@
 # Shared image for Python components. Build from the repository root with
 #   --build-arg PACKAGE=<workspace package with a console script of the same name>
 #   [--build-arg KNOWCEL_VERSION=<x.y.z>]
-FROM python:3.13-slim
+FROM python:3.15-slim
 RUN pip install --no-cache-dir uv==0.11.14
 ENV UV_LINK_MODE=copy \
     UV_COMPILE_BYTECODE=1 \
