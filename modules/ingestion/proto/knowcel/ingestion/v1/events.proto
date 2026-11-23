@@ -127,3 +127,27 @@ message ConnectorsConfigured {
   repeated ConnectorConfig connectors = 1;
   google.protobuf.Timestamp time = 2;
 }
+
+// Request/reply, not events: the ingestion service asks the worker's connector
+// runtime for live search results with a core NATS request on subject
+// knowcel.connectors.search (outside the INGESTION stream, which would
+// acknowledge the request instead of the worker). Workers share the queue
+// group "ingestion-worker". See docs/adr/0015-live-retrieval-through-connectors.md.
+message ConnectorSearchRequest {
+  string query = 1;
+  repeated string connector_ids = 2;
+  int32 limit = 3;
+  // Connectors shared with none of these teams are not asked, unless public.
+  // The service fills it from the caller's teams in iam.
+  repeated string member_team_ids = 4;
+  // When not empty, only connectors shared with one of these teams (and no
+  // public ones) are asked: the teams a conversation is limited to.
+  repeated string scope_team_ids = 5;
+  // Seconds a connector gets to answer before it counts as unavailable.
+  float timeout_seconds = 6;
+}
+
+message ConnectorSearchReply {
+  repeated ConnectorSnippet snippets = 1;
+  repeated string unavailable_connectors = 2;
+}

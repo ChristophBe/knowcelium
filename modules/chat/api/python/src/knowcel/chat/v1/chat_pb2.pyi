@@ -64,7 +64,7 @@ class Progress(_message.Message):
     def __init__(self, stage: _Optional[_Union[ProgressStage, str]] = ..., passages: _Optional[int] = ..., documents: _Optional[int] = ..., manual_sections: _Optional[int] = ...) -> None: ...
 
 class Citation(_message.Message):
-    __slots__ = ("document_id", "document_title", "chunk_index", "snippet", "score", "manual_page", "manual_section")
+    __slots__ = ("document_id", "document_title", "chunk_index", "snippet", "score", "manual_page", "manual_section", "connector", "source_url")
     DOCUMENT_ID_FIELD_NUMBER: _ClassVar[int]
     DOCUMENT_TITLE_FIELD_NUMBER: _ClassVar[int]
     CHUNK_INDEX_FIELD_NUMBER: _ClassVar[int]
@@ -72,6 +72,8 @@ class Citation(_message.Message):
     SCORE_FIELD_NUMBER: _ClassVar[int]
     MANUAL_PAGE_FIELD_NUMBER: _ClassVar[int]
     MANUAL_SECTION_FIELD_NUMBER: _ClassVar[int]
+    CONNECTOR_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_URL_FIELD_NUMBER: _ClassVar[int]
     document_id: str
     document_title: str
     chunk_index: int
@@ -79,23 +81,27 @@ class Citation(_message.Message):
     score: float
     manual_page: str
     manual_section: str
-    def __init__(self, document_id: _Optional[str] = ..., document_title: _Optional[str] = ..., chunk_index: _Optional[int] = ..., snippet: _Optional[str] = ..., score: _Optional[float] = ..., manual_page: _Optional[str] = ..., manual_section: _Optional[str] = ...) -> None: ...
+    connector: str
+    source_url: str
+    def __init__(self, document_id: _Optional[str] = ..., document_title: _Optional[str] = ..., chunk_index: _Optional[int] = ..., snippet: _Optional[str] = ..., score: _Optional[float] = ..., manual_page: _Optional[str] = ..., manual_section: _Optional[str] = ..., connector: _Optional[str] = ..., source_url: _Optional[str] = ...) -> None: ...
 
 class ChatMessage(_message.Message):
-    __slots__ = ("id", "role", "content", "citations", "create_time", "status")
+    __slots__ = ("id", "role", "content", "citations", "create_time", "status", "unavailable_sources")
     ID_FIELD_NUMBER: _ClassVar[int]
     ROLE_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
     CITATIONS_FIELD_NUMBER: _ClassVar[int]
     CREATE_TIME_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
+    UNAVAILABLE_SOURCES_FIELD_NUMBER: _ClassVar[int]
     id: str
     role: MessageRole
     content: str
     citations: _containers.RepeatedCompositeFieldContainer[Citation]
     create_time: _timestamp_pb2.Timestamp
     status: MessageStatus
-    def __init__(self, id: _Optional[str] = ..., role: _Optional[_Union[MessageRole, str]] = ..., content: _Optional[str] = ..., citations: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., create_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., status: _Optional[_Union[MessageStatus, str]] = ...) -> None: ...
+    unavailable_sources: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, id: _Optional[str] = ..., role: _Optional[_Union[MessageRole, str]] = ..., content: _Optional[str] = ..., citations: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., create_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., status: _Optional[_Union[MessageStatus, str]] = ..., unavailable_sources: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class Conversation(_message.Message):
     __slots__ = ("id", "title", "create_time", "update_time", "document_ids", "last_message_time", "last_message_preview", "owner_id", "team_ids", "generating", "completed_unseen", "system_prompt")
@@ -280,10 +286,12 @@ class ChatError(_message.Message):
     def __init__(self, code: _Optional[_Union[ChatErrorCode, str]] = ..., message: _Optional[str] = ...) -> None: ...
 
 class Citations(_message.Message):
-    __slots__ = ("items",)
+    __slots__ = ("items", "unavailable_sources")
     ITEMS_FIELD_NUMBER: _ClassVar[int]
+    UNAVAILABLE_SOURCES_FIELD_NUMBER: _ClassVar[int]
     items: _containers.RepeatedCompositeFieldContainer[Citation]
-    def __init__(self, items: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ...) -> None: ...
+    unavailable_sources: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, items: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., unavailable_sources: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class PromptTemplates(_message.Message):
     __slots__ = ("system_prompt", "sources_template", "no_sources_template", "variables")

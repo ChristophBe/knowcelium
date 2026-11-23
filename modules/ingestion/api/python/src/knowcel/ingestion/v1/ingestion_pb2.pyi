@@ -248,3 +248,37 @@ class GetConnectorResponse(_message.Message):
     CONNECTOR_FIELD_NUMBER: _ClassVar[int]
     connector: Connector
     def __init__(self, connector: _Optional[_Union[Connector, _Mapping]] = ...) -> None: ...
+
+class SearchConnectorsRequest(_message.Message):
+    __slots__ = ("query", "connector_ids", "limit", "team_ids")
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    CONNECTOR_IDS_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
+    TEAM_IDS_FIELD_NUMBER: _ClassVar[int]
+    query: str
+    connector_ids: _containers.RepeatedScalarFieldContainer[str]
+    limit: int
+    team_ids: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, query: _Optional[str] = ..., connector_ids: _Optional[_Iterable[str]] = ..., limit: _Optional[int] = ..., team_ids: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class SearchConnectorsResponse(_message.Message):
+    __slots__ = ("snippets", "unavailable_connectors")
+    SNIPPETS_FIELD_NUMBER: _ClassVar[int]
+    UNAVAILABLE_CONNECTORS_FIELD_NUMBER: _ClassVar[int]
+    snippets: _containers.RepeatedCompositeFieldContainer[ConnectorSnippet]
+    unavailable_connectors: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, snippets: _Optional[_Iterable[_Union[ConnectorSnippet, _Mapping]]] = ..., unavailable_connectors: _Optional[_Iterable[str]] = ...) -> None: ...
+
+class ConnectorSnippet(_message.Message):
+    __slots__ = ("connector", "title", "text", "source_url", "external_id")
+    CONNECTOR_FIELD_NUMBER: _ClassVar[int]
+    TITLE_FIELD_NUMBER: _ClassVar[int]
+    TEXT_FIELD_NUMBER: _ClassVar[int]
+    SOURCE_URL_FIELD_NUMBER: _ClassVar[int]
+    EXTERNAL_ID_FIELD_NUMBER: _ClassVar[int]
+    connector: str
+    title: str
+    text: str
+    source_url: str
+    external_id: str
+    def __init__(self, connector: _Optional[str] = ..., title: _Optional[str] = ..., text: _Optional[str] = ..., source_url: _Optional[str] = ..., external_id: _Optional[str] = ...) -> None: ...

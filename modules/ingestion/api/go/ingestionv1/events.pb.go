@@ -717,6 +717,152 @@ func (x *ConnectorsConfigured) GetTime() *timestamppb.Timestamp {
 	return nil
 }
 
+// Request/reply, not events: the ingestion service asks the worker's connector
+// runtime for live search results with a core NATS request on subject
+// knowcel.connectors.search (outside the INGESTION stream, which would
+// acknowledge the request instead of the worker). Workers share the queue
+// group "ingestion-worker". See docs/adr/0015-live-retrieval-through-connectors.md.
+type ConnectorSearchRequest struct {
+	state        protoimpl.MessageState `protogen:"open.v1"`
+	Query        string                 `protobuf:"bytes,1,opt,name=query,proto3" json:"query,omitempty"`
+	ConnectorIds []string               `protobuf:"bytes,2,rep,name=connector_ids,json=connectorIds,proto3" json:"connector_ids,omitempty"`
+	Limit        int32                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
+	// Connectors shared with none of these teams are not asked, unless public.
+	// The service fills it from the caller's teams in iam.
+	MemberTeamIds []string `protobuf:"bytes,4,rep,name=member_team_ids,json=memberTeamIds,proto3" json:"member_team_ids,omitempty"`
+	// When not empty, only connectors shared with one of these teams (and no
+	// public ones) are asked: the teams a conversation is limited to.
+	ScopeTeamIds []string `protobuf:"bytes,5,rep,name=scope_team_ids,json=scopeTeamIds,proto3" json:"scope_team_ids,omitempty"`
+	// Seconds a connector gets to answer before it counts as unavailable.
+	TimeoutSeconds float32 `protobuf:"fixed32,6,opt,name=timeout_seconds,json=timeoutSeconds,proto3" json:"timeout_seconds,omitempty"`
+	unknownFields  protoimpl.UnknownFields
+	sizeCache      protoimpl.SizeCache
+}
+
+func (x *ConnectorSearchRequest) Reset() {
+	*x = ConnectorSearchRequest{}
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[8]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorSearchRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorSearchRequest) ProtoMessage() {}
+
+func (x *ConnectorSearchRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[8]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorSearchRequest.ProtoReflect.Descriptor instead.
+func (*ConnectorSearchRequest) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{8}
+}
+
+func (x *ConnectorSearchRequest) GetQuery() string {
+	if x != nil {
+		return x.Query
+	}
+	return ""
+}
+
+func (x *ConnectorSearchRequest) GetConnectorIds() []string {
+	if x != nil {
+		return x.ConnectorIds
+	}
+	return nil
+}
+
+func (x *ConnectorSearchRequest) GetLimit() int32 {
+	if x != nil {
+		return x.Limit
+	}
+	return 0
+}
+
+func (x *ConnectorSearchRequest) GetMemberTeamIds() []string {
+	if x != nil {
+		return x.MemberTeamIds
+	}
+	return nil
+}
+
+func (x *ConnectorSearchRequest) GetScopeTeamIds() []string {
+	if x != nil {
+		return x.ScopeTeamIds
+	}
+	return nil
+}
+
+func (x *ConnectorSearchRequest) GetTimeoutSeconds() float32 {
+	if x != nil {
+		return x.TimeoutSeconds
+	}
+	return 0
+}
+
+type ConnectorSearchReply struct {
+	state                 protoimpl.MessageState `protogen:"open.v1"`
+	Snippets              []*ConnectorSnippet    `protobuf:"bytes,1,rep,name=snippets,proto3" json:"snippets,omitempty"`
+	UnavailableConnectors []string               `protobuf:"bytes,2,rep,name=unavailable_connectors,json=unavailableConnectors,proto3" json:"unavailable_connectors,omitempty"`
+	unknownFields         protoimpl.UnknownFields
+	sizeCache             protoimpl.SizeCache
+}
+
+func (x *ConnectorSearchReply) Reset() {
+	*x = ConnectorSearchReply{}
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[9]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ConnectorSearchReply) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ConnectorSearchReply) ProtoMessage() {}
+
+func (x *ConnectorSearchReply) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_ingestion_v1_events_proto_msgTypes[9]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ConnectorSearchReply.ProtoReflect.Descriptor instead.
+func (*ConnectorSearchReply) Descriptor() ([]byte, []int) {
+	return file_knowcel_ingestion_v1_events_proto_rawDescGZIP(), []int{9}
+}
+
+func (x *ConnectorSearchReply) GetSnippets() []*ConnectorSnippet {
+	if x != nil {
+		return x.Snippets
+	}
+	return nil
+}
+
+func (x *ConnectorSearchReply) GetUnavailableConnectors() []string {
+	if x != nil {
+		return x.UnavailableConnectors
+	}
+	return nil
+}
+
 var File_knowcel_ingestion_v1_events_proto protoreflect.FileDescriptor
 
 const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
@@ -779,7 +925,17 @@ const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
 	"\n" +
 	"connectors\x18\x01 \x03(\v2%.knowcel.ingestion.v1.ConnectorConfigR\n" +
 	"connectors\x12.\n" +
-	"\x04time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04time*z\n" +
+	"\x04time\x18\x02 \x01(\v2\x1a.google.protobuf.TimestampR\x04time\"\xe0\x01\n" +
+	"\x16ConnectorSearchRequest\x12\x14\n" +
+	"\x05query\x18\x01 \x01(\tR\x05query\x12#\n" +
+	"\rconnector_ids\x18\x02 \x03(\tR\fconnectorIds\x12\x14\n" +
+	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12&\n" +
+	"\x0fmember_team_ids\x18\x04 \x03(\tR\rmemberTeamIds\x12$\n" +
+	"\x0escope_team_ids\x18\x05 \x03(\tR\fscopeTeamIds\x12'\n" +
+	"\x0ftimeout_seconds\x18\x06 \x01(\x02R\x0etimeoutSeconds\"\x91\x01\n" +
+	"\x14ConnectorSearchReply\x12B\n" +
+	"\bsnippets\x18\x01 \x03(\v2&.knowcel.ingestion.v1.ConnectorSnippetR\bsnippets\x125\n" +
+	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors*z\n" +
 	"\vSyncOutcome\x12\x1c\n" +
 	"\x18SYNC_OUTCOME_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16SYNC_OUTCOME_SUCCEEDED\x10\x01\x12\x18\n" +
@@ -799,32 +955,36 @@ func file_knowcel_ingestion_v1_events_proto_rawDescGZIP() []byte {
 }
 
 var file_knowcel_ingestion_v1_events_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_knowcel_ingestion_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
+var file_knowcel_ingestion_v1_events_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_knowcel_ingestion_v1_events_proto_goTypes = []any{
-	(SyncOutcome)(0),              // 0: knowcel.ingestion.v1.SyncOutcome
-	(*DocumentUploaded)(nil),      // 1: knowcel.ingestion.v1.DocumentUploaded
-	(*ProcessingStarted)(nil),     // 2: knowcel.ingestion.v1.ProcessingStarted
-	(*ProcessingProgress)(nil),    // 3: knowcel.ingestion.v1.ProcessingProgress
-	(*DocumentProcessed)(nil),     // 4: knowcel.ingestion.v1.DocumentProcessed
-	(*ProcessingFailed)(nil),      // 5: knowcel.ingestion.v1.ProcessingFailed
-	(*ConnectorSynced)(nil),       // 6: knowcel.ingestion.v1.ConnectorSynced
-	(*ConnectorConfig)(nil),       // 7: knowcel.ingestion.v1.ConnectorConfig
-	(*ConnectorsConfigured)(nil),  // 8: knowcel.ingestion.v1.ConnectorsConfigured
-	(JobStage)(0),                 // 9: knowcel.ingestion.v1.JobStage
-	(*timestamppb.Timestamp)(nil), // 10: google.protobuf.Timestamp
+	(SyncOutcome)(0),               // 0: knowcel.ingestion.v1.SyncOutcome
+	(*DocumentUploaded)(nil),       // 1: knowcel.ingestion.v1.DocumentUploaded
+	(*ProcessingStarted)(nil),      // 2: knowcel.ingestion.v1.ProcessingStarted
+	(*ProcessingProgress)(nil),     // 3: knowcel.ingestion.v1.ProcessingProgress
+	(*DocumentProcessed)(nil),      // 4: knowcel.ingestion.v1.DocumentProcessed
+	(*ProcessingFailed)(nil),       // 5: knowcel.ingestion.v1.ProcessingFailed
+	(*ConnectorSynced)(nil),        // 6: knowcel.ingestion.v1.ConnectorSynced
+	(*ConnectorConfig)(nil),        // 7: knowcel.ingestion.v1.ConnectorConfig
+	(*ConnectorsConfigured)(nil),   // 8: knowcel.ingestion.v1.ConnectorsConfigured
+	(*ConnectorSearchRequest)(nil), // 9: knowcel.ingestion.v1.ConnectorSearchRequest
+	(*ConnectorSearchReply)(nil),   // 10: knowcel.ingestion.v1.ConnectorSearchReply
+	(JobStage)(0),                  // 11: knowcel.ingestion.v1.JobStage
+	(*timestamppb.Timestamp)(nil),  // 12: google.protobuf.Timestamp
+	(*ConnectorSnippet)(nil),       // 13: knowcel.ingestion.v1.ConnectorSnippet
 }
 var file_knowcel_ingestion_v1_events_proto_depIdxs = []int32{
-	9,  // 0: knowcel.ingestion.v1.ProcessingProgress.stage:type_name -> knowcel.ingestion.v1.JobStage
+	11, // 0: knowcel.ingestion.v1.ProcessingProgress.stage:type_name -> knowcel.ingestion.v1.JobStage
 	0,  // 1: knowcel.ingestion.v1.ConnectorSynced.outcome:type_name -> knowcel.ingestion.v1.SyncOutcome
-	10, // 2: knowcel.ingestion.v1.ConnectorSynced.start_time:type_name -> google.protobuf.Timestamp
-	10, // 3: knowcel.ingestion.v1.ConnectorSynced.end_time:type_name -> google.protobuf.Timestamp
+	12, // 2: knowcel.ingestion.v1.ConnectorSynced.start_time:type_name -> google.protobuf.Timestamp
+	12, // 3: knowcel.ingestion.v1.ConnectorSynced.end_time:type_name -> google.protobuf.Timestamp
 	7,  // 4: knowcel.ingestion.v1.ConnectorsConfigured.connectors:type_name -> knowcel.ingestion.v1.ConnectorConfig
-	10, // 5: knowcel.ingestion.v1.ConnectorsConfigured.time:type_name -> google.protobuf.Timestamp
-	6,  // [6:6] is the sub-list for method output_type
-	6,  // [6:6] is the sub-list for method input_type
-	6,  // [6:6] is the sub-list for extension type_name
-	6,  // [6:6] is the sub-list for extension extendee
-	0,  // [0:6] is the sub-list for field type_name
+	12, // 5: knowcel.ingestion.v1.ConnectorsConfigured.time:type_name -> google.protobuf.Timestamp
+	13, // 6: knowcel.ingestion.v1.ConnectorSearchReply.snippets:type_name -> knowcel.ingestion.v1.ConnectorSnippet
+	7,  // [7:7] is the sub-list for method output_type
+	7,  // [7:7] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_ingestion_v1_events_proto_init() }
@@ -840,7 +1000,7 @@ func file_knowcel_ingestion_v1_events_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_ingestion_v1_events_proto_rawDesc), len(file_knowcel_ingestion_v1_events_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   8,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

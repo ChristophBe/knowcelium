@@ -21,3 +21,4 @@ Significant decisions are recorded here, one file per decision, using [template.
 | [0012](0012-prometheus-metrics-with-native-clients.md) | Expose Prometheus metrics with the native client libraries | Accepted |
 | [0013](0013-iam-module.md) | Keep users, teams and roles in an `iam` module | Accepted |
 | [0014](0014-curation-module.md) | Keep relevance and consistency in a `curation` module | Accepted |
+| [0015](0015-live-retrieval-through-connectors.md) | Search connectors live at question time, from chat through ingestion | Accepted |

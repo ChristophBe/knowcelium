@@ -131,3 +131,27 @@ class ConnectorsConfigured(_message.Message):
     connectors: _containers.RepeatedCompositeFieldContainer[ConnectorConfig]
     time: _timestamp_pb2.Timestamp
     def __init__(self, connectors: _Optional[_Iterable[_Union[ConnectorConfig, _Mapping]]] = ..., time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...
+
+class ConnectorSearchRequest(_message.Message):
+    __slots__ = ("query", "connector_ids", "limit", "member_team_ids", "scope_team_ids", "timeout_seconds")
+    QUERY_FIELD_NUMBER: _ClassVar[int]
+    CONNECTOR_IDS_FIELD_NUMBER: _ClassVar[int]
+    LIMIT_FIELD_NUMBER: _ClassVar[int]
+    MEMBER_TEAM_IDS_FIELD_NUMBER: _ClassVar[int]
+    SCOPE_TEAM_IDS_FIELD_NUMBER: _ClassVar[int]
+    TIMEOUT_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    query: str
+    connector_ids: _containers.RepeatedScalarFieldContainer[str]
+    limit: int
+    member_team_ids: _containers.RepeatedScalarFieldContainer[str]
+    scope_team_ids: _containers.RepeatedScalarFieldContainer[str]
+    timeout_seconds: float
+    def __init__(self, query: _Optional[str] = ..., connector_ids: _Optional[_Iterable[str]] = ..., limit: _Optional[int] = ..., member_team_ids: _Optional[_Iterable[str]] = ..., scope_team_ids: _Optional[_Iterable[str]] = ..., timeout_seconds: _Optional[float] = ...) -> None: ...
+
+class ConnectorSearchReply(_message.Message):
+    __slots__ = ("snippets", "unavailable_connectors")
+    SNIPPETS_FIELD_NUMBER: _ClassVar[int]
+    UNAVAILABLE_CONNECTORS_FIELD_NUMBER: _ClassVar[int]
+    snippets: _containers.RepeatedCompositeFieldContainer[_ingestion_pb2.ConnectorSnippet]
+    unavailable_connectors: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, snippets: _Optional[_Iterable[_Union[_ingestion_pb2.ConnectorSnippet, _Mapping]]] = ..., unavailable_connectors: _Optional[_Iterable[str]] = ...) -> None: ...

@@ -307,9 +307,11 @@ func (x *Progress) GetManualSections() int32 {
 	return 0
 }
 
-// A source an answer is grounded in: a chunk of a document, or a section of the
-// user manual. Manual citations set manual_page and manual_section instead of
-// document_id and chunk_index; their document_title names the page and section.
+// A source an answer is grounded in: a chunk of a document, a section of the
+// user manual or a snippet a connector found live. Manual citations set
+// manual_page and manual_section instead of document_id and chunk_index; their
+// document_title names the page and section. Connector citations set connector
+// and source_url instead; their document_title is the snippet's title.
 type Citation struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	DocumentId    string                 `protobuf:"bytes,1,opt,name=document_id,json=documentId,proto3" json:"document_id,omitempty"`
@@ -321,6 +323,11 @@ type Citation struct {
 	ManualPage string `protobuf:"bytes,6,opt,name=manual_page,json=manualPage,proto3" json:"manual_page,omitempty"`
 	// The section anchor on that page, as in /help/<manual_page>#<manual_section>.
 	ManualSection string `protobuf:"bytes,7,opt,name=manual_section,json=manualSection,proto3" json:"manual_section,omitempty"`
+	// The connector that found the snippet live, by name; set only on connector
+	// citations.
+	Connector string `protobuf:"bytes,8,opt,name=connector,proto3" json:"connector,omitempty"`
+	// Where the snippet's original lives, on connector citations.
+	SourceUrl     string `protobuf:"bytes,9,opt,name=source_url,json=sourceUrl,proto3" json:"source_url,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -404,16 +411,34 @@ func (x *Citation) GetManualSection() string {
 	return ""
 }
 
+func (x *Citation) GetConnector() string {
+	if x != nil {
+		return x.Connector
+	}
+	return ""
+}
+
+func (x *Citation) GetSourceUrl() string {
+	if x != nil {
+		return x.SourceUrl
+	}
+	return ""
+}
+
 type ChatMessage struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Role          MessageRole            `protobuf:"varint,2,opt,name=role,proto3,enum=knowcel.chat.v1.MessageRole" json:"role,omitempty"`
-	Content       string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
-	Citations     []*Citation            `protobuf:"bytes,4,rep,name=citations,proto3" json:"citations,omitempty"`
-	CreateTime    *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
-	Status        MessageStatus          `protobuf:"varint,6,opt,name=status,proto3,enum=knowcel.chat.v1.MessageStatus" json:"status,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state      protoimpl.MessageState `protogen:"open.v1"`
+	Id         string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Role       MessageRole            `protobuf:"varint,2,opt,name=role,proto3,enum=knowcel.chat.v1.MessageRole" json:"role,omitempty"`
+	Content    string                 `protobuf:"bytes,3,opt,name=content,proto3" json:"content,omitempty"`
+	Citations  []*Citation            `protobuf:"bytes,4,rep,name=citations,proto3" json:"citations,omitempty"`
+	CreateTime *timestamppb.Timestamp `protobuf:"bytes,5,opt,name=create_time,json=createTime,proto3" json:"create_time,omitempty"`
+	Status     MessageStatus          `protobuf:"varint,6,opt,name=status,proto3,enum=knowcel.chat.v1.MessageStatus" json:"status,omitempty"`
+	// Connectors that were asked live while writing the answer and did not
+	// answer in time or failed, by name, so their content is missing from it.
+	// Only on assistant messages.
+	UnavailableSources []string `protobuf:"bytes,7,rep,name=unavailable_sources,json=unavailableSources,proto3" json:"unavailable_sources,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ChatMessage) Reset() {
@@ -486,6 +511,13 @@ func (x *ChatMessage) GetStatus() MessageStatus {
 		return x.Status
 	}
 	return MessageStatus_MESSAGE_STATUS_UNSPECIFIED
+}
+
+func (x *ChatMessage) GetUnavailableSources() []string {
+	if x != nil {
+		return x.UnavailableSources
+	}
+	return nil
 }
 
 type Conversation struct {
@@ -1758,10 +1790,12 @@ func (x *ChatError) GetMessage() string {
 }
 
 type Citations struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Items         []*Citation            `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Items []*Citation            `protobuf:"bytes,1,rep,name=items,proto3" json:"items,omitempty"`
+	// As ChatMessage.unavailable_sources.
+	UnavailableSources []string `protobuf:"bytes,2,rep,name=unavailable_sources,json=unavailableSources,proto3" json:"unavailable_sources,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *Citations) Reset() {
@@ -1797,6 +1831,13 @@ func (*Citations) Descriptor() ([]byte, []int) {
 func (x *Citations) GetItems() []*Citation {
 	if x != nil {
 		return x.Items
+	}
+	return nil
+}
+
+func (x *Citations) GetUnavailableSources() []string {
+	if x != nil {
+		return x.UnavailableSources
 	}
 	return nil
 }
@@ -2141,7 +2182,7 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x05stage\x18\x01 \x01(\x0e2\x1e.knowcel.chat.v1.ProgressStageR\x05stage\x12\x1a\n" +
 	"\bpassages\x18\x02 \x01(\x05R\bpassages\x12\x1c\n" +
 	"\tdocuments\x18\x03 \x01(\x05R\tdocuments\x12'\n" +
-	"\x0fmanual_sections\x18\x04 \x01(\x05R\x0emanualSections\"\xeb\x01\n" +
+	"\x0fmanual_sections\x18\x04 \x01(\x05R\x0emanualSections\"\xa8\x02\n" +
 	"\bCitation\x12\x1f\n" +
 	"\vdocument_id\x18\x01 \x01(\tR\n" +
 	"documentId\x12%\n" +
@@ -2152,7 +2193,10 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x05score\x18\x05 \x01(\x02R\x05score\x12\x1f\n" +
 	"\vmanual_page\x18\x06 \x01(\tR\n" +
 	"manualPage\x12%\n" +
-	"\x0emanual_section\x18\a \x01(\tR\rmanualSection\"\x97\x02\n" +
+	"\x0emanual_section\x18\a \x01(\tR\rmanualSection\x12\x1c\n" +
+	"\tconnector\x18\b \x01(\tR\tconnector\x12\x1d\n" +
+	"\n" +
+	"source_url\x18\t \x01(\tR\tsourceUrl\"\xc8\x02\n" +
 	"\vChatMessage\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x120\n" +
 	"\x04role\x18\x02 \x01(\x0e2\x1c.knowcel.chat.v1.MessageRoleR\x04role\x12\x18\n" +
@@ -2160,7 +2204,8 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\tcitations\x18\x04 \x03(\v2\x19.knowcel.chat.v1.CitationR\tcitations\x12;\n" +
 	"\vcreate_time\x18\x05 \x01(\v2\x1a.google.protobuf.TimestampR\n" +
 	"createTime\x126\n" +
-	"\x06status\x18\x06 \x01(\x0e2\x1e.knowcel.chat.v1.MessageStatusR\x06status\"\xf1\x03\n" +
+	"\x06status\x18\x06 \x01(\x0e2\x1e.knowcel.chat.v1.MessageStatusR\x06status\x12/\n" +
+	"\x13unavailable_sources\x18\a \x03(\tR\x12unavailableSources\"\xf1\x03\n" +
 	"\fConversation\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12;\n" +
@@ -2238,9 +2283,10 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x05event\"Y\n" +
 	"\tChatError\x122\n" +
 	"\x04code\x18\x01 \x01(\x0e2\x1e.knowcel.chat.v1.ChatErrorCodeR\x04code\x12\x18\n" +
-	"\amessage\x18\x02 \x01(\tR\amessage\"<\n" +
+	"\amessage\x18\x02 \x01(\tR\amessage\"m\n" +
 	"\tCitations\x12/\n" +
-	"\x05items\x18\x01 \x03(\v2\x19.knowcel.chat.v1.CitationR\x05items\"\x92\x02\n" +
+	"\x05items\x18\x01 \x03(\v2\x19.knowcel.chat.v1.CitationR\x05items\x12/\n" +
+	"\x13unavailable_sources\x18\x02 \x03(\tR\x12unavailableSources\"\x92\x02\n" +
 	"\x0fPromptTemplates\x12D\n" +
 	"\rsystem_prompt\x18\x01 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\fsystemPrompt\x12J\n" +
 	"\x10sources_template\x18\x02 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\x0fsourcesTemplate\x12O\n" +

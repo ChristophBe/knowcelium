@@ -45,6 +45,15 @@ service IngestionService {
   // GetConnector returns one connector by id (NOT_FOUND when none is
   // configured under it). Platform admins only, like ListConnectors.
   rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse);
+  // SearchConnectors asks the connectors that allow live search for passages
+  // matching a query, at question time and without copying their content into
+  // documents. Only connectors the caller may read are asked: public ones and
+  // those shared with one of the caller's teams. Connectors are asked
+  // concurrently; one that fails or does not answer in time is left out and
+  // named in unavailable_connectors, the others still answer. UNAVAILABLE when
+  // the connector runtime (the ingestion worker) is not running, which callers
+  // treat as "no connector snippets".
+  rpc SearchConnectors(SearchConnectorsRequest) returns (SearchConnectorsResponse);
 }
 
 // Access says who can read a document, as in the document module.
@@ -241,4 +250,39 @@ message GetConnectorRequest {
 
 message GetConnectorResponse {
   Connector connector = 1;
+}
+
+message SearchConnectorsRequest {
+  // The question or search words; required.
+  string query = 1;
+  // Only these connectors (their names in the connectors file); empty asks all
+  // the caller may read. A name the caller may not read or that does not allow
+  // live search is ignored.
+  repeated string connector_ids = 2;
+  // The most snippets to return in total, 1 to 20; 0 means 5. Each connector
+  // is asked for this many and the results are interleaved.
+  int32 limit = 3;
+  // Only connectors shared with one of these teams (public ones are not
+  // asked); teams the caller does not belong to are ignored, and with none
+  // left nothing is searched. Empty means every connector the caller may read,
+  // public ones included.
+  repeated string team_ids = 4;
+}
+
+message SearchConnectorsResponse {
+  repeated ConnectorSnippet snippets = 1;
+  // The connectors that failed or did not answer in time, by name.
+  repeated string unavailable_connectors = 2;
+}
+
+// A passage a connector found when searched live.
+message ConnectorSnippet {
+  // The name of the connector, as in the connectors file.
+  string connector = 1;
+  string title = 2;
+  string text = 3;
+  // Where to open the original.
+  string source_url = 4;
+  // The item's id in the source system, when the connector gives one.
+  string external_id = 5;
 }

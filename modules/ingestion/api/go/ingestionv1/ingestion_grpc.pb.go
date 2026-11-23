@@ -19,15 +19,16 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	IngestionService_CreateUpload_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/CreateUpload"
-	IngestionService_CompleteUpload_FullMethodName = "/knowcel.ingestion.v1.IngestionService/CompleteUpload"
-	IngestionService_ReplaceUpload_FullMethodName  = "/knowcel.ingestion.v1.IngestionService/ReplaceUpload"
-	IngestionService_GetJob_FullMethodName         = "/knowcel.ingestion.v1.IngestionService/GetJob"
-	IngestionService_ListJobs_FullMethodName       = "/knowcel.ingestion.v1.IngestionService/ListJobs"
-	IngestionService_WatchJob_FullMethodName       = "/knowcel.ingestion.v1.IngestionService/WatchJob"
-	IngestionService_ReprocessJob_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/ReprocessJob"
-	IngestionService_ListConnectors_FullMethodName = "/knowcel.ingestion.v1.IngestionService/ListConnectors"
-	IngestionService_GetConnector_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/GetConnector"
+	IngestionService_CreateUpload_FullMethodName     = "/knowcel.ingestion.v1.IngestionService/CreateUpload"
+	IngestionService_CompleteUpload_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/CompleteUpload"
+	IngestionService_ReplaceUpload_FullMethodName    = "/knowcel.ingestion.v1.IngestionService/ReplaceUpload"
+	IngestionService_GetJob_FullMethodName           = "/knowcel.ingestion.v1.IngestionService/GetJob"
+	IngestionService_ListJobs_FullMethodName         = "/knowcel.ingestion.v1.IngestionService/ListJobs"
+	IngestionService_WatchJob_FullMethodName         = "/knowcel.ingestion.v1.IngestionService/WatchJob"
+	IngestionService_ReprocessJob_FullMethodName     = "/knowcel.ingestion.v1.IngestionService/ReprocessJob"
+	IngestionService_ListConnectors_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/ListConnectors"
+	IngestionService_GetConnector_FullMethodName     = "/knowcel.ingestion.v1.IngestionService/GetConnector"
+	IngestionService_SearchConnectors_FullMethodName = "/knowcel.ingestion.v1.IngestionService/SearchConnectors"
 )
 
 // IngestionServiceClient is the client API for IngestionService service.
@@ -72,6 +73,15 @@ type IngestionServiceClient interface {
 	// GetConnector returns one connector by id (NOT_FOUND when none is
 	// configured under it). Platform admins only, like ListConnectors.
 	GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error)
+	// SearchConnectors asks the connectors that allow live search for passages
+	// matching a query, at question time and without copying their content into
+	// documents. Only connectors the caller may read are asked: public ones and
+	// those shared with one of the caller's teams. Connectors are asked
+	// concurrently; one that fails or does not answer in time is left out and
+	// named in unavailable_connectors, the others still answer. UNAVAILABLE when
+	// the connector runtime (the ingestion worker) is not running, which callers
+	// treat as "no connector snippets".
+	SearchConnectors(ctx context.Context, in *SearchConnectorsRequest, opts ...grpc.CallOption) (*SearchConnectorsResponse, error)
 }
 
 type ingestionServiceClient struct {
@@ -181,6 +191,16 @@ func (c *ingestionServiceClient) GetConnector(ctx context.Context, in *GetConnec
 	return out, nil
 }
 
+func (c *ingestionServiceClient) SearchConnectors(ctx context.Context, in *SearchConnectorsRequest, opts ...grpc.CallOption) (*SearchConnectorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(SearchConnectorsResponse)
+	err := c.cc.Invoke(ctx, IngestionService_SearchConnectors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IngestionServiceServer is the server API for IngestionService service.
 // All implementations must embed UnimplementedIngestionServiceServer
 // for forward compatibility.
@@ -223,6 +243,15 @@ type IngestionServiceServer interface {
 	// GetConnector returns one connector by id (NOT_FOUND when none is
 	// configured under it). Platform admins only, like ListConnectors.
 	GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error)
+	// SearchConnectors asks the connectors that allow live search for passages
+	// matching a query, at question time and without copying their content into
+	// documents. Only connectors the caller may read are asked: public ones and
+	// those shared with one of the caller's teams. Connectors are asked
+	// concurrently; one that fails or does not answer in time is left out and
+	// named in unavailable_connectors, the others still answer. UNAVAILABLE when
+	// the connector runtime (the ingestion worker) is not running, which callers
+	// treat as "no connector snippets".
+	SearchConnectors(context.Context, *SearchConnectorsRequest) (*SearchConnectorsResponse, error)
 	mustEmbedUnimplementedIngestionServiceServer()
 }
 
@@ -259,6 +288,9 @@ func (UnimplementedIngestionServiceServer) ListConnectors(context.Context, *List
 }
 func (UnimplementedIngestionServiceServer) GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetConnector not implemented")
+}
+func (UnimplementedIngestionServiceServer) SearchConnectors(context.Context, *SearchConnectorsRequest) (*SearchConnectorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method SearchConnectors not implemented")
 }
 func (UnimplementedIngestionServiceServer) mustEmbedUnimplementedIngestionServiceServer() {}
 func (UnimplementedIngestionServiceServer) testEmbeddedByValue()                          {}
@@ -436,6 +468,24 @@ func _IngestionService_GetConnector_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IngestionService_SearchConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(SearchConnectorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IngestionServiceServer).SearchConnectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IngestionService_SearchConnectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IngestionServiceServer).SearchConnectors(ctx, req.(*SearchConnectorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IngestionService_ServiceDesc is the grpc.ServiceDesc for IngestionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -474,6 +524,10 @@ var IngestionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "GetConnector",
 			Handler:    _IngestionService_GetConnector_Handler,
+		},
+		{
+			MethodName: "SearchConnectors",
+			Handler:    _IngestionService_SearchConnectors_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

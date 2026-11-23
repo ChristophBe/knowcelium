@@ -79,9 +79,11 @@ message Progress {
   int32 manual_sections = 4;
 }
 
-// A source an answer is grounded in: a chunk of a document, or a section of the
-// user manual. Manual citations set manual_page and manual_section instead of
-// document_id and chunk_index; their document_title names the page and section.
+// A source an answer is grounded in: a chunk of a document, a section of the
+// user manual or a snippet a connector found live. Manual citations set
+// manual_page and manual_section instead of document_id and chunk_index; their
+// document_title names the page and section. Connector citations set connector
+// and source_url instead; their document_title is the snippet's title.
 message Citation {
   string document_id = 1;
   string document_title = 2;
@@ -92,6 +94,11 @@ message Citation {
   string manual_page = 6;
   // The section anchor on that page, as in /help/<manual_page>#<manual_section>.
   string manual_section = 7;
+  // The connector that found the snippet live, by name; set only on connector
+  // citations.
+  string connector = 8;
+  // Where the snippet's original lives, on connector citations.
+  string source_url = 9;
 }
 
 message ChatMessage {
@@ -101,6 +108,10 @@ message ChatMessage {
   repeated Citation citations = 4;
   google.protobuf.Timestamp create_time = 5;
   MessageStatus status = 6;
+  // Connectors that were asked live while writing the answer and did not
+  // answer in time or failed, by name, so their content is missing from it.
+  // Only on assistant messages.
+  repeated string unavailable_sources = 7;
 }
 
 message Conversation {
@@ -273,6 +284,8 @@ message ChatError {
 
 message Citations {
   repeated Citation items = 1;
+  // As ChatMessage.unavailable_sources.
+  repeated string unavailable_sources = 2;
 }
 
 // The prompts that build the system message of an answer. Templates are text
