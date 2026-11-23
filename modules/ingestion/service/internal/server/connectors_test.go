@@ -79,7 +79,9 @@ func TestConnectorsAreForPlatformAdminsOnly(t *testing.T) {
 }
 
 func TestListConnectorsReportsHealthTimesAndError(t *testing.T) {
-	start := time.Date(2026, 11, 23, 10, 0, 0, 0, time.UTC)
+	// Recent, because the server derives health from the real clock: the last
+	// run ended well within twice its interval, so the connector is FAILING, not STALE.
+	start := time.Now().UTC().Add(-time.Minute)
 	repo := &fakeConnectorRepo{statuses: []connectors.Status{
 		{Name: "docs", Kind: "folder", Enabled: true, Interval: 5 * time.Minute,
 			Outcome: ingestionv1.SyncOutcome_SYNC_OUTCOME_FAILED, LastStart: start, LastEnd: start.Add(time.Second),
