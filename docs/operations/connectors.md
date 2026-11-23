@@ -1,6 +1,6 @@
 # Connectors
 
-A connector keeps documents in step with an external system. The ingestion worker runs the connectors listed in its connectors file on a schedule: it lists what the source has, adds documents for new items, replaces the file of changed ones and deletes the documents of items that are gone. Everything it creates goes through the same upload, processing and access rules as a user's upload. The first connector, `folder`, watches a directory. The runtime lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`.
+A connector keeps documents in step with an external system. The ingestion worker runs the connectors listed in its connectors file on a schedule: it lists what the source has, adds documents for new items, replaces the file of changed ones and deletes the documents of items that are gone. Everything it creates goes through the same upload, processing and access rules as a user's upload. The first connector, `folder`, watches a directory. To write one, see [Build a connector](../connectors.md). The runtime lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`.
 
 ## Configure a connector
 

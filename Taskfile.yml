@@ -131,6 +131,14 @@ tasks:
         EOF
         exit $status
 
+  connector:new:
+    desc: "Create a connector from the template: task connector:new -- <name> (see docs/connectors.md)."
+    cmds:
+      - uv run python modules/ingestion/worker/scripts/new_connector.py {{.CLI_ARGS}}
+      # Registering adds an import; keep the file sorted and formatted.
+      - uv run ruff check --select I --fix -q modules/ingestion/worker
+      - uv run ruff format -q modules/ingestion/worker
+
   test:py:
     desc: Python unit tests with per-component coverage minimums.
     vars:

@@ -91,6 +91,10 @@ To use another identity provider, set `KNOWCEL_OIDC_ISSUER` (the `iss` of its to
 | `task site` | Vite dev server for the marketing site (`apps/site`) |
 | `task ci` | What CI runs (incl. a check that generated code is committed) |
 
+### Adding a connector
+
+A connector syncs an external system into documents, or is searched live. `task connector:new -- <name>` creates one with a passing test; [Build a connector](docs/connectors.md) explains the SDK.
+
 ### Adding a module
 
 Follow the [module architecture](docs/architecture/module.md) and copy the structure of the reference implementation for your language (`document` for Go, `llm` for Python). A new module needs an ADR (see CONTRIBUTING.md).
