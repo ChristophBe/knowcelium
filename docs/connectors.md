@@ -5,7 +5,7 @@ A connector connects Knowcelium to a system that holds content: a wiki, a drive,
 A connector works in one or both of two modes:
 
 - **Sync** copies the source into documents on a schedule. Everything downstream (search, chat, access rules) then works as for an upload. Implement `list_changes`; this is all a connector needs.
-- **Live search** asks the source at question time and copies nothing, for content that is too large or too volatile to mirror. Implement `search` in addition (or, for a source that is only searched, in place of useful syncing).
+- **Live search** asks the source at question time and copies nothing, for content that is too large or too volatile to mirror. Implement `search` in addition. The SDK defines the interface (`search`, `Snippet`, `Connector.searchable()`); the retrieval pipeline does not call it yet, so a connector's `search` is not used until live retrieval lands.
 
 The code lives in `modules/ingestion/worker/src/knowcel_ingestion_worker/connectors/`:
 

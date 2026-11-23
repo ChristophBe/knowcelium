@@ -3,6 +3,7 @@
 Writes `connectors/<name>.py` and `tests/test_connector_<name>.py` (a passing
 contract test) and registers the kind in `connectors/registry.py`."""
 
+import keyword
 import pathlib
 import re
 import sys
@@ -59,7 +60,11 @@ async def test_{name}_meets_the_connector_contract():
 
 
 def main(argv: list[str]) -> int:
-    if len(argv) != 1 or not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", argv[0]):
+    if (
+        len(argv) != 1
+        or not re.fullmatch(r"[a-z][a-z0-9_]{0,40}", argv[0])
+        or keyword.iskeyword(argv[0])
+    ):
         print(
             "usage: task connector:new -- <name>  (lowercase letters, digits and _, "
             "starting with a letter)",
@@ -77,14 +82,14 @@ def main(argv: list[str]) -> int:
     if MARKER not in text:
         print(f"cannot find the registration marker in {registry}", file=sys.stderr)
         return 1
+    anchor = "from .model import Source\n"
+    if anchor not in text:
+        print(f"cannot find the import anchor in {registry}", file=sys.stderr)
+        return 1
+    text = text.replace(anchor, f"from .{name} import {cls}Connector\n{anchor}", 1)
+    text = text.replace(MARKER, f'    "{name}": Kind.of({cls}Connector),\n{MARKER}')
     module.write_text(CONNECTOR.format(name=name, cls=cls), encoding="utf-8")
     test.write_text(TEST.format(name=name, cls=cls), encoding="utf-8")
-    text = text.replace(
-        "from .model import Source\n",
-        f"from .{name} import {cls}Connector\nfrom .model import Source\n",
-        1,
-    )
-    text = text.replace(MARKER, f'    "{name}": Kind.of({cls}Connector),\n{MARKER}')
     registry.write_text(text, encoding="utf-8")
     print(f"created {module.name} and {test.name}; registered kind {name!r}")
     print("next: implement list_changes, then read docs/connectors.md")

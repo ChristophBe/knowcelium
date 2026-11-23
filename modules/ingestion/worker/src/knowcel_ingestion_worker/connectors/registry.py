@@ -21,6 +21,8 @@ class Kind:
 
     @classmethod
     def of(cls, connector: type[Connector[Any]]) -> "Kind":
+        if not hasattr(connector, "config_model"):
+            raise TypeError(f"{connector.__name__} must set config_model to its settings model")
         return cls(connector.config_model, connector)
 
 

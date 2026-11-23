@@ -144,8 +144,18 @@ async def test_the_kit_reports_a_sync_that_did_not_run():
             async for record in super().list_changes(since):
                 yield record
 
-    with pytest.raises(AssertionError, match="did not run"):
+    with pytest.raises(AssertionError, match="did not run: the server is down"):
         await check_connector(Flaky, {})
+
+
+def test_a_connector_without_settings_model_is_rejected_clearly():
+    class Bare(Connector[NotesConfig]):
+        async def list_changes(self, since: datetime | None) -> AsyncIterator[Record]:
+            return
+            yield
+
+    with pytest.raises(TypeError, match="config_model"):
+        Kind.of(Bare)
 
 
 async def test_the_kit_leaves_the_registry_as_it_was():
@@ -193,8 +203,14 @@ def test_the_scaffold_writes_a_connector_its_test_and_the_registration(
     text = registry.read_text()
     assert "from .my_wiki import MyWikiConnector" in text
     assert '"my_wiki": Kind.of(MyWikiConnector),' in text
+    for generated in (connectors / "my_wiki.py", tests / "test_connector_my_wiki.py"):
+        compile(generated.read_text(), str(generated), "exec")
     assert module.main(["my_wiki"]) == 1  # exists
+    assert module.main(["class"]) == 2
     assert module.main(["Bad-Name"]) == 2
     assert module.main([]) == 2
     registry.write_text("KINDS = {}\n")
     assert module.main(["other"]) == 1  # no marker
+    registry.write_text(f"KINDS = {{\n{module.MARKER}}}\n")
+    assert module.main(["other"]) == 1  # no import anchor
+    assert not (connectors / "other.py").exists()

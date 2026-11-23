@@ -21,12 +21,12 @@ from typing import Any
 from pydantic import ValidationError
 
 from .library import DocumentGoneError
-from .model import Record
+from .model import ConnectorError, Record
 from .registry import KINDS, Kind
 from .runner import Outcome, Runner
 from .sdk import Connector
 from .spec import ConnectorSpec
-from .state import MemoryState
+from .state import MemoryState, status_key
 
 
 class MemoryLibrary:
@@ -116,21 +116,21 @@ async def check_connector(
     name = "contract-check"
     spec = ConnectorSpec(name=name, kind=name, owner="tester", public=True, settings=dict(settings))
     library = MemoryLibrary()
-    runner = Runner(library, MemoryState())
+    state = MemoryState()
+    runner = Runner(library, state)
     with registered(connector, name):
-        listed = [
-            r.external_id
-            async for r in connector(connector.config_model.model_validate(settings)).list_changes(
-                None
-            )
-        ]
+        instance = connector(connector.config_model.model_validate(settings))
+        try:
+            listed = [r.external_id async for r in instance.list_changes(None)]
+        except ConnectorError as err:
+            raise AssertionError(f"listing the source failed: {err}") from err
         assert "" not in listed, "a record has an empty external id"
         assert len(listed) == len(set(listed)), "two records share an external id"
-        first = await _sync(runner, spec, "first")
+        first = await _sync(runner, state, spec, "first")
         assert first.created > 0, "the first sync created no document: is the source empty?"
         ids = library.external_ids()
 
-        again = await _sync(runner, spec, "second")
+        again = await _sync(runner, state, spec, "second")
         assert (again.created, again.updated, again.deleted) == (0, 0, 0), (
             f"syncing an unchanged source is not idempotent: {again}"
         )
@@ -138,14 +138,18 @@ async def check_connector(
 
         if remove is not None:
             await _call(remove)
-            removed = await _sync(runner, spec, "third")
+            removed = await _sync(runner, state, spec, "third")
             assert removed.deleted == 1, f"removing one item deleted {removed.deleted} documents"
             assert len(library.external_ids()) == len(ids) - 1
     return first
 
 
-async def _sync(runner: Runner, spec: ConnectorSpec, label: str) -> Outcome:
+async def _sync(runner: Runner, state: MemoryState, spec: ConnectorSpec, label: str) -> Outcome:
     outcome = await runner.sync(spec)
-    assert outcome is not None, f"the {label} sync did not run; see the log for its status"
+    if outcome is None:
+        status = await state.get(status_key(spec.name)) or {}
+        raise AssertionError(
+            f"the {label} sync did not run: {status.get('last_error', 'no reason')}"
+        )
     assert outcome.failed == 0, f"the {label} sync had failing items: {outcome}"
     return outcome
