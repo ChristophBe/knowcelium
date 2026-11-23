@@ -14,20 +14,36 @@ type Querier interface {
 	// terminal jobs (DONE=4, FAILED=5) never change, and events of an earlier run
 	// are ignored. The only way back is ReprocessJob. A DONE job is 100% done.
 	AdvanceJob(ctx context.Context, arg AdvanceJobParams) (IngestionJob, error)
+	// ConfigureConnector adds a connector the worker lists in its connectors file
+	// or updates its configuration, leaving what its last run reported alone. An
+	// invalid entry (error is not empty) has failed: its last run is the error.
+	ConfigureConnector(ctx context.Context, arg ConfigureConnectorParams) error
 	// CountJobsByStatus counts all jobs per status, for the kb_ingestion_jobs
 	// metric (docs/metrics.md).
 	CountJobsByStatus(ctx context.Context) ([]CountJobsByStatusRow, error)
 	// Queries taking an owner_id act for that user and find only their jobs. The
 	// others apply the worker's events, which carry no user, and act on any job.
 	CreateJob(ctx context.Context, arg CreateJobParams) (IngestionJob, error)
+	// DeleteConnectorsExcept forgets the connectors the worker no longer lists.
+	DeleteConnectorsExcept(ctx context.Context, names []string) error
+	GetConnectorStatus(ctx context.Context, name string) (IngestionConnectorStatus, error)
 	// GetDocumentJob returns the owner's job of a document: the latest, should
 	// there be more than one.
 	GetDocumentJob(ctx context.Context, arg GetDocumentJobParams) (IngestionJob, error)
 	GetJob(ctx context.Context, arg GetJobParams) (IngestionJob, error)
+	// Connector status: what the worker reported about each connector. No query
+	// takes a user; the server decides who may read it.
+	ListConnectorStatuses(ctx context.Context) ([]IngestionConnectorStatus, error)
 	// ListJobs is keyset-paginated: a page continues after the (created_at, id) of
 	// the last row of the previous one (both after_* NULL for the first page), so
 	// rows inserted meanwhile never shift it. It walks the owner's index.
 	ListJobs(ctx context.Context, arg ListJobsParams) ([]IngestionJob, error)
+	// RecordConnectorSync stores the outcome of a sync run. A report that ended
+	// before the stored one is stale (events can arrive out of order) and changes
+	// nothing. Only a clean run (outcome 1) moves last_success. A report for a
+	// connector that is not known (yet) adds it, to be completed by
+	// ConfigureConnector.
+	RecordConnectorSync(ctx context.Context, arg RecordConnectorSyncParams) error
 	// ReportProgress records the stage and progress of a job's current run. A
 	// report means the worker is at it, so a QUEUED job (whose started event is
 	// late) becomes PROCESSING (3). Stage and progress only grow, so stale and
