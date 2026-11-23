@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, field_validator
 
 from ..extract import HTML_SUFFIXES, TEXT_SUFFIXES
 from .model import ConnectorError, Record
+from .sdk import Connector
 
 log = logging.getLogger(__name__)
 
@@ -37,15 +38,17 @@ class FolderConfig(BaseModel):
         return value
 
 
-class FolderSource:
+class FolderConnector(Connector[FolderConfig]):
     """Lists every supported file below `path`. The external id of a file is its
     path relative to the folder, so moving a file within it replaces the old
     document with a new one. Links that lead out of the folder are skipped."""
 
+    config_model = FolderConfig
     # Every file is listed on each sync, so a missing file means it was removed.
     complete = True
 
     def __init__(self, config: FolderConfig) -> None:
+        super().__init__(config)
         self._root = pathlib.Path(config.path).resolve()
         self._recursive = config.recursive
 

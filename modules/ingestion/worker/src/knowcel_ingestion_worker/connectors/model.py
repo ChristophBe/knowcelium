@@ -3,7 +3,7 @@
 A connector knows its source system and nothing about ingestion. It yields one
 `Record` per item (a file, a ticket, a part) with a stable external id, and
 the runtime turns them into documents, finds out what changed and deletes what
-disappeared. The SDK's `Connector` base class (sdk.py) is meant to implement
+disappeared. The SDK's `Connector` base class (sdk.py) implements
 `Source` on top of this."""
 
 import mimetypes
@@ -51,6 +51,17 @@ class Record:
             return self.content_type
         guessed, _ = mimetypes.guess_type(self.filename)
         return guessed or "application/octet-stream"
+
+
+@dataclass(frozen=True)
+class Snippet:
+    """A passage a connector found when searched live (`Connector.search`)."""
+
+    text: str
+    # Where to open the original; shown as the citation.
+    source_url: str
+    title: str = ""
+    external_id: str = ""
 
 
 class Source(Protocol):

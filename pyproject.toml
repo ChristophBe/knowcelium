@@ -46,6 +46,8 @@ select = [
 # gRPC servicers (and test fakes of them) implement the generated CamelCase method names.
 "**/server.py" = ["N802"]
 "**/tests/**" = ["N802"]
+# Command-line scripts talk to the terminal.
+"**/scripts/*.py" = ["T20"]
 # Seed data: prose strings in records.
 "examples/**/data.py" = ["E501"]
 

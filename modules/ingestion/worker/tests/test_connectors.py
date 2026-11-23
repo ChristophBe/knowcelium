@@ -10,7 +10,7 @@ import grpc
 import pytest
 from knowcel_ingestion_worker.config import Settings
 from knowcel_ingestion_worker.connectors import runner as runner_module
-from knowcel_ingestion_worker.connectors.folder import FolderConfig, FolderSource
+from knowcel_ingestion_worker.connectors.folder import FolderConfig, FolderConnector
 from knowcel_ingestion_worker.connectors.library import DocumentGoneError, metadata_of
 from knowcel_ingestion_worker.connectors.model import ConnectorError, Record
 from knowcel_ingestion_worker.connectors.registry import KINDS, Kind
@@ -423,7 +423,7 @@ def test_metadata_names_the_connector_and_origin():
 
 
 async def listing(path: pathlib.Path, **config: Any) -> dict[str, Record]:
-    source = FolderSource(FolderConfig(path=str(path), **config))
+    source = FolderConnector(FolderConfig(path=str(path), **config))
     return {r.external_id: r async for r in source.list_changes(None)}
 
 
