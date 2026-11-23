@@ -10,6 +10,7 @@ import {
   CircleAlert as LucideCircleAlert,
   CircleHelp as LucideCircleHelp,
   CircleUser as LucideCircleUser,
+  Clock as LucideClock,
   Copy as LucideCopy,
   Cpu as LucideCpu,
   Download as LucideDownload,
@@ -24,6 +25,7 @@ import {
   MessageSquareText as LucideMessageSquareText,
   Monitor as LucideMonitor,
   Moon as LucideMoon,
+  Plug as LucidePlug,
   Plus as LucidePlus,
   RotateCcw as LucideRotateCcw,
   Search as LucideSearch,
@@ -125,6 +127,7 @@ export const ChevronLeft = icon("chevron-left", LucideChevronLeft);
 export const CircleAlert = icon("circle-alert", LucideCircleAlert);
 export const CircleHelp = icon("circle-help", LucideCircleHelp);
 export const CircleUser = icon("circle-user", LucideCircleUser);
+export const Clock = icon("clock", LucideClock);
 export const Copy = icon("copy", LucideCopy);
 export const Cpu = icon("cpu", LucideCpu);
 export const Download = icon("download", LucideDownload);
@@ -139,6 +142,7 @@ export const MessageSquare = icon("message-square", LucideMessageSquare);
 export const MessageSquareText = icon("message-square-text", LucideMessageSquareText);
 export const Monitor = icon("monitor", LucideMonitor);
 export const Moon = icon("moon", LucideMoon);
+export const Plug = icon("plug", LucidePlug);
 export const Plus = icon("plus", LucidePlus);
 export const RotateCcw = icon("rotate-ccw", LucideRotateCcw);
 export const Search = icon("search", LucideSearch);
