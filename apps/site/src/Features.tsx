@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { DotGrid } from "./Graphics.tsx";
+import { repoPath } from "./links.ts";
 
 type Feature = { icon: LucideIcon; title: string; text: string; demo: ReactNode };
 
@@ -99,7 +100,7 @@ export function Features() {
           id="features-title"
           eyebrow="Features"
           title="One backbone for what your organization knows"
-          text="Stop digging through folders and PDFs. Knowcelium takes in your documents, makes them searchable and answers questions like a colleague who has read them all."
+          text="Stop digging through folders, PDFs and systems. Knowcelium takes in your documents and the systems you already use, makes them searchable and answers questions like a colleague who has read them all."
         />
         <Pillars />
         <h3 className="mt-20 mb-8 text-3xl font-bold tracking-tight sm:text-4xl">
@@ -107,7 +108,7 @@ export function Features() {
         </h3>
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
-            <li key={f.title}>
+            <li key={f.title} className="min-w-0">
               <Card className="flex h-full flex-col gap-3 p-5">
                 <span className="inline-flex size-10 items-center justify-center rounded-card bg-accent-subtle text-accent">
                   <f.icon className="size-5" aria-hidden="true" />
@@ -129,11 +130,26 @@ export function Features() {
   );
 }
 
-const PILLARS: { icon: LucideIcon; title: string; text: string; roadmap?: boolean }[] = [
+type Pillar = {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+  roadmap?: boolean;
+  /** Connectors that ship today; everything else is built with the SDK. */
+  shipped?: string[];
+  link?: { label: string; href: string };
+};
+
+const PILLARS: Pillar[] = [
   {
     icon: Download,
     title: "Absorb",
-    text: "Ingest documents today, with connectors to the systems you already use to come.",
+    text: "Upload documents, or connect the systems that hold them. A connector either syncs a source into documents on a schedule or looks it up live when someone asks a question, and the connector SDK lets you connect any system.",
+    shipped: ["Watched folder", "Showcase engineering", "Showcase logistics"],
+    link: {
+      label: "Build a connector",
+      href: repoPath("docs/connectors.md"),
+    },
   },
   {
     icon: Share2,
@@ -163,6 +179,29 @@ function Pillars() {
             </div>
             <h3 className="text-xl font-semibold tracking-tight">{p.title}</h3>
             <p className="text-base text-fg-muted">{p.text}</p>
+            {p.shipped && (
+              <div>
+                <p className="mb-2 text-sm font-medium">Connectors that ship today</p>
+                <ul className="flex flex-wrap gap-2">
+                  {p.shipped.map((c) => (
+                    <li key={c}>
+                      <Badge tone="success">{c}</Badge>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-sm text-fg-muted">
+                  The showcase connectors read made-up example systems. For any other system, build
+                  your own.
+                </p>
+              </div>
+            )}
+            {p.link && (
+              <p className="mt-auto text-sm">
+                <a href={p.link.href} className="text-accent underline">
+                  {p.link.label}
+                </a>
+              </p>
+            )}
           </Card>
         </li>
       ))}

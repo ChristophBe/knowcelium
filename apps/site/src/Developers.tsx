@@ -63,11 +63,23 @@ export function Developers() {
               </li>
             ))}
           </ul>
-          <p className="mt-8 text-sm">
-            <a href={repoPath("docs/architecture/overview.md")} className="text-accent underline">
-              Read the architecture overview
-            </a>
-          </p>
+          <ul className="mt-8 space-y-2 text-sm">
+            <li>
+              <a href={repoPath("docs/connectors.md")} className="text-accent underline">
+                Build a connector to your own system
+              </a>
+            </li>
+            <li>
+              <a href={repoPath("examples/showcase/README.md")} className="text-accent underline">
+                Try the showcase mock systems
+              </a>
+            </li>
+            <li>
+              <a href={repoPath("docs/architecture/overview.md")} className="text-accent underline">
+                Read the architecture overview
+              </a>
+            </li>
+          </ul>
         </div>
 
         <Architecture />

@@ -2,7 +2,9 @@ import { expectNoAxeViolations } from "@knowcel/ui/testing";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { App } from "./App.tsx";
+import { SOURCES } from "./ChatDemo.tsx";
 import { render as renderStatic } from "./entry-server.tsx";
+import { REPO } from "./links.ts";
 
 describe("marketing site", () => {
   it("has one title and a section for every nav link", async () => {
@@ -31,7 +33,29 @@ describe("marketing site", () => {
     expect(html).toContain("Everything your organization knows");
     for (const pillar of ["Absorb", "Connect", "Renew"]) expect(html).toContain(pillar);
     expect(html).toContain("On the roadmap");
-    expect(html).toContain("Drop PDFs, Markdown or text files here");
+    expect(html).toContain("showcase-logistics");
+    expect(html).toContain("from showcase-engineering");
     expect(html).toContain("task up:release");
+  });
+
+  it("claims only the connectors that exist and links to the guide and the showcase", () => {
+    const { container } = render(<App />);
+    const absorb = screen.getByRole("heading", { name: "Absorb" }).closest("li") as HTMLElement;
+    for (const name of ["Watched folder", "Showcase engineering", "Showcase logistics"])
+      expect(within(absorb).getByText(name)).not.toBeNull();
+    expect(absorb.textContent).toMatch(/sync/);
+    expect(absorb.textContent).toMatch(/live/);
+    expect(absorb.textContent).toMatch(/build\s+your own/);
+    const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href"));
+    expect(hrefs).toContain(`${REPO}/blob/main/docs/connectors.md`);
+    expect(hrefs).toContain(`${REPO}/blob/main/examples/showcase/README.md`);
+    expect(screen.getByRole("heading", { name: "Connect your systems" })).not.toBeNull();
+  });
+
+  it("answers the demo question from two connected systems", () => {
+    const [first, second] = SOURCES;
+    expect(first?.detail).toContain("showcase-engineering");
+    expect(second?.detail).toContain("showcase-logistics");
+    expect(SOURCES).toHaveLength(2);
   });
 });
