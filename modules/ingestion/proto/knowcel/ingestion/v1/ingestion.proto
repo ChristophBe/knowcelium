@@ -38,6 +38,13 @@ service IngestionService {
   // chunks and embeds the uploaded file anew and replaces the document's
   // chunks. Other jobs fail with FAILED_PRECONDITION.
   rpc ReprocessJob(ReprocessJobRequest) returns (ReprocessJobResponse);
+  // ListConnectors returns every configured connector with its health.
+  // Platform admins only (PERMISSION_DENIED otherwise; UNAVAILABLE while iam,
+  // which tells who is one, is down).
+  rpc ListConnectors(ListConnectorsRequest) returns (ListConnectorsResponse);
+  // GetConnector returns one connector by id (NOT_FOUND when none is
+  // configured under it). Platform admins only, like ListConnectors.
+  rpc GetConnector(GetConnectorRequest) returns (GetConnectorResponse);
 }
 
 // Access says who can read a document, as in the document module.
@@ -175,4 +182,63 @@ message ReprocessJobRequest {
 
 message ReprocessJobResponse {
   Job job = 1;
+}
+
+// ConnectorHealth says whether a connector keeps its documents up to date. It
+// is derived when the connector is read, from its last sync and its interval.
+enum ConnectorHealth {
+  CONNECTOR_HEALTH_UNSPECIFIED = 0;
+  // The last sync succeeded within the expected interval.
+  CONNECTOR_HEALTH_HEALTHY = 1;
+  // The last sync had partial failures: some items synced, others did not.
+  CONNECTOR_HEALTH_DEGRADED = 2;
+  // The last sync failed.
+  CONNECTOR_HEALTH_FAILING = 3;
+  // The last sync succeeded, but more than twice the connector's interval
+  // ago: syncs have stopped (the worker is down or stuck).
+  CONNECTOR_HEALTH_STALE = 4;
+  // The connector has not synced yet.
+  CONNECTOR_HEALTH_UNKNOWN = 5;
+}
+
+// Connector is an external system whose content is synced into documents on a
+// schedule (see docs/operations/connectors.md). Connectors are configured in
+// the worker's connectors file; this is what the worker reported about them.
+message Connector {
+  // The connector's configured name, which is unique and does not change.
+  string id = 1;
+  string name = 2;
+  // The kind of source (for example "folder"); empty when the connector's
+  // configuration is invalid.
+  string kind = 3;
+  bool enabled = 4;
+  ConnectorHealth health = 5;
+  // Seconds between the starts of two syncs, 0 when the configuration is
+  // invalid.
+  int32 interval_seconds = 6;
+  // Start and end of the last sync, unset until one ran.
+  google.protobuf.Timestamp last_sync_start_time = 7;
+  google.protobuf.Timestamp last_sync_end_time = 8;
+  // End of the last successful sync, unset until one succeeded.
+  google.protobuf.Timestamp last_success_time = 9;
+  // Documents the connector keeps in sync, as of its last sync.
+  int32 documents_synced = 10;
+  // Why the last sync failed, or a note about it (items skipped); empty when
+  // it went through cleanly.
+  string last_error = 11;
+}
+
+message ListConnectorsRequest {}
+
+message ListConnectorsResponse {
+  // Ordered by name.
+  repeated Connector connectors = 1;
+}
+
+message GetConnectorRequest {
+  string id = 1;
+}
+
+message GetConnectorResponse {
+  Connector connector = 1;
 }

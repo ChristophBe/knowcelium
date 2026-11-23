@@ -1,11 +1,26 @@
+import datetime
+
+from google.protobuf import timestamp_pb2 as _timestamp_pb2
 from knowcel.ingestion.v1 import ingestion_pb2 as _ingestion_pb2
 from google.protobuf.internal import containers as _containers
+from google.protobuf.internal import enum_type_wrapper as _enum_type_wrapper
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import message as _message
-from collections.abc import Iterable as _Iterable
+from collections.abc import Iterable as _Iterable, Mapping as _Mapping
 from typing import ClassVar as _ClassVar, Optional as _Optional, Union as _Union
 
 DESCRIPTOR: _descriptor.FileDescriptor
+
+class SyncOutcome(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    SYNC_OUTCOME_UNSPECIFIED: _ClassVar[SyncOutcome]
+    SYNC_OUTCOME_SUCCEEDED: _ClassVar[SyncOutcome]
+    SYNC_OUTCOME_PARTIAL: _ClassVar[SyncOutcome]
+    SYNC_OUTCOME_FAILED: _ClassVar[SyncOutcome]
+SYNC_OUTCOME_UNSPECIFIED: SyncOutcome
+SYNC_OUTCOME_SUCCEEDED: SyncOutcome
+SYNC_OUTCOME_PARTIAL: SyncOutcome
+SYNC_OUTCOME_FAILED: SyncOutcome
 
 class DocumentUploaded(_message.Message):
     __slots__ = ("job_id", "document_id", "filename", "content_type", "run", "team_ids")
@@ -72,3 +87,41 @@ class ProcessingFailed(_message.Message):
     error: str
     run: int
     def __init__(self, job_id: _Optional[str] = ..., document_id: _Optional[str] = ..., error: _Optional[str] = ..., run: _Optional[int] = ...) -> None: ...
+
+class ConnectorSynced(_message.Message):
+    __slots__ = ("name", "outcome", "start_time", "end_time", "documents", "error")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    OUTCOME_FIELD_NUMBER: _ClassVar[int]
+    START_TIME_FIELD_NUMBER: _ClassVar[int]
+    END_TIME_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENTS_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    outcome: SyncOutcome
+    start_time: _timestamp_pb2.Timestamp
+    end_time: _timestamp_pb2.Timestamp
+    documents: int
+    error: str
+    def __init__(self, name: _Optional[str] = ..., outcome: _Optional[_Union[SyncOutcome, str]] = ..., start_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., end_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., documents: _Optional[int] = ..., error: _Optional[str] = ...) -> None: ...
+
+class ConnectorConfig(_message.Message):
+    __slots__ = ("name", "kind", "enabled", "interval_seconds", "error")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    INTERVAL_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    ERROR_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    kind: str
+    enabled: bool
+    interval_seconds: int
+    error: str
+    def __init__(self, name: _Optional[str] = ..., kind: _Optional[str] = ..., enabled: _Optional[bool] = ..., interval_seconds: _Optional[int] = ..., error: _Optional[str] = ...) -> None: ...
+
+class ConnectorsConfigured(_message.Message):
+    __slots__ = ("connectors", "time")
+    CONNECTORS_FIELD_NUMBER: _ClassVar[int]
+    TIME_FIELD_NUMBER: _ClassVar[int]
+    connectors: _containers.RepeatedCompositeFieldContainer[ConnectorConfig]
+    time: _timestamp_pb2.Timestamp
+    def __init__(self, connectors: _Optional[_Iterable[_Union[ConnectorConfig, _Mapping]]] = ..., time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ...) -> None: ...

@@ -33,6 +33,15 @@ class JobStage(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     JOB_STAGE_CHUNKING: _ClassVar[JobStage]
     JOB_STAGE_EMBEDDING: _ClassVar[JobStage]
     JOB_STAGE_STORING: _ClassVar[JobStage]
+
+class ConnectorHealth(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    CONNECTOR_HEALTH_UNSPECIFIED: _ClassVar[ConnectorHealth]
+    CONNECTOR_HEALTH_HEALTHY: _ClassVar[ConnectorHealth]
+    CONNECTOR_HEALTH_DEGRADED: _ClassVar[ConnectorHealth]
+    CONNECTOR_HEALTH_FAILING: _ClassVar[ConnectorHealth]
+    CONNECTOR_HEALTH_STALE: _ClassVar[ConnectorHealth]
+    CONNECTOR_HEALTH_UNKNOWN: _ClassVar[ConnectorHealth]
 ACCESS_UNSPECIFIED: Access
 ACCESS_PUBLIC: Access
 ACCESS_TEAM: Access
@@ -47,6 +56,12 @@ JOB_STAGE_EXTRACTING: JobStage
 JOB_STAGE_CHUNKING: JobStage
 JOB_STAGE_EMBEDDING: JobStage
 JOB_STAGE_STORING: JobStage
+CONNECTOR_HEALTH_UNSPECIFIED: ConnectorHealth
+CONNECTOR_HEALTH_HEALTHY: ConnectorHealth
+CONNECTOR_HEALTH_DEGRADED: ConnectorHealth
+CONNECTOR_HEALTH_FAILING: ConnectorHealth
+CONNECTOR_HEALTH_STALE: ConnectorHealth
+CONNECTOR_HEALTH_UNKNOWN: ConnectorHealth
 
 class Job(_message.Message):
     __slots__ = ("id", "document_id", "filename", "content_type", "status", "error", "chunk_count", "create_time", "update_time", "progress", "stage", "owner_id")
@@ -185,3 +200,51 @@ class ReprocessJobResponse(_message.Message):
     JOB_FIELD_NUMBER: _ClassVar[int]
     job: Job
     def __init__(self, job: _Optional[_Union[Job, _Mapping]] = ...) -> None: ...
+
+class Connector(_message.Message):
+    __slots__ = ("id", "name", "kind", "enabled", "health", "interval_seconds", "last_sync_start_time", "last_sync_end_time", "last_success_time", "documents_synced", "last_error")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    HEALTH_FIELD_NUMBER: _ClassVar[int]
+    INTERVAL_SECONDS_FIELD_NUMBER: _ClassVar[int]
+    LAST_SYNC_START_TIME_FIELD_NUMBER: _ClassVar[int]
+    LAST_SYNC_END_TIME_FIELD_NUMBER: _ClassVar[int]
+    LAST_SUCCESS_TIME_FIELD_NUMBER: _ClassVar[int]
+    DOCUMENTS_SYNCED_FIELD_NUMBER: _ClassVar[int]
+    LAST_ERROR_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    name: str
+    kind: str
+    enabled: bool
+    health: ConnectorHealth
+    interval_seconds: int
+    last_sync_start_time: _timestamp_pb2.Timestamp
+    last_sync_end_time: _timestamp_pb2.Timestamp
+    last_success_time: _timestamp_pb2.Timestamp
+    documents_synced: int
+    last_error: str
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., kind: _Optional[str] = ..., enabled: _Optional[bool] = ..., health: _Optional[_Union[ConnectorHealth, str]] = ..., interval_seconds: _Optional[int] = ..., last_sync_start_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., last_sync_end_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., last_success_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., documents_synced: _Optional[int] = ..., last_error: _Optional[str] = ...) -> None: ...
+
+class ListConnectorsRequest(_message.Message):
+    __slots__ = ()
+    def __init__(self) -> None: ...
+
+class ListConnectorsResponse(_message.Message):
+    __slots__ = ("connectors",)
+    CONNECTORS_FIELD_NUMBER: _ClassVar[int]
+    connectors: _containers.RepeatedCompositeFieldContainer[Connector]
+    def __init__(self, connectors: _Optional[_Iterable[_Union[Connector, _Mapping]]] = ...) -> None: ...
+
+class GetConnectorRequest(_message.Message):
+    __slots__ = ("id",)
+    ID_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    def __init__(self, id: _Optional[str] = ...) -> None: ...
+
+class GetConnectorResponse(_message.Message):
+    __slots__ = ("connector",)
+    CONNECTOR_FIELD_NUMBER: _ClassVar[int]
+    connector: Connector
+    def __init__(self, connector: _Optional[_Union[Connector, _Mapping]] = ...) -> None: ...

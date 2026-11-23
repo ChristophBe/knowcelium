@@ -22,10 +22,11 @@ _runtime_version.ValidateProtobufRuntimeVersion(
 _sym_db = _symbol_database.Default()
 
 
+from google.protobuf import timestamp_pb2 as google_dot_protobuf_dot_timestamp__pb2
 from knowcel.ingestion.v1 import ingestion_pb2 as knowcel_dot_ingestion_dot_v1_dot_ingestion__pb2
 
 
-DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n!knowcel/ingestion/v1/events.proto\x12\x14knowcel.ingestion.v1\x1a$knowcel/ingestion/v1/ingestion.proto\"\xb6\x01\n\x10\x44ocumentUploaded\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x1a\n\x08\x66ilename\x18\x03 \x01(\tR\x08\x66ilename\x12!\n\x0c\x63ontent_type\x18\x04 \x01(\tR\x0b\x63ontentType\x12\x10\n\x03run\x18\x05 \x01(\x05R\x03run\x12\x19\n\x08team_ids\x18\x06 \x03(\tR\x07teamIds\"]\n\x11ProcessingStarted\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x10\n\x03run\x18\x03 \x01(\x05R\x03run\"\xb0\x01\n\x12ProcessingProgress\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x10\n\x03run\x18\x03 \x01(\x05R\x03run\x12\x34\n\x05stage\x18\x04 \x01(\x0e\x32\x1e.knowcel.ingestion.v1.JobStageR\x05stage\x12\x1a\n\x08progress\x18\x05 \x01(\x05R\x08progress\"\x99\x01\n\x11\x44ocumentProcessed\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x1f\n\x0b\x63hunk_count\x18\x03 \x01(\x05R\nchunkCount\x12\x10\n\x03run\x18\x04 \x01(\x05R\x03run\x12\x19\n\x08owner_id\x18\x05 \x01(\tR\x07ownerId\"r\n\x10ProcessingFailed\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x14\n\x05\x65rror\x18\x03 \x01(\tR\x05\x65rror\x12\x10\n\x03run\x18\x04 \x01(\x05R\x03runBTZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3')
+DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(b'\n!knowcel/ingestion/v1/events.proto\x12\x14knowcel.ingestion.v1\x1a\x1fgoogle/protobuf/timestamp.proto\x1a$knowcel/ingestion/v1/ingestion.proto\"\xb6\x01\n\x10\x44ocumentUploaded\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x1a\n\x08\x66ilename\x18\x03 \x01(\tR\x08\x66ilename\x12!\n\x0c\x63ontent_type\x18\x04 \x01(\tR\x0b\x63ontentType\x12\x10\n\x03run\x18\x05 \x01(\x05R\x03run\x12\x19\n\x08team_ids\x18\x06 \x03(\tR\x07teamIds\"]\n\x11ProcessingStarted\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x10\n\x03run\x18\x03 \x01(\x05R\x03run\"\xb0\x01\n\x12ProcessingProgress\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x10\n\x03run\x18\x03 \x01(\x05R\x03run\x12\x34\n\x05stage\x18\x04 \x01(\x0e\x32\x1e.knowcel.ingestion.v1.JobStageR\x05stage\x12\x1a\n\x08progress\x18\x05 \x01(\x05R\x08progress\"\x99\x01\n\x11\x44ocumentProcessed\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x1f\n\x0b\x63hunk_count\x18\x03 \x01(\x05R\nchunkCount\x12\x10\n\x03run\x18\x04 \x01(\x05R\x03run\x12\x19\n\x08owner_id\x18\x05 \x01(\tR\x07ownerId\"r\n\x10ProcessingFailed\x12\x15\n\x06job_id\x18\x01 \x01(\tR\x05jobId\x12\x1f\n\x0b\x64ocument_id\x18\x02 \x01(\tR\ndocumentId\x12\x14\n\x05\x65rror\x18\x03 \x01(\tR\x05\x65rror\x12\x10\n\x03run\x18\x04 \x01(\x05R\x03run\"\x88\x02\n\x0f\x43onnectorSynced\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12;\n\x07outcome\x18\x02 \x01(\x0e\x32!.knowcel.ingestion.v1.SyncOutcomeR\x07outcome\x12\x39\n\nstart_time\x18\x03 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\tstartTime\x12\x35\n\x08\x65nd_time\x18\x04 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\x07\x65ndTime\x12\x1c\n\tdocuments\x18\x05 \x01(\x05R\tdocuments\x12\x14\n\x05\x65rror\x18\x06 \x01(\tR\x05\x65rror\"\x94\x01\n\x0f\x43onnectorConfig\x12\x12\n\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n\x04kind\x18\x02 \x01(\tR\x04kind\x12\x18\n\x07\x65nabled\x18\x03 \x01(\x08R\x07\x65nabled\x12)\n\x10interval_seconds\x18\x04 \x01(\x05R\x0fintervalSeconds\x12\x14\n\x05\x65rror\x18\x05 \x01(\tR\x05\x65rror\"\x8d\x01\n\x14\x43onnectorsConfigured\x12\x45\n\nconnectors\x18\x01 \x03(\x0b\x32%.knowcel.ingestion.v1.ConnectorConfigR\nconnectors\x12.\n\x04time\x18\x02 \x01(\x0b\x32\x1a.google.protobuf.TimestampR\x04time*z\n\x0bSyncOutcome\x12\x1c\n\x18SYNC_OUTCOME_UNSPECIFIED\x10\x00\x12\x1a\n\x16SYNC_OUTCOME_SUCCEEDED\x10\x01\x12\x18\n\x14SYNC_OUTCOME_PARTIAL\x10\x02\x12\x17\n\x13SYNC_OUTCOME_FAILED\x10\x03\x42TZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1b\x06proto3')
 
 _globals = globals()
 _builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, _globals)
@@ -33,14 +34,22 @@ _builder.BuildTopDescriptorsAndMessages(DESCRIPTOR, 'knowcel.ingestion.v1.events
 if not _descriptor._USE_C_DESCRIPTORS:
   _globals['DESCRIPTOR']._loaded_options = None
   _globals['DESCRIPTOR']._serialized_options = b'ZRgithub.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1;ingestionv1'
-  _globals['_DOCUMENTUPLOADED']._serialized_start=98
-  _globals['_DOCUMENTUPLOADED']._serialized_end=280
-  _globals['_PROCESSINGSTARTED']._serialized_start=282
-  _globals['_PROCESSINGSTARTED']._serialized_end=375
-  _globals['_PROCESSINGPROGRESS']._serialized_start=378
-  _globals['_PROCESSINGPROGRESS']._serialized_end=554
-  _globals['_DOCUMENTPROCESSED']._serialized_start=557
-  _globals['_DOCUMENTPROCESSED']._serialized_end=710
-  _globals['_PROCESSINGFAILED']._serialized_start=712
-  _globals['_PROCESSINGFAILED']._serialized_end=826
+  _globals['_SYNCOUTCOME']._serialized_start=1423
+  _globals['_SYNCOUTCOME']._serialized_end=1545
+  _globals['_DOCUMENTUPLOADED']._serialized_start=131
+  _globals['_DOCUMENTUPLOADED']._serialized_end=313
+  _globals['_PROCESSINGSTARTED']._serialized_start=315
+  _globals['_PROCESSINGSTARTED']._serialized_end=408
+  _globals['_PROCESSINGPROGRESS']._serialized_start=411
+  _globals['_PROCESSINGPROGRESS']._serialized_end=587
+  _globals['_DOCUMENTPROCESSED']._serialized_start=590
+  _globals['_DOCUMENTPROCESSED']._serialized_end=743
+  _globals['_PROCESSINGFAILED']._serialized_start=745
+  _globals['_PROCESSINGFAILED']._serialized_end=859
+  _globals['_CONNECTORSYNCED']._serialized_start=862
+  _globals['_CONNECTORSYNCED']._serialized_end=1126
+  _globals['_CONNECTORCONFIG']._serialized_start=1129
+  _globals['_CONNECTORCONFIG']._serialized_end=1277
+  _globals['_CONNECTORSCONFIGURED']._serialized_start=1280
+  _globals['_CONNECTORSCONFIGURED']._serialized_end=1421
 # @@protoc_insertion_point(module_scope)

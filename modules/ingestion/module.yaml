@@ -24,4 +24,6 @@ consumes:
   - knowcel.ingestion.progress
   - knowcel.ingestion.processed
   - knowcel.ingestion.failed
+  - knowcel.ingestion.connector_synced   # ingestion-service (connector status)
+  - knowcel.ingestion.connectors_configured
   - knowcel.document.reindex_requested   # ingestion-service (reprocess after an embedding model change)

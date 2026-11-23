@@ -26,6 +26,8 @@ const (
 	IngestionService_ListJobs_FullMethodName       = "/knowcel.ingestion.v1.IngestionService/ListJobs"
 	IngestionService_WatchJob_FullMethodName       = "/knowcel.ingestion.v1.IngestionService/WatchJob"
 	IngestionService_ReprocessJob_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/ReprocessJob"
+	IngestionService_ListConnectors_FullMethodName = "/knowcel.ingestion.v1.IngestionService/ListConnectors"
+	IngestionService_GetConnector_FullMethodName   = "/knowcel.ingestion.v1.IngestionService/GetConnector"
 )
 
 // IngestionServiceClient is the client API for IngestionService service.
@@ -63,6 +65,13 @@ type IngestionServiceClient interface {
 	// chunks and embeds the uploaded file anew and replaces the document's
 	// chunks. Other jobs fail with FAILED_PRECONDITION.
 	ReprocessJob(ctx context.Context, in *ReprocessJobRequest, opts ...grpc.CallOption) (*ReprocessJobResponse, error)
+	// ListConnectors returns every configured connector with its health.
+	// Platform admins only (PERMISSION_DENIED otherwise; UNAVAILABLE while iam,
+	// which tells who is one, is down).
+	ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error)
+	// GetConnector returns one connector by id (NOT_FOUND when none is
+	// configured under it). Platform admins only, like ListConnectors.
+	GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error)
 }
 
 type ingestionServiceClient struct {
@@ -152,6 +161,26 @@ func (c *ingestionServiceClient) ReprocessJob(ctx context.Context, in *Reprocess
 	return out, nil
 }
 
+func (c *ingestionServiceClient) ListConnectors(ctx context.Context, in *ListConnectorsRequest, opts ...grpc.CallOption) (*ListConnectorsResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(ListConnectorsResponse)
+	err := c.cc.Invoke(ctx, IngestionService_ListConnectors_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
+func (c *ingestionServiceClient) GetConnector(ctx context.Context, in *GetConnectorRequest, opts ...grpc.CallOption) (*GetConnectorResponse, error) {
+	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
+	out := new(GetConnectorResponse)
+	err := c.cc.Invoke(ctx, IngestionService_GetConnector_FullMethodName, in, out, cOpts...)
+	if err != nil {
+		return nil, err
+	}
+	return out, nil
+}
+
 // IngestionServiceServer is the server API for IngestionService service.
 // All implementations must embed UnimplementedIngestionServiceServer
 // for forward compatibility.
@@ -187,6 +216,13 @@ type IngestionServiceServer interface {
 	// chunks and embeds the uploaded file anew and replaces the document's
 	// chunks. Other jobs fail with FAILED_PRECONDITION.
 	ReprocessJob(context.Context, *ReprocessJobRequest) (*ReprocessJobResponse, error)
+	// ListConnectors returns every configured connector with its health.
+	// Platform admins only (PERMISSION_DENIED otherwise; UNAVAILABLE while iam,
+	// which tells who is one, is down).
+	ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error)
+	// GetConnector returns one connector by id (NOT_FOUND when none is
+	// configured under it). Platform admins only, like ListConnectors.
+	GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error)
 	mustEmbedUnimplementedIngestionServiceServer()
 }
 
@@ -217,6 +253,12 @@ func (UnimplementedIngestionServiceServer) WatchJob(*WatchJobRequest, grpc.Serve
 }
 func (UnimplementedIngestionServiceServer) ReprocessJob(context.Context, *ReprocessJobRequest) (*ReprocessJobResponse, error) {
 	return nil, status.Error(codes.Unimplemented, "method ReprocessJob not implemented")
+}
+func (UnimplementedIngestionServiceServer) ListConnectors(context.Context, *ListConnectorsRequest) (*ListConnectorsResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method ListConnectors not implemented")
+}
+func (UnimplementedIngestionServiceServer) GetConnector(context.Context, *GetConnectorRequest) (*GetConnectorResponse, error) {
+	return nil, status.Error(codes.Unimplemented, "method GetConnector not implemented")
 }
 func (UnimplementedIngestionServiceServer) mustEmbedUnimplementedIngestionServiceServer() {}
 func (UnimplementedIngestionServiceServer) testEmbeddedByValue()                          {}
@@ -358,6 +400,42 @@ func _IngestionService_ReprocessJob_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
+func _IngestionService_ListConnectors_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ListConnectorsRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IngestionServiceServer).ListConnectors(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IngestionService_ListConnectors_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IngestionServiceServer).ListConnectors(ctx, req.(*ListConnectorsRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
+func _IngestionService_GetConnector_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConnectorRequest)
+	if err := dec(in); err != nil {
+		return nil, err
+	}
+	if interceptor == nil {
+		return srv.(IngestionServiceServer).GetConnector(ctx, in)
+	}
+	info := &grpc.UnaryServerInfo{
+		Server:     srv,
+		FullMethod: IngestionService_GetConnector_FullMethodName,
+	}
+	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
+		return srv.(IngestionServiceServer).GetConnector(ctx, req.(*GetConnectorRequest))
+	}
+	return interceptor(ctx, in, info, handler)
+}
+
 // IngestionService_ServiceDesc is the grpc.ServiceDesc for IngestionService service.
 // It's only intended for direct use with grpc.RegisterService,
 // and not to be introspected or modified (even as a copy)
@@ -388,6 +466,14 @@ var IngestionService_ServiceDesc = grpc.ServiceDesc{
 		{
 			MethodName: "ReprocessJob",
 			Handler:    _IngestionService_ReprocessJob_Handler,
+		},
+		{
+			MethodName: "ListConnectors",
+			Handler:    _IngestionService_ListConnectors_Handler,
+		},
+		{
+			MethodName: "GetConnector",
+			Handler:    _IngestionService_GetConnector_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

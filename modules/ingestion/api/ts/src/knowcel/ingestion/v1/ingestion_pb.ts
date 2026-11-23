@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file knowcel/ingestion/v1/ingestion.proto.
  */
 export const file_knowcel_ingestion_v1_ingestion: GenFile = /*@__PURE__*/
-  fileDesc("CiRrbm93Y2VsL2luZ2VzdGlvbi92MS9pbmdlc3Rpb24ucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxItgCCgNKb2ISCgoCaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEAoIZmlsZW5hbWUYAyABKAkSFAoMY29udGVudF90eXBlGAQgASgJEi8KBnN0YXR1cxgFIAEoDjIfLmtub3djZWwuaW5nZXN0aW9uLnYxLkpvYlN0YXR1cxINCgVlcnJvchgGIAEoCRITCgtjaHVua19jb3VudBgHIAEoBRIvCgtjcmVhdGVfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLdXBkYXRlX3RpbWUYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHByb2dyZXNzGAogASgFEi0KBXN0YWdlGAsgASgOMh4ua25vd2NlbC5pbmdlc3Rpb24udjEuSm9iU3RhZ2USEAoIb3duZXJfaWQYDCABKAkisAEKE0NyZWF0ZVVwbG9hZFJlcXVlc3QSEAoIZmlsZW5hbWUYASABKAkSFAoMY29udGVudF90eXBlGAIgASgJEhIKCnNpemVfYnl0ZXMYAyABKAMSDQoFdGl0bGUYBCABKAkSDgoGc2hhMjU2GAUgASgJEiwKBmFjY2VzcxgHIAEoDjIcLmtub3djZWwuaW5nZXN0aW9uLnYxLkFjY2VzcxIQCgh0ZWFtX2lkcxgGIAMoCSJSChRDcmVhdGVVcGxvYWRSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2ISEgoKdXBsb2FkX3VybBgCIAEoCSJ3ChRSZXBsYWNlVXBsb2FkUmVxdWVzdBITCgtkb2N1bWVudF9pZBgBIAEoCRIQCghmaWxlbmFtZRgCIAEoCRIUCgxjb250ZW50X3R5cGUYAyABKAkSEgoKc2l6ZV9ieXRlcxgEIAEoAxIOCgZzaGEyNTYYBSABKAkiUwoVUmVwbGFjZVVwbG9hZFJlc3BvbnNlEiYKA2pvYhgBIAEoCzIZLmtub3djZWwuaW5nZXN0aW9uLnYxLkpvYhISCgp1cGxvYWRfdXJsGAIgASgJIicKFUNvbXBsZXRlVXBsb2FkUmVxdWVzdBIOCgZqb2JfaWQYASABKAkiQAoWQ29tcGxldGVVcGxvYWRSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiGwoNR2V0Sm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI4Cg5HZXRKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiPwoPTGlzdEpvYnNSZXF1ZXN0EiwKBHBhZ2UYASABKAsyHi5rbm93Y2VsLmNvbW1vbi52MS5QYWdlUmVxdWVzdCJqChBMaXN0Sm9ic1Jlc3BvbnNlEicKBGpvYnMYASADKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2ISLQoEcGFnZRgCIAEoCzIfLmtub3djZWwuY29tbW9uLnYxLlBhZ2VSZXNwb25zZSIdCg9XYXRjaEpvYlJlcXVlc3QSCgoCaWQYASABKAkiOgoQV2F0Y2hKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiIQoTUmVwcm9jZXNzSm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI+ChRSZXByb2Nlc3NKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IqRAoGQWNjZXNzEhYKEkFDQ0VTU19VTlNQRUNJRklFRBAAEhEKDUFDQ0VTU19QVUJMSUMQARIPCgtBQ0NFU1NfVEVBTRACKqQBCglKb2JTdGF0dXMSGgoWSk9CX1NUQVRVU19VTlNQRUNJRklFRBAAEh0KGUpPQl9TVEFUVVNfUEVORElOR19VUExPQUQQARIVChFKT0JfU1RBVFVTX1FVRVVFRBACEhkKFUpPQl9TVEFUVVNfUFJPQ0VTU0lORxADEhMKD0pPQl9TVEFUVVNfRE9ORRAEEhUKEUpPQl9TVEFUVVNfRkFJTEVEEAUqhwEKCEpvYlN0YWdlEhkKFUpPQl9TVEFHRV9VTlNQRUNJRklFRBAAEhgKFEpPQl9TVEFHRV9FWFRSQUNUSU5HEAESFgoSSk9CX1NUQUdFX0NIVU5LSU5HEAISFwoTSk9CX1NUQUdFX0VNQkVERElORxADEhUKEUpPQl9TVEFHRV9TVE9SSU5HEAQyxAUKEEluZ2VzdGlvblNlcnZpY2USZQoMQ3JlYXRlVXBsb2FkEikua25vd2NlbC5pbmdlc3Rpb24udjEuQ3JlYXRlVXBsb2FkUmVxdWVzdBoqLmtub3djZWwuaW5nZXN0aW9uLnYxLkNyZWF0ZVVwbG9hZFJlc3BvbnNlEmsKDkNvbXBsZXRlVXBsb2FkEisua25vd2NlbC5pbmdlc3Rpb24udjEuQ29tcGxldGVVcGxvYWRSZXF1ZXN0Giwua25vd2NlbC5pbmdlc3Rpb24udjEuQ29tcGxldGVVcGxvYWRSZXNwb25zZRJoCg1SZXBsYWNlVXBsb2FkEioua25vd2NlbC5pbmdlc3Rpb24udjEuUmVwbGFjZVVwbG9hZFJlcXVlc3QaKy5rbm93Y2VsLmluZ2VzdGlvbi52MS5SZXBsYWNlVXBsb2FkUmVzcG9uc2USUwoGR2V0Sm9iEiMua25vd2NlbC5pbmdlc3Rpb24udjEuR2V0Sm9iUmVxdWVzdBokLmtub3djZWwuaW5nZXN0aW9uLnYxLkdldEpvYlJlc3BvbnNlElkKCExpc3RKb2JzEiUua25vd2NlbC5pbmdlc3Rpb24udjEuTGlzdEpvYnNSZXF1ZXN0GiYua25vd2NlbC5pbmdlc3Rpb24udjEuTGlzdEpvYnNSZXNwb25zZRJbCghXYXRjaEpvYhIlLmtub3djZWwuaW5nZXN0aW9uLnYxLldhdGNoSm9iUmVxdWVzdBomLmtub3djZWwuaW5nZXN0aW9uLnYxLldhdGNoSm9iUmVzcG9uc2UwARJlCgxSZXByb2Nlc3NKb2ISKS5rbm93Y2VsLmluZ2VzdGlvbi52MS5SZXByb2Nlc3NKb2JSZXF1ZXN0Gioua25vd2NlbC5pbmdlc3Rpb24udjEuUmVwcm9jZXNzSm9iUmVzcG9uc2VCVFpSZ2l0aHViLmNvbS9DaHJpc3RvcGhCZS9rbm93Y2VsaXVtL21vZHVsZXMvaW5nZXN0aW9uL2FwaS9nby9pbmdlc3Rpb252MTtpbmdlc3Rpb252MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_knowcel_common_v1_common]);
+  fileDesc("CiRrbm93Y2VsL2luZ2VzdGlvbi92MS9pbmdlc3Rpb24ucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxItgCCgNKb2ISCgoCaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEAoIZmlsZW5hbWUYAyABKAkSFAoMY29udGVudF90eXBlGAQgASgJEi8KBnN0YXR1cxgFIAEoDjIfLmtub3djZWwuaW5nZXN0aW9uLnYxLkpvYlN0YXR1cxINCgVlcnJvchgGIAEoCRITCgtjaHVua19jb3VudBgHIAEoBRIvCgtjcmVhdGVfdGltZRgIIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASLwoLdXBkYXRlX3RpbWUYCSABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEhAKCHByb2dyZXNzGAogASgFEi0KBXN0YWdlGAsgASgOMh4ua25vd2NlbC5pbmdlc3Rpb24udjEuSm9iU3RhZ2USEAoIb3duZXJfaWQYDCABKAkisAEKE0NyZWF0ZVVwbG9hZFJlcXVlc3QSEAoIZmlsZW5hbWUYASABKAkSFAoMY29udGVudF90eXBlGAIgASgJEhIKCnNpemVfYnl0ZXMYAyABKAMSDQoFdGl0bGUYBCABKAkSDgoGc2hhMjU2GAUgASgJEiwKBmFjY2VzcxgHIAEoDjIcLmtub3djZWwuaW5nZXN0aW9uLnYxLkFjY2VzcxIQCgh0ZWFtX2lkcxgGIAMoCSJSChRDcmVhdGVVcGxvYWRSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2ISEgoKdXBsb2FkX3VybBgCIAEoCSJ3ChRSZXBsYWNlVXBsb2FkUmVxdWVzdBITCgtkb2N1bWVudF9pZBgBIAEoCRIQCghmaWxlbmFtZRgCIAEoCRIUCgxjb250ZW50X3R5cGUYAyABKAkSEgoKc2l6ZV9ieXRlcxgEIAEoAxIOCgZzaGEyNTYYBSABKAkiUwoVUmVwbGFjZVVwbG9hZFJlc3BvbnNlEiYKA2pvYhgBIAEoCzIZLmtub3djZWwuaW5nZXN0aW9uLnYxLkpvYhISCgp1cGxvYWRfdXJsGAIgASgJIicKFUNvbXBsZXRlVXBsb2FkUmVxdWVzdBIOCgZqb2JfaWQYASABKAkiQAoWQ29tcGxldGVVcGxvYWRSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiGwoNR2V0Sm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI4Cg5HZXRKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiPwoPTGlzdEpvYnNSZXF1ZXN0EiwKBHBhZ2UYASABKAsyHi5rbm93Y2VsLmNvbW1vbi52MS5QYWdlUmVxdWVzdCJqChBMaXN0Sm9ic1Jlc3BvbnNlEicKBGpvYnMYASADKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2ISLQoEcGFnZRgCIAEoCzIfLmtub3djZWwuY29tbW9uLnYxLlBhZ2VSZXNwb25zZSIdCg9XYXRjaEpvYlJlcXVlc3QSCgoCaWQYASABKAkiOgoQV2F0Y2hKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2IiIQoTUmVwcm9jZXNzSm9iUmVxdWVzdBIKCgJpZBgBIAEoCSI+ChRSZXByb2Nlc3NKb2JSZXNwb25zZRImCgNqb2IYASABKAsyGS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2Ii7AIKCUNvbm5lY3RvchIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEgwKBGtpbmQYAyABKAkSDwoHZW5hYmxlZBgEIAEoCBI1CgZoZWFsdGgYBSABKA4yJS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3JIZWFsdGgSGAoQaW50ZXJ2YWxfc2Vjb25kcxgGIAEoBRI4ChRsYXN0X3N5bmNfc3RhcnRfdGltZRgHIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASNgoSbGFzdF9zeW5jX2VuZF90aW1lGAggASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBI1ChFsYXN0X3N1Y2Nlc3NfdGltZRgJIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXASGAoQZG9jdW1lbnRzX3N5bmNlZBgKIAEoBRISCgpsYXN0X2Vycm9yGAsgASgJIhcKFUxpc3RDb25uZWN0b3JzUmVxdWVzdCJNChZMaXN0Q29ubmVjdG9yc1Jlc3BvbnNlEjMKCmNvbm5lY3RvcnMYASADKAsyHy5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3IiIQoTR2V0Q29ubmVjdG9yUmVxdWVzdBIKCgJpZBgBIAEoCSJKChRHZXRDb25uZWN0b3JSZXNwb25zZRIyCgljb25uZWN0b3IYASABKAsyHy5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3IqRAoGQWNjZXNzEhYKEkFDQ0VTU19VTlNQRUNJRklFRBAAEhEKDUFDQ0VTU19QVUJMSUMQARIPCgtBQ0NFU1NfVEVBTRACKqQBCglKb2JTdGF0dXMSGgoWSk9CX1NUQVRVU19VTlNQRUNJRklFRBAAEh0KGUpPQl9TVEFUVVNfUEVORElOR19VUExPQUQQARIVChFKT0JfU1RBVFVTX1FVRVVFRBACEhkKFUpPQl9TVEFUVVNfUFJPQ0VTU0lORxADEhMKD0pPQl9TVEFUVVNfRE9ORRAEEhUKEUpPQl9TVEFUVVNfRkFJTEVEEAUqhwEKCEpvYlN0YWdlEhkKFUpPQl9TVEFHRV9VTlNQRUNJRklFRBAAEhgKFEpPQl9TVEFHRV9FWFRSQUNUSU5HEAESFgoSSk9CX1NUQUdFX0NIVU5LSU5HEAISFwoTSk9CX1NUQUdFX0VNQkVERElORxADEhUKEUpPQl9TVEFHRV9TVE9SSU5HEAQqyAEKD0Nvbm5lY3RvckhlYWx0aBIgChxDT05ORUNUT1JfSEVBTFRIX1VOU1BFQ0lGSUVEEAASHAoYQ09OTkVDVE9SX0hFQUxUSF9IRUFMVEhZEAESHQoZQ09OTkVDVE9SX0hFQUxUSF9ERUdSQURFRBACEhwKGENPTk5FQ1RPUl9IRUFMVEhfRkFJTElORxADEhoKFkNPTk5FQ1RPUl9IRUFMVEhfU1RBTEUQBBIcChhDT05ORUNUT1JfSEVBTFRIX1VOS05PV04QBTKYBwoQSW5nZXN0aW9uU2VydmljZRJlCgxDcmVhdGVVcGxvYWQSKS5rbm93Y2VsLmluZ2VzdGlvbi52MS5DcmVhdGVVcGxvYWRSZXF1ZXN0Gioua25vd2NlbC5pbmdlc3Rpb24udjEuQ3JlYXRlVXBsb2FkUmVzcG9uc2USawoOQ29tcGxldGVVcGxvYWQSKy5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db21wbGV0ZVVwbG9hZFJlcXVlc3QaLC5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db21wbGV0ZVVwbG9hZFJlc3BvbnNlEmgKDVJlcGxhY2VVcGxvYWQSKi5rbm93Y2VsLmluZ2VzdGlvbi52MS5SZXBsYWNlVXBsb2FkUmVxdWVzdBorLmtub3djZWwuaW5nZXN0aW9uLnYxLlJlcGxhY2VVcGxvYWRSZXNwb25zZRJTCgZHZXRKb2ISIy5rbm93Y2VsLmluZ2VzdGlvbi52MS5HZXRKb2JSZXF1ZXN0GiQua25vd2NlbC5pbmdlc3Rpb24udjEuR2V0Sm9iUmVzcG9uc2USWQoITGlzdEpvYnMSJS5rbm93Y2VsLmluZ2VzdGlvbi52MS5MaXN0Sm9ic1JlcXVlc3QaJi5rbm93Y2VsLmluZ2VzdGlvbi52MS5MaXN0Sm9ic1Jlc3BvbnNlElsKCFdhdGNoSm9iEiUua25vd2NlbC5pbmdlc3Rpb24udjEuV2F0Y2hKb2JSZXF1ZXN0GiYua25vd2NlbC5pbmdlc3Rpb24udjEuV2F0Y2hKb2JSZXNwb25zZTABEmUKDFJlcHJvY2Vzc0pvYhIpLmtub3djZWwuaW5nZXN0aW9uLnYxLlJlcHJvY2Vzc0pvYlJlcXVlc3QaKi5rbm93Y2VsLmluZ2VzdGlvbi52MS5SZXByb2Nlc3NKb2JSZXNwb25zZRJrCg5MaXN0Q29ubmVjdG9ycxIrLmtub3djZWwuaW5nZXN0aW9uLnYxLkxpc3RDb25uZWN0b3JzUmVxdWVzdBosLmtub3djZWwuaW5nZXN0aW9uLnYxLkxpc3RDb25uZWN0b3JzUmVzcG9uc2USZQoMR2V0Q29ubmVjdG9yEikua25vd2NlbC5pbmdlc3Rpb24udjEuR2V0Q29ubmVjdG9yUmVxdWVzdBoqLmtub3djZWwuaW5nZXN0aW9uLnYxLkdldENvbm5lY3RvclJlc3BvbnNlQlRaUmdpdGh1Yi5jb20vQ2hyaXN0b3BoQmUva25vd2NlbGl1bS9tb2R1bGVzL2luZ2VzdGlvbi9hcGkvZ28vaW5nZXN0aW9udjE7aW5nZXN0aW9udjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_knowcel_common_v1_common]);
 
 /**
  * @generated from message knowcel.ingestion.v1.Job
@@ -425,6 +425,160 @@ export const ReprocessJobResponseSchema: GenMessage<ReprocessJobResponse> = /*@_
   messageDesc(file_knowcel_ingestion_v1_ingestion, 14);
 
 /**
+ * Connector is an external system whose content is synced into documents on a
+ * schedule (see docs/operations/connectors.md). Connectors are configured in
+ * the worker's connectors file; this is what the worker reported about them.
+ *
+ * @generated from message knowcel.ingestion.v1.Connector
+ */
+export type Connector = Message<"knowcel.ingestion.v1.Connector"> & {
+  /**
+   * The connector's configured name, which is unique and does not change.
+   *
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * The kind of source (for example "folder"); empty when the connector's
+   * configuration is invalid.
+   *
+   * @generated from field: string kind = 3;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: bool enabled = 4;
+   */
+  enabled: boolean;
+
+  /**
+   * @generated from field: knowcel.ingestion.v1.ConnectorHealth health = 5;
+   */
+  health: ConnectorHealth;
+
+  /**
+   * Seconds between the starts of two syncs, 0 when the configuration is
+   * invalid.
+   *
+   * @generated from field: int32 interval_seconds = 6;
+   */
+  intervalSeconds: number;
+
+  /**
+   * Start and end of the last sync, unset until one ran.
+   *
+   * @generated from field: google.protobuf.Timestamp last_sync_start_time = 7;
+   */
+  lastSyncStartTime?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp last_sync_end_time = 8;
+   */
+  lastSyncEndTime?: Timestamp | undefined;
+
+  /**
+   * End of the last successful sync, unset until one succeeded.
+   *
+   * @generated from field: google.protobuf.Timestamp last_success_time = 9;
+   */
+  lastSuccessTime?: Timestamp | undefined;
+
+  /**
+   * Documents the connector keeps in sync, as of its last sync.
+   *
+   * @generated from field: int32 documents_synced = 10;
+   */
+  documentsSynced: number;
+
+  /**
+   * Why the last sync failed, or a note about it (items skipped); empty when
+   * it went through cleanly.
+   *
+   * @generated from field: string last_error = 11;
+   */
+  lastError: string;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.Connector.
+ * Use `create(ConnectorSchema)` to create a new message.
+ */
+export const ConnectorSchema: GenMessage<Connector> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_ingestion, 15);
+
+/**
+ * @generated from message knowcel.ingestion.v1.ListConnectorsRequest
+ */
+export type ListConnectorsRequest = Message<"knowcel.ingestion.v1.ListConnectorsRequest"> & {
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ListConnectorsRequest.
+ * Use `create(ListConnectorsRequestSchema)` to create a new message.
+ */
+export const ListConnectorsRequestSchema: GenMessage<ListConnectorsRequest> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_ingestion, 16);
+
+/**
+ * @generated from message knowcel.ingestion.v1.ListConnectorsResponse
+ */
+export type ListConnectorsResponse = Message<"knowcel.ingestion.v1.ListConnectorsResponse"> & {
+  /**
+   * Ordered by name.
+   *
+   * @generated from field: repeated knowcel.ingestion.v1.Connector connectors = 1;
+   */
+  connectors: Connector[];
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ListConnectorsResponse.
+ * Use `create(ListConnectorsResponseSchema)` to create a new message.
+ */
+export const ListConnectorsResponseSchema: GenMessage<ListConnectorsResponse> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_ingestion, 17);
+
+/**
+ * @generated from message knowcel.ingestion.v1.GetConnectorRequest
+ */
+export type GetConnectorRequest = Message<"knowcel.ingestion.v1.GetConnectorRequest"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.GetConnectorRequest.
+ * Use `create(GetConnectorRequestSchema)` to create a new message.
+ */
+export const GetConnectorRequestSchema: GenMessage<GetConnectorRequest> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_ingestion, 18);
+
+/**
+ * @generated from message knowcel.ingestion.v1.GetConnectorResponse
+ */
+export type GetConnectorResponse = Message<"knowcel.ingestion.v1.GetConnectorResponse"> & {
+  /**
+   * @generated from field: knowcel.ingestion.v1.Connector connector = 1;
+   */
+  connector?: Connector | undefined;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.GetConnectorResponse.
+ * Use `create(GetConnectorResponseSchema)` to create a new message.
+ */
+export const GetConnectorResponseSchema: GenMessage<GetConnectorResponse> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_ingestion, 19);
+
+/**
  * Access says who can read a document, as in the document module.
  *
  * @generated from enum knowcel.ingestion.v1.Access
@@ -546,6 +700,61 @@ export const JobStageSchema: GenEnum<JobStage> = /*@__PURE__*/
   enumDesc(file_knowcel_ingestion_v1_ingestion, 2);
 
 /**
+ * ConnectorHealth says whether a connector keeps its documents up to date. It
+ * is derived when the connector is read, from its last sync and its interval.
+ *
+ * @generated from enum knowcel.ingestion.v1.ConnectorHealth
+ */
+export enum ConnectorHealth {
+  /**
+   * @generated from enum value: CONNECTOR_HEALTH_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * The last sync succeeded within the expected interval.
+   *
+   * @generated from enum value: CONNECTOR_HEALTH_HEALTHY = 1;
+   */
+  HEALTHY = 1,
+
+  /**
+   * The last sync had partial failures: some items synced, others did not.
+   *
+   * @generated from enum value: CONNECTOR_HEALTH_DEGRADED = 2;
+   */
+  DEGRADED = 2,
+
+  /**
+   * The last sync failed.
+   *
+   * @generated from enum value: CONNECTOR_HEALTH_FAILING = 3;
+   */
+  FAILING = 3,
+
+  /**
+   * The last sync succeeded, but more than twice the connector's interval
+   * ago: syncs have stopped (the worker is down or stuck).
+   *
+   * @generated from enum value: CONNECTOR_HEALTH_STALE = 4;
+   */
+  STALE = 4,
+
+  /**
+   * The connector has not synced yet.
+   *
+   * @generated from enum value: CONNECTOR_HEALTH_UNKNOWN = 5;
+   */
+  UNKNOWN = 5,
+}
+
+/**
+ * Describes the enum knowcel.ingestion.v1.ConnectorHealth.
+ */
+export const ConnectorHealthSchema: GenEnum<ConnectorHealth> = /*@__PURE__*/
+  enumDesc(file_knowcel_ingestion_v1_ingestion, 3);
+
+/**
  * IngestionService accepts new content and tracks it through processing
  * (extraction, chunking, embedding).
  *
@@ -633,6 +842,29 @@ export const IngestionService: GenService<{
     methodKind: "unary";
     input: typeof ReprocessJobRequestSchema;
     output: typeof ReprocessJobResponseSchema;
+  },
+  /**
+   * ListConnectors returns every configured connector with its health.
+   * Platform admins only (PERMISSION_DENIED otherwise; UNAVAILABLE while iam,
+   * which tells who is one, is down).
+   *
+   * @generated from rpc knowcel.ingestion.v1.IngestionService.ListConnectors
+   */
+  listConnectors: {
+    methodKind: "unary";
+    input: typeof ListConnectorsRequestSchema;
+    output: typeof ListConnectorsResponseSchema;
+  },
+  /**
+   * GetConnector returns one connector by id (NOT_FOUND when none is
+   * configured under it). Platform admins only, like ListConnectors.
+   *
+   * @generated from rpc knowcel.ingestion.v1.IngestionService.GetConnector
+   */
+  getConnector: {
+    methodKind: "unary";
+    input: typeof GetConnectorRequestSchema;
+    output: typeof GetConnectorResponseSchema;
   },
 }> = /*@__PURE__*/
   serviceDesc(file_knowcel_ingestion_v1_ingestion, 0);

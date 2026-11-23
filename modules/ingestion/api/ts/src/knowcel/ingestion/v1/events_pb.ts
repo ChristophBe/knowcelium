@@ -2,8 +2,10 @@
 // @generated from file knowcel/ingestion/v1/events.proto (package knowcel.ingestion.v1, syntax proto3)
 /* eslint-disable */
 
-import type { GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
-import { fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { GenEnum, GenFile, GenMessage } from "@bufbuild/protobuf/codegenv2";
+import { enumDesc, fileDesc, messageDesc } from "@bufbuild/protobuf/codegenv2";
+import type { Timestamp } from "@bufbuild/protobuf/wkt";
+import { file_google_protobuf_timestamp } from "@bufbuild/protobuf/wkt";
 import type { JobStage } from "./ingestion_pb";
 import { file_knowcel_ingestion_v1_ingestion } from "./ingestion_pb";
 import type { Message } from "@bufbuild/protobuf";
@@ -12,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file knowcel/ingestion/v1/events.proto.
  */
 export const file_knowcel_ingestion_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBUJUWlJnaXRodWIuY29tL0NocmlzdG9waEJlL2tub3djZWxpdW0vbW9kdWxlcy9pbmdlc3Rpb24vYXBpL2dvL2luZ2VzdGlvbnYxO2luZ2VzdGlvbnYxYgZwcm90bzM", [file_knowcel_ingestion_v1_ingestion]);
+  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBSLTAQoPQ29ubmVjdG9yU3luY2VkEgwKBG5hbWUYASABKAkSMgoHb3V0Y29tZRgCIAEoDjIhLmtub3djZWwuaW5nZXN0aW9uLnYxLlN5bmNPdXRjb21lEi4KCnN0YXJ0X3RpbWUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglkb2N1bWVudHMYBSABKAUSDQoFZXJyb3IYBiABKAkiZwoPQ29ubmVjdG9yQ29uZmlnEgwKBG5hbWUYASABKAkSDAoEa2luZBgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhgKEGludGVydmFsX3NlY29uZHMYBCABKAUSDQoFZXJyb3IYBSABKAkiewoUQ29ubmVjdG9yc0NvbmZpZ3VyZWQSOQoKY29ubmVjdG9ycxgBIAMoCzIlLmtub3djZWwuaW5nZXN0aW9uLnYxLkNvbm5lY3RvckNvbmZpZxIoCgR0aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCp6CgtTeW5jT3V0Y29tZRIcChhTWU5DX09VVENPTUVfVU5TUEVDSUZJRUQQABIaChZTWU5DX09VVENPTUVfU1VDQ0VFREVEEAESGAoUU1lOQ19PVVRDT01FX1BBUlRJQUwQAhIXChNTWU5DX09VVENPTUVfRkFJTEVEEANCVFpSZ2l0aHViLmNvbS9DaHJpc3RvcGhCZS9rbm93Y2VsaXVtL21vZHVsZXMvaW5nZXN0aW9uL2FwaS9nby9pbmdlc3Rpb252MTtpbmdlc3Rpb252MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_knowcel_ingestion_v1_ingestion]);
 
 /**
  * Subject: knowcel.ingestion.uploaded
@@ -210,4 +212,174 @@ export type ProcessingFailed = Message<"knowcel.ingestion.v1.ProcessingFailed"> 
  */
 export const ProcessingFailedSchema: GenMessage<ProcessingFailed> = /*@__PURE__*/
   messageDesc(file_knowcel_ingestion_v1_events, 4);
+
+/**
+ * Subject: knowcel.ingestion.connector_synced
+ * Published by the worker after each sync run of a connector, for the
+ * connector status of the ingestion service (ListConnectors). The service
+ * keeps the newest report per connector (by end_time); a lost report only
+ * delays the status until the next run.
+ *
+ * @generated from message knowcel.ingestion.v1.ConnectorSynced
+ */
+export type ConnectorSynced = Message<"knowcel.ingestion.v1.ConnectorSynced"> & {
+  /**
+   * The connector's configured name.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: knowcel.ingestion.v1.SyncOutcome outcome = 2;
+   */
+  outcome: SyncOutcome;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp start_time = 3;
+   */
+  startTime?: Timestamp | undefined;
+
+  /**
+   * @generated from field: google.protobuf.Timestamp end_time = 4;
+   */
+  endTime?: Timestamp | undefined;
+
+  /**
+   * Documents the connector keeps in sync after the run.
+   *
+   * @generated from field: int32 documents = 5;
+   */
+  documents: number;
+
+  /**
+   * Why the run failed, or a note about it; empty for a clean run.
+   *
+   * @generated from field: string error = 6;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ConnectorSynced.
+ * Use `create(ConnectorSyncedSchema)` to create a new message.
+ */
+export const ConnectorSyncedSchema: GenMessage<ConnectorSynced> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_events, 5);
+
+/**
+ * ConnectorConfig is one entry of the connectors file.
+ *
+ * @generated from message knowcel.ingestion.v1.ConnectorConfig
+ */
+export type ConnectorConfig = Message<"knowcel.ingestion.v1.ConnectorConfig"> & {
+  /**
+   * The connector's name; "#<position>" for an entry that has none.
+   *
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * Empty when the entry is invalid.
+   *
+   * @generated from field: string kind = 2;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: bool enabled = 3;
+   */
+  enabled: boolean;
+
+  /**
+   * Seconds between syncs, 0 when the entry is invalid.
+   *
+   * @generated from field: int32 interval_seconds = 4;
+   */
+  intervalSeconds: number;
+
+  /**
+   * What is wrong with the entry; empty when it is valid. The connector then
+   * reports FAILING with this message.
+   *
+   * @generated from field: string error = 5;
+   */
+  error: string;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ConnectorConfig.
+ * Use `create(ConnectorConfigSchema)` to create a new message.
+ */
+export const ConnectorConfigSchema: GenMessage<ConnectorConfig> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_events, 6);
+
+/**
+ * Subject: knowcel.ingestion.connectors_configured
+ * Published by the worker at start with every entry of its connectors file.
+ * The service adds the connectors it does not know, updates the others'
+ * configuration and forgets the ones no longer listed, so that a removed
+ * connector disappears and a connector that never synced is UNKNOWN.
+ *
+ * @generated from message knowcel.ingestion.v1.ConnectorsConfigured
+ */
+export type ConnectorsConfigured = Message<"knowcel.ingestion.v1.ConnectorsConfigured"> & {
+  /**
+   * @generated from field: repeated knowcel.ingestion.v1.ConnectorConfig connectors = 1;
+   */
+  connectors: ConnectorConfig[];
+
+  /**
+   * @generated from field: google.protobuf.Timestamp time = 2;
+   */
+  time?: Timestamp | undefined;
+};
+
+/**
+ * Describes the message knowcel.ingestion.v1.ConnectorsConfigured.
+ * Use `create(ConnectorsConfiguredSchema)` to create a new message.
+ */
+export const ConnectorsConfiguredSchema: GenMessage<ConnectorsConfigured> = /*@__PURE__*/
+  messageDesc(file_knowcel_ingestion_v1_events, 7);
+
+/**
+ * SyncOutcome is how a connector's sync run ended.
+ *
+ * @generated from enum knowcel.ingestion.v1.SyncOutcome
+ */
+export enum SyncOutcome {
+  /**
+   * @generated from enum value: SYNC_OUTCOME_UNSPECIFIED = 0;
+   */
+  UNSPECIFIED = 0,
+
+  /**
+   * Every item synced (items skipped as empty do not count as failures).
+   *
+   * @generated from enum value: SYNC_OUTCOME_SUCCEEDED = 1;
+   */
+  SUCCEEDED = 1,
+
+  /**
+   * Some items synced, others failed.
+   *
+   * @generated from enum value: SYNC_OUTCOME_PARTIAL = 2;
+   */
+  PARTIAL = 2,
+
+  /**
+   * The run failed as a whole (bad settings, source unreachable) or no item
+   * synced.
+   *
+   * @generated from enum value: SYNC_OUTCOME_FAILED = 3;
+   */
+  FAILED = 3,
+}
+
+/**
+ * Describes the enum knowcel.ingestion.v1.SyncOutcome.
+ */
+export const SyncOutcomeSchema: GenEnum<SyncOutcome> = /*@__PURE__*/
+  enumDesc(file_knowcel_ingestion_v1_events, 0);
 
