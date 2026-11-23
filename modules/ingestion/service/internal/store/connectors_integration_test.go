@@ -20,6 +20,8 @@ const (
 	failedRun = ingestionv1.SyncOutcome_SYNC_OUTCOME_FAILED
 )
 
+func ptr(n int32) *int32 { return &n }
+
 var t0 = time.Date(2026, 11, 23, 8, 0, 0, 0, time.UTC)
 
 func TestConnectorStatus(t *testing.T) {
@@ -42,7 +44,7 @@ func TestConnectorStatus(t *testing.T) {
 	})
 
 	t.Run("a success sets the last success", func(t *testing.T) {
-		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: succeeded, Start: t0, End: t0.Add(time.Second), Documents: 3})
+		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: succeeded, Start: t0, End: t0.Add(time.Second), Documents: ptr(3), Kind: "folder", Enabled: true, Interval: 5 * time.Minute})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,13 +54,13 @@ func TestConnectorStatus(t *testing.T) {
 		}
 	})
 
-	t.Run("a failure keeps the last success and records the error", func(t *testing.T) {
-		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: failedRun, Start: t0.Add(time.Minute), End: t0.Add(time.Minute + time.Second), Documents: 3, Error: "boom"})
+	t.Run("a failure keeps the last success, the count and the error", func(t *testing.T) {
+		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: failedRun, Start: t0.Add(time.Minute), End: t0.Add(time.Minute + time.Second), Error: "boom"})
 		if err != nil {
 			t.Fatal(err)
 		}
 		got, _ := repo.Get(ctx, "docs")
-		if got.Outcome != failedRun || got.LastError != "boom" || !got.LastSuccess.Equal(t0.Add(time.Second)) {
+		if got.Outcome != failedRun || got.LastError != "boom" || got.Documents != 3 || !got.LastSuccess.Equal(t0.Add(time.Second)) {
 			t.Errorf("status = %+v", got)
 		}
 	})
@@ -75,7 +77,7 @@ func TestConnectorStatus(t *testing.T) {
 	})
 
 	t.Run("an older report changes nothing", func(t *testing.T) {
-		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: succeeded, Start: t0, End: t0.Add(time.Second), Documents: 99})
+		err := repo.Record(ctx, connectors.Sync{Name: "docs", Outcome: succeeded, Start: t0, End: t0.Add(time.Second), Documents: ptr(99)})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -104,6 +106,45 @@ func TestConnectorStatus(t *testing.T) {
 		got, _ := repo.Get(ctx, "#2")
 		if got.Outcome != failedRun || got.LastError != "unknown kind" || got.LastEnd.IsZero() {
 			t.Errorf("status = %+v", got)
+		}
+	})
+
+	t.Run("an invalid entry does not undo a newer run", func(t *testing.T) {
+		if err := repo.Configure(ctx, connectors.Config{Name: "docs", Kind: "folder", Enabled: true, Error: "late"}, t0.Add(-time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := repo.Get(ctx, "docs")
+		if got.Outcome != partial || got.LastError == "late" {
+			t.Errorf("a late configuration replaced the last run: %+v", got)
+		}
+	})
+
+	t.Run("a fixed entry starts over unknown", func(t *testing.T) {
+		fixed := connectors.Config{Name: "#2", Kind: "folder", Enabled: true, Interval: time.Minute}
+		if err := repo.Configure(ctx, fixed, t0.Add(time.Hour)); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := repo.Get(ctx, "#2")
+		if got.Outcome != ingestionv1.SyncOutcome_SYNC_OUTCOME_UNSPECIFIED || got.LastError != "" || !got.LastEnd.IsZero() || got.Kind != "folder" {
+			t.Errorf("status = %+v", got)
+		}
+	})
+
+	t.Run("a report carries the configuration", func(t *testing.T) {
+		if err := repo.Record(ctx, connectors.Sync{Name: "#2", Outcome: succeeded, End: t0.Add(2 * time.Hour), Kind: "folder", Enabled: false, Interval: time.Hour}); err != nil {
+			t.Fatal(err)
+		}
+		got, _ := repo.Get(ctx, "#2")
+		if got.Enabled || got.Interval != time.Hour || got.Documents != 0 {
+			t.Errorf("status = %+v", got)
+		}
+		// One without a kind leaves the configuration alone.
+		if err := repo.Record(ctx, connectors.Sync{Name: "#2", Outcome: succeeded, End: t0.Add(3 * time.Hour)}); err != nil {
+			t.Fatal(err)
+		}
+		got, _ = repo.Get(ctx, "#2")
+		if got.Kind != "folder" || got.Interval != time.Hour {
+			t.Errorf("configuration lost: %+v", got)
 		}
 	})
 

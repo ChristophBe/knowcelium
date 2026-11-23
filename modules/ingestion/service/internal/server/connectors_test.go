@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"testing"
 	"time"
@@ -36,12 +37,19 @@ func (f *fakeConnectorRepo) Get(_ context.Context, name string) (connectors.Stat
 	return connectors.Status{}, connectors.ErrNotFound
 }
 
+// connectorServer serves repo to callers whose principals iam would return:
+// the user of the call names it, "admin" being a platform admin.
 func connectorServer(repo *fakeConnectorRepo) *Server {
-	return New(nil, slog.New(slog.DiscardHandler)).WithConnectors(connectors.New(repo))
-}
-
-func callerCtx(t *testing.T, p grpcserver.Principal) context.Context {
-	return grpcserver.WithPrincipal(t.Context(), p)
+	callers := grpcserver.NewResolver(func(_ context.Context, user string) (grpcserver.Principal, error) {
+		switch user {
+		case "down":
+			return grpcserver.Principal{}, errors.New("iam is down")
+		case "teamadmin":
+			return grpcserver.Principal{Teams: []grpcserver.Team{{ID: "t", Admin: true}}}, nil
+		}
+		return grpcserver.Principal{PlatformAdmin: user == "admin"}, nil
+	}, time.Minute, slog.New(slog.DiscardHandler))
+	return New(nil, slog.New(slog.DiscardHandler)).WithConnectors(connectors.New(repo), callers)
 }
 
 func TestConnectorsAreForPlatformAdminsOnly(t *testing.T) {
@@ -51,11 +59,11 @@ func TestConnectorsAreForPlatformAdminsOnly(t *testing.T) {
 		ctx  context.Context
 		want codes.Code
 	}{
-		{"a member", callerCtx(t, grpcserver.Principal{UserID: alice}), codes.PermissionDenied},
-		{"a team admin", callerCtx(t, grpcserver.Principal{UserID: alice, Teams: []grpcserver.Team{{ID: "t", Admin: true}}}), codes.PermissionDenied},
-		{"no principal", as(t, alice), codes.PermissionDenied},
-		{"iam down", callerCtx(t, grpcserver.Principal{UserID: alice, Unavailable: true}), codes.Unavailable},
-		{"a platform admin", callerCtx(t, grpcserver.Principal{UserID: alice, PlatformAdmin: true}), codes.OK},
+		{"a member", as(t, alice), codes.PermissionDenied},
+		{"a team admin", as(t, "teamadmin"), codes.PermissionDenied},
+		{"no user", t.Context(), codes.Unauthenticated},
+		{"iam down", as(t, "down"), codes.Unavailable},
+		{"a platform admin", as(t, "admin"), codes.OK},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -78,7 +86,7 @@ func TestListConnectorsReportsHealthTimesAndError(t *testing.T) {
 			LastSuccess: start.Add(-time.Hour), Documents: 7, LastError: "boom"},
 		{Name: "new", Kind: "folder", Enabled: true, Interval: time.Minute},
 	}}
-	resp, err := connectorServer(repo).ListConnectors(callerCtx(t, grpcserver.Principal{PlatformAdmin: true}), &ingestionv1.ListConnectorsRequest{})
+	resp, err := connectorServer(repo).ListConnectors(as(t, "admin"), &ingestionv1.ListConnectorsRequest{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -100,7 +108,7 @@ func TestListConnectorsReportsHealthTimesAndError(t *testing.T) {
 }
 
 func TestGetConnectorNotFoundAndFailures(t *testing.T) {
-	admin := callerCtx(t, grpcserver.Principal{PlatformAdmin: true})
+	admin := as(t, "admin")
 	srv := connectorServer(&fakeConnectorRepo{})
 	if _, err := srv.GetConnector(admin, &ingestionv1.GetConnectorRequest{Id: "nope"}); status.Code(err) != codes.NotFound {
 		t.Errorf("get unknown: %v", err)
@@ -110,6 +118,16 @@ func TestGetConnectorNotFoundAndFailures(t *testing.T) {
 		t.Errorf("list: %v", err)
 	}
 	if _, err := srv.GetConnector(admin, &ingestionv1.GetConnectorRequest{Id: "x"}); status.Code(err) != codes.Internal {
+		t.Errorf("get: %v", err)
+	}
+}
+
+func TestConnectorsAreUnimplementedWithoutThem(t *testing.T) {
+	srv := New(nil, slog.New(slog.DiscardHandler))
+	if _, err := srv.ListConnectors(as(t, "admin"), &ingestionv1.ListConnectorsRequest{}); status.Code(err) != codes.Unimplemented {
+		t.Errorf("list: %v", err)
+	}
+	if _, err := srv.GetConnector(as(t, "admin"), &ingestionv1.GetConnectorRequest{Id: "x"}); status.Code(err) != codes.Unimplemented {
 		t.Errorf("get: %v", err)
 	}
 }

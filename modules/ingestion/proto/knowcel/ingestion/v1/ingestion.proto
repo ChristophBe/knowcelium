@@ -188,14 +188,14 @@ message ReprocessJobResponse {
 // is derived when the connector is read, from its last sync and its interval.
 enum ConnectorHealth {
   CONNECTOR_HEALTH_UNSPECIFIED = 0;
-  // The last sync succeeded within the expected interval.
+  // The last sync succeeded, within the expected interval.
   CONNECTOR_HEALTH_HEALTHY = 1;
   // The last sync had partial failures: some items synced, others did not.
   CONNECTOR_HEALTH_DEGRADED = 2;
   // The last sync failed.
   CONNECTOR_HEALTH_FAILING = 3;
-  // The last sync succeeded, but more than twice the connector's interval
-  // ago: syncs have stopped (the worker is down or stuck).
+  // The last sync ended more than twice the connector's interval ago,
+  // whatever its outcome: syncs have stopped (the worker is down or stuck).
   CONNECTOR_HEALTH_STALE = 4;
   // The connector has not synced yet.
   CONNECTOR_HEALTH_UNKNOWN = 5;

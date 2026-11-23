@@ -16,7 +16,9 @@ type Querier interface {
 	AdvanceJob(ctx context.Context, arg AdvanceJobParams) (IngestionJob, error)
 	// ConfigureConnector adds a connector the worker lists in its connectors file
 	// or updates its configuration, leaving what its last run reported alone. An
-	// invalid entry (error is not empty) has failed: its last run is the error.
+	// invalid entry (error is not empty) has failed: its last run is the error,
+	// unless a run reported since (the events can arrive again or late). An entry
+	// that was invalid (no kind, failed) and is valid now starts over unknown.
 	ConfigureConnector(ctx context.Context, arg ConfigureConnectorParams) error
 	// CountJobsByStatus counts all jobs per status, for the kb_ingestion_jobs
 	// metric (docs/metrics.md).
@@ -38,11 +40,12 @@ type Querier interface {
 	// the last row of the previous one (both after_* NULL for the first page), so
 	// rows inserted meanwhile never shift it. It walks the owner's index.
 	ListJobs(ctx context.Context, arg ListJobsParams) ([]IngestionJob, error)
-	// RecordConnectorSync stores the outcome of a sync run. A report that ended
-	// before the stored one is stale (events can arrive out of order) and changes
+	// RecordConnectorSync stores the outcome of a sync run, with the connector's
+	// configuration when the report has one (a kind). A report that ended before
+	// the stored one is stale (events can arrive out of order) and changes
 	// nothing. Only a clean run (outcome 1) moves last_success. A report for a
-	// connector that is not known (yet) adds it, to be completed by
-	// ConfigureConnector.
+	// connector that is not known adds it. An unknown document count keeps the
+	// last one.
 	RecordConnectorSync(ctx context.Context, arg RecordConnectorSyncParams) error
 	// ReportProgress records the stage and progress of a job's current run. A
 	// report means the worker is at it, so a QUEUED job (whose started event is

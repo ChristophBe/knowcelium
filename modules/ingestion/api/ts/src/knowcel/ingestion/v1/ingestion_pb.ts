@@ -712,7 +712,7 @@ export enum ConnectorHealth {
   UNSPECIFIED = 0,
 
   /**
-   * The last sync succeeded within the expected interval.
+   * The last sync succeeded, within the expected interval.
    *
    * @generated from enum value: CONNECTOR_HEALTH_HEALTHY = 1;
    */
@@ -733,8 +733,8 @@ export enum ConnectorHealth {
   FAILING = 3,
 
   /**
-   * The last sync succeeded, but more than twice the connector's interval
-   * ago: syncs have stopped (the worker is down or stuck).
+   * The last sync ended more than twice the connector's interval ago,
+   * whatever its outcome: syncs have stopped (the worker is down or stuck).
    *
    * @generated from enum value: CONNECTOR_HEALTH_STALE = 4;
    */

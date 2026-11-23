@@ -62,13 +62,24 @@ func (c *Connectors) Forget(ctx context.Context, keep []string) error {
 
 func (c *Connectors) Record(ctx context.Context, s connectors.Sync) error {
 	return c.q.RecordConnectorSync(ctx, RecordConnectorSyncParams{
-		Name:      s.Name,
-		Outcome:   int16(s.Outcome),
-		StartTime: timestamptz(s.Start),
-		EndTime:   timestamptz(s.End),
-		Documents: s.Documents,
-		Error:     s.Error,
+		Name:            s.Name,
+		Outcome:         int16(s.Outcome),
+		StartTime:       timestamptz(s.Start),
+		EndTime:         timestamptz(s.End),
+		Documents:       documents(s.Documents),
+		Error:           s.Error,
+		Kind:            s.Kind,
+		Enabled:         s.Enabled,
+		IntervalSeconds: int32(s.Interval / time.Second),
 	})
+}
+
+// documents is NULL when the count is unknown.
+func documents(n *int32) pgtype.Int4 {
+	if n == nil {
+		return pgtype.Int4{}
+	}
+	return pgtype.Int4{Int32: *n, Valid: true}
 }
 
 // timestamptz is NULL for the zero time.

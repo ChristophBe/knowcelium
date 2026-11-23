@@ -49,7 +49,7 @@ State (the bookkeeping of each connector, the document of each item) lives in th
 Two copies of a connector's status exist:
 
 - **The worker's** is stored under `<name>.status` in the bucket: start and end of the last run, last successful run and its start (where the next run continues), number of synced documents and the last error (empty when the run succeeded). It is the worker's own memory, not meant to be read.
-- **The ingestion service's** is what people read: `IngestionService.ListConnectors` and `GetConnector`, for platform admins only (`PERMISSION_DENIED` for everyone else, `UNAVAILABLE` while iam, which tells who is one, is down). The worker reports to it by event: `knowcel.ingestion.connectors_configured` once at start with every entry of the connectors file (valid or not; connectors no longer listed disappear, one that never ran is `UNKNOWN`), and `knowcel.ingestion.connector_synced` after each sync run. A lost event only delays the status until the next run.
+- **The ingestion service's** is what people read: `IngestionService.ListConnectors` and `GetConnector`, for platform admins only (`PERMISSION_DENIED` for everyone else, `UNAVAILABLE` while iam, which tells who is one, is down). The worker reports to it by event: `knowcel.ingestion.connectors_configured` at start and every five minutes with every entry of the connectors file (valid or not; connectors no longer listed disappear, one that never ran is `UNKNOWN`), and `knowcel.ingestion.connector_synced` after each sync run. A lost event only delays the status until the next run.
 
 Errors caused by the settings (an unknown kind, a missing directory, an owner who is not a platform admin) are recorded in both, not only in the worker's log.
 
@@ -59,10 +59,10 @@ The service derives a connector's health when it is read:
 
 | Health | When |
 |---|---|
-| `HEALTHY` | The last sync succeeded, and within twice the connector's interval. |
+| `HEALTHY` | The last sync succeeded, and it ended within twice the connector's interval. |
 | `DEGRADED` | The last sync had partial failures: some items synced, others did not (`last_error` names the first). |
 | `FAILING` | The last sync failed: it could not run (settings, permissions, an unreachable source), or no item synced (`last_error` says why). |
-| `STALE` | The last sync succeeded more than twice the interval ago: syncs have stopped, for instance because the worker is down. |
+| `STALE` | The last sync ended more than twice the interval ago, whatever its outcome: syncs have stopped, for instance because the worker is down. |
 | `UNKNOWN` | The connector has not synced yet. |
 
-A failed or partial run is `FAILING` or `DEGRADED` however old, because the error is what to fix. A disabled connector or an invalid entry (no interval) is never `STALE`. Skipped empty files do not fail a run; the note shows as `last_error` while the connector stays `HEALTHY`. A page that shows connectors and their health is planned (issue #260).
+A disabled connector or an invalid entry (no interval) is never `STALE`. Skipped empty files do not fail a run; the note shows as `last_error` while the connector stays `HEALTHY`. The worker announces its connectors every five minutes, so a removed connector disappears from the list within that time, and a connector that is listed but never ran is `UNKNOWN`. A page that shows connectors and their health is planned (issue #260).

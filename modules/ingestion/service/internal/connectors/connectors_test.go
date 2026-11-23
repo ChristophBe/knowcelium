@@ -25,20 +25,32 @@ var now = time.Date(2026, 11, 23, 12, 0, 0, 0, time.UTC)
 
 func TestHealth(t *testing.T) {
 	interval := 5 * time.Minute
+	ran := func(outcome ingestionv1.SyncOutcome, ago time.Duration) Status {
+		st := Status{Enabled: true, Interval: interval, Outcome: outcome, LastEnd: now.Add(-ago)}
+		if outcome == succeeded {
+			st.LastSuccess = st.LastEnd
+		}
+		return st
+	}
+	disabled := ran(succeeded, 24*time.Hour)
+	disabled.Enabled = false
+	noInterval := ran(failed, 24*time.Hour)
+	noInterval.Interval = 0
 	tests := []struct {
 		name string
 		st   Status
 		want ingestionv1.ConnectorHealth
 	}{
 		{"a connector that never ran is unknown", Status{Enabled: true, Interval: interval}, unknown},
-		{"a success within the interval is healthy", Status{Enabled: true, Interval: interval, Outcome: succeeded, LastSuccess: now.Add(-time.Minute)}, healthy},
-		{"a success just inside twice the interval is healthy", Status{Enabled: true, Interval: interval, Outcome: succeeded, LastSuccess: now.Add(-2 * interval)}, healthy},
-		{"a success older than twice the interval is stale", Status{Enabled: true, Interval: interval, Outcome: succeeded, LastSuccess: now.Add(-2*interval - time.Second)}, stale},
-		{"partial failures degrade", Status{Enabled: true, Interval: interval, Outcome: partial, LastSuccess: now.Add(-time.Hour)}, degraded},
-		{"a failed run fails", Status{Enabled: true, Interval: interval, Outcome: failed, LastError: "boom"}, failing},
-		{"a failed run fails however old the last success", Status{Enabled: true, Interval: interval, Outcome: failed, LastSuccess: now.Add(-24 * time.Hour)}, failing},
-		{"a disabled connector is never stale", Status{Enabled: false, Interval: interval, Outcome: succeeded, LastSuccess: now.Add(-24 * time.Hour)}, healthy},
-		{"an unknown interval is never stale", Status{Enabled: true, Outcome: succeeded, LastSuccess: now.Add(-24 * time.Hour)}, healthy},
+		{"a success within the interval is healthy", ran(succeeded, time.Minute), healthy},
+		{"a success just inside twice the interval is healthy", ran(succeeded, 2*interval), healthy},
+		{"a success older than twice the interval is stale", ran(succeeded, 2*interval+time.Second), stale},
+		{"partial failures degrade", ran(partial, time.Minute), degraded},
+		{"a failed run fails", ran(failed, time.Minute), failing},
+		{"a failed run long ago means syncs stopped", ran(failed, 24*time.Hour), stale},
+		{"a partial run long ago means syncs stopped", ran(partial, 24*time.Hour), stale},
+		{"a disabled connector is never stale", disabled, healthy},
+		{"an invalid entry is never stale", noInterval, failing},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -88,7 +100,7 @@ func newService(repo *fakeRepo) *Service {
 
 func TestListDerivesHealthAndSortsByName(t *testing.T) {
 	repo := &fakeRepo{statuses: []Status{
-		{Name: "b", Enabled: true, Interval: time.Minute, Outcome: succeeded, LastSuccess: now.Add(-time.Hour)},
+		{Name: "b", Enabled: true, Interval: time.Minute, Outcome: succeeded, LastEnd: now.Add(-time.Hour), LastSuccess: now.Add(-time.Hour)},
 		{Name: "a", Enabled: true, Interval: time.Minute},
 	}}
 	list, err := newService(repo).List(t.Context())

@@ -200,14 +200,14 @@ type ConnectorHealth int32
 
 const (
 	ConnectorHealth_CONNECTOR_HEALTH_UNSPECIFIED ConnectorHealth = 0
-	// The last sync succeeded within the expected interval.
+	// The last sync succeeded, within the expected interval.
 	ConnectorHealth_CONNECTOR_HEALTH_HEALTHY ConnectorHealth = 1
 	// The last sync had partial failures: some items synced, others did not.
 	ConnectorHealth_CONNECTOR_HEALTH_DEGRADED ConnectorHealth = 2
 	// The last sync failed.
 	ConnectorHealth_CONNECTOR_HEALTH_FAILING ConnectorHealth = 3
-	// The last sync succeeded, but more than twice the connector's interval
-	// ago: syncs have stopped (the worker is down or stuck).
+	// The last sync ended more than twice the connector's interval ago,
+	// whatever its outcome: syncs have stopped (the worker is down or stuck).
 	ConnectorHealth_CONNECTOR_HEALTH_STALE ConnectorHealth = 4
 	// The connector has not synced yet.
 	ConnectorHealth_CONNECTOR_HEALTH_UNKNOWN ConnectorHealth = 5

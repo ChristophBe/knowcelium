@@ -14,7 +14,7 @@ import type { Message } from "@bufbuild/protobuf";
  * Describes the file knowcel/ingestion/v1/events.proto.
  */
 export const file_knowcel_ingestion_v1_events: GenFile = /*@__PURE__*/
-  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBSLTAQoPQ29ubmVjdG9yU3luY2VkEgwKBG5hbWUYASABKAkSMgoHb3V0Y29tZRgCIAEoDjIhLmtub3djZWwuaW5nZXN0aW9uLnYxLlN5bmNPdXRjb21lEi4KCnN0YXJ0X3RpbWUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIRCglkb2N1bWVudHMYBSABKAUSDQoFZXJyb3IYBiABKAkiZwoPQ29ubmVjdG9yQ29uZmlnEgwKBG5hbWUYASABKAkSDAoEa2luZBgCIAEoCRIPCgdlbmFibGVkGAMgASgIEhgKEGludGVydmFsX3NlY29uZHMYBCABKAUSDQoFZXJyb3IYBSABKAkiewoUQ29ubmVjdG9yc0NvbmZpZ3VyZWQSOQoKY29ubmVjdG9ycxgBIAMoCzIlLmtub3djZWwuaW5nZXN0aW9uLnYxLkNvbm5lY3RvckNvbmZpZxIoCgR0aW1lGAIgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcCp6CgtTeW5jT3V0Y29tZRIcChhTWU5DX09VVENPTUVfVU5TUEVDSUZJRUQQABIaChZTWU5DX09VVENPTUVfU1VDQ0VFREVEEAESGAoUU1lOQ19PVVRDT01FX1BBUlRJQUwQAhIXChNTWU5DX09VVENPTUVfRkFJTEVEEANCVFpSZ2l0aHViLmNvbS9DaHJpc3RvcGhCZS9rbm93Y2VsaXVtL21vZHVsZXMvaW5nZXN0aW9uL2FwaS9nby9pbmdlc3Rpb252MTtpbmdlc3Rpb252MWIGcHJvdG8z", [file_google_protobuf_timestamp, file_knowcel_ingestion_v1_ingestion]);
+  fileDesc("CiFrbm93Y2VsL2luZ2VzdGlvbi92MS9ldmVudHMucHJvdG8SFGtub3djZWwuaW5nZXN0aW9uLnYxIn4KEERvY3VtZW50VXBsb2FkZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEhAKCGZpbGVuYW1lGAMgASgJEhQKDGNvbnRlbnRfdHlwZRgEIAEoCRILCgNydW4YBSABKAUSEAoIdGVhbV9pZHMYBiADKAkiRQoRUHJvY2Vzc2luZ1N0YXJ0ZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEgsKA3J1bhgDIAEoBSKHAQoSUHJvY2Vzc2luZ1Byb2dyZXNzEg4KBmpvYl9pZBgBIAEoCRITCgtkb2N1bWVudF9pZBgCIAEoCRILCgNydW4YAyABKAUSLQoFc3RhZ2UYBCABKA4yHi5rbm93Y2VsLmluZ2VzdGlvbi52MS5Kb2JTdGFnZRIQCghwcm9ncmVzcxgFIAEoBSJsChFEb2N1bWVudFByb2Nlc3NlZBIOCgZqb2JfaWQYASABKAkSEwoLZG9jdW1lbnRfaWQYAiABKAkSEwoLY2h1bmtfY291bnQYAyABKAUSCwoDcnVuGAQgASgFEhAKCG93bmVyX2lkGAUgASgJIlMKEFByb2Nlc3NpbmdGYWlsZWQSDgoGam9iX2lkGAEgASgJEhMKC2RvY3VtZW50X2lkGAIgASgJEg0KBWVycm9yGAMgASgJEgsKA3J1bhgEIAEoBSKfAgoPQ29ubmVjdG9yU3luY2VkEgwKBG5hbWUYASABKAkSMgoHb3V0Y29tZRgCIAEoDjIhLmtub3djZWwuaW5nZXN0aW9uLnYxLlN5bmNPdXRjb21lEi4KCnN0YXJ0X3RpbWUYAyABKAsyGi5nb29nbGUucHJvdG9idWYuVGltZXN0YW1wEiwKCGVuZF90aW1lGAQgASgLMhouZ29vZ2xlLnByb3RvYnVmLlRpbWVzdGFtcBIWCglkb2N1bWVudHMYBSABKAVIAIgBARINCgVlcnJvchgGIAEoCRIMCgRraW5kGAcgASgJEg8KB2VuYWJsZWQYCCABKAgSGAoQaW50ZXJ2YWxfc2Vjb25kcxgJIAEoBUIMCgpfZG9jdW1lbnRzImcKD0Nvbm5lY3RvckNvbmZpZxIMCgRuYW1lGAEgASgJEgwKBGtpbmQYAiABKAkSDwoHZW5hYmxlZBgDIAEoCBIYChBpbnRlcnZhbF9zZWNvbmRzGAQgASgFEg0KBWVycm9yGAUgASgJInsKFENvbm5lY3RvcnNDb25maWd1cmVkEjkKCmNvbm5lY3RvcnMYASADKAsyJS5rbm93Y2VsLmluZ2VzdGlvbi52MS5Db25uZWN0b3JDb25maWcSKAoEdGltZRgCIAEoCzIaLmdvb2dsZS5wcm90b2J1Zi5UaW1lc3RhbXAqegoLU3luY091dGNvbWUSHAoYU1lOQ19PVVRDT01FX1VOU1BFQ0lGSUVEEAASGgoWU1lOQ19PVVRDT01FX1NVQ0NFRURFRBABEhgKFFNZTkNfT1VUQ09NRV9QQVJUSUFMEAISFwoTU1lOQ19PVVRDT01FX0ZBSUxFRBADQlRaUmdpdGh1Yi5jb20vQ2hyaXN0b3BoQmUva25vd2NlbGl1bS9tb2R1bGVzL2luZ2VzdGlvbi9hcGkvZ28vaW5nZXN0aW9udjE7aW5nZXN0aW9udjFiBnByb3RvMw", [file_google_protobuf_timestamp, file_knowcel_ingestion_v1_ingestion]);
 
 /**
  * Subject: knowcel.ingestion.uploaded
@@ -218,7 +218,9 @@ export const ProcessingFailedSchema: GenMessage<ProcessingFailed> = /*@__PURE__*
  * Published by the worker after each sync run of a connector, for the
  * connector status of the ingestion service (ListConnectors). The service
  * keeps the newest report per connector (by end_time); a lost report only
- * delays the status until the next run.
+ * delays the status until the next run. It carries the connector's
+ * configuration too, so that a connector appears even when
+ * ConnectorsConfigured was lost.
  *
  * @generated from message knowcel.ingestion.v1.ConnectorSynced
  */
@@ -246,11 +248,12 @@ export type ConnectorSynced = Message<"knowcel.ingestion.v1.ConnectorSynced"> & 
   endTime?: Timestamp | undefined;
 
   /**
-   * Documents the connector keeps in sync after the run.
+   * Documents the connector keeps in sync after the run; unset when the
+   * worker could not tell (its state store failed), which keeps the last count.
    *
-   * @generated from field: int32 documents = 5;
+   * @generated from field: optional int32 documents = 5;
    */
-  documents: number;
+  documents?: number | undefined;
 
   /**
    * Why the run failed, or a note about it; empty for a clean run.
@@ -258,6 +261,23 @@ export type ConnectorSynced = Message<"knowcel.ingestion.v1.ConnectorSynced"> & 
    * @generated from field: string error = 6;
    */
   error: string;
+
+  /**
+   * @generated from field: string kind = 7;
+   */
+  kind: string;
+
+  /**
+   * @generated from field: bool enabled = 8;
+   */
+  enabled: boolean;
+
+  /**
+   * Seconds between syncs.
+   *
+   * @generated from field: int32 interval_seconds = 9;
+   */
+  intervalSeconds: number;
 };
 
 /**
@@ -317,10 +337,11 @@ export const ConnectorConfigSchema: GenMessage<ConnectorConfig> = /*@__PURE__*/
 
 /**
  * Subject: knowcel.ingestion.connectors_configured
- * Published by the worker at start with every entry of its connectors file.
- * The service adds the connectors it does not know, updates the others'
- * configuration and forgets the ones no longer listed, so that a removed
- * connector disappears and a connector that never synced is UNKNOWN.
+ * Published by the worker at start and every few minutes after, with every
+ * entry of its connectors file (an empty list when it has none). The service
+ * adds the connectors it does not know, updates the others' configuration and
+ * forgets the ones no longer listed, so that a removed connector disappears
+ * and a connector that never synced is UNKNOWN.
  *
  * @generated from message knowcel.ingestion.v1.ConnectorsConfigured
  */

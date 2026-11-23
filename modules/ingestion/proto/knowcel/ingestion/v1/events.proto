@@ -83,17 +83,24 @@ enum SyncOutcome {
 // Published by the worker after each sync run of a connector, for the
 // connector status of the ingestion service (ListConnectors). The service
 // keeps the newest report per connector (by end_time); a lost report only
-// delays the status until the next run.
+// delays the status until the next run. It carries the connector's
+// configuration too, so that a connector appears even when
+// ConnectorsConfigured was lost.
 message ConnectorSynced {
   // The connector's configured name.
   string name = 1;
   SyncOutcome outcome = 2;
   google.protobuf.Timestamp start_time = 3;
   google.protobuf.Timestamp end_time = 4;
-  // Documents the connector keeps in sync after the run.
-  int32 documents = 5;
+  // Documents the connector keeps in sync after the run; unset when the
+  // worker could not tell (its state store failed), which keeps the last count.
+  optional int32 documents = 5;
   // Why the run failed, or a note about it; empty for a clean run.
   string error = 6;
+  string kind = 7;
+  bool enabled = 8;
+  // Seconds between syncs.
+  int32 interval_seconds = 9;
 }
 
 // ConnectorConfig is one entry of the connectors file.
@@ -111,10 +118,11 @@ message ConnectorConfig {
 }
 
 // Subject: knowcel.ingestion.connectors_configured
-// Published by the worker at start with every entry of its connectors file.
-// The service adds the connectors it does not know, updates the others'
-// configuration and forgets the ones no longer listed, so that a removed
-// connector disappears and a connector that never synced is UNKNOWN.
+// Published by the worker at start and every few minutes after, with every
+// entry of its connectors file (an empty list when it has none). The service
+// adds the connectors it does not know, updates the others' configuration and
+// forgets the ones no longer listed, so that a removed connector disappears
+// and a connector that never synced is UNKNOWN.
 message ConnectorsConfigured {
   repeated ConnectorConfig connectors = 1;
   google.protobuf.Timestamp time = 2;

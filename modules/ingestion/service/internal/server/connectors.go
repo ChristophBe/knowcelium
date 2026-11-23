@@ -10,12 +10,11 @@ import (
 
 	ingestionv1 "github.com/ChristophBe/knowcelium/modules/ingestion/api/go/ingestionv1"
 	"github.com/ChristophBe/knowcelium/modules/ingestion/service/internal/connectors"
-	"github.com/ChristophBe/knowcelium/platform/go/grpcserver"
 )
 
 // ListConnectors returns every configured connector. Platform admins only.
 func (s *Server) ListConnectors(ctx context.Context, _ *ingestionv1.ListConnectorsRequest) (*ingestionv1.ListConnectorsResponse, error) {
-	if err := requirePlatformAdmin(ctx); err != nil {
+	if err := s.requirePlatformAdmin(ctx); err != nil {
 		return nil, err
 	}
 	list, err := s.connectors.List(ctx)
@@ -31,7 +30,7 @@ func (s *Server) ListConnectors(ctx context.Context, _ *ingestionv1.ListConnecto
 
 // GetConnector returns one connector. Platform admins only.
 func (s *Server) GetConnector(ctx context.Context, req *ingestionv1.GetConnectorRequest) (*ingestionv1.GetConnectorResponse, error) {
-	if err := requirePlatformAdmin(ctx); err != nil {
+	if err := s.requirePlatformAdmin(ctx); err != nil {
 		return nil, err
 	}
 	c, err := s.connectors.Get(ctx, req.GetId())
@@ -45,13 +44,20 @@ func (s *Server) GetConnector(ctx context.Context, req *ingestionv1.GetConnector
 }
 
 // requirePlatformAdmin fails with PERMISSION_DENIED unless the caller is a
-// platform admin, and with UNAVAILABLE while iam, which knows, is down.
-func requirePlatformAdmin(ctx context.Context) error {
-	p, ok := grpcserver.PrincipalFromContext(ctx)
-	switch {
-	case ok && p.PlatformAdmin:
+// platform admin, and with UNAVAILABLE while iam, which knows, is down. It
+// is UNIMPLEMENTED without connectors to serve.
+func (s *Server) requirePlatformAdmin(ctx context.Context) error {
+	if s.connectors == nil || s.callers == nil {
+		return status.Error(codes.Unimplemented, "connector status is not served")
+	}
+	user, err := caller(ctx)
+	if err != nil {
+		return err
+	}
+	switch p := s.callers.Resolve(ctx, user); {
+	case p.PlatformAdmin:
 		return nil
-	case ok && p.Unavailable:
+	case p.Unavailable:
 		return status.Error(codes.Unavailable, "cannot tell whether you are a platform admin: the iam service is unavailable")
 	}
 	return status.Error(codes.PermissionDenied, "Only platform admins can see connectors")

@@ -217,20 +217,26 @@ func TestApplyConnectorDecodesConfiguredEvents(t *testing.T) {
 func TestApplyConnectorDecodesSyncEvents(t *testing.T) {
 	status := &fakeStatus{}
 	start := time.Date(2026, 11, 23, 9, 0, 0, 0, time.UTC)
+	docs := int32(4)
 	ev := &ingestionv1.ConnectorSynced{
-		Name: "docs", Outcome: ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL, Documents: 4, Error: "1 items failed",
+		Name: "docs", Outcome: ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL, Documents: &docs, Error: "1 items failed",
 		StartTime: timestamppb.New(start), EndTime: timestamppb.New(start.Add(time.Minute)),
+		Kind: "folder", Enabled: true, IntervalSeconds: 300,
 	}
 	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil {
 		t.Fatal(err)
 	}
-	want := connectors.Sync{Name: "docs", Outcome: ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL, Start: start, End: start.Add(time.Minute), Documents: 4, Error: "1 items failed"}
-	if len(status.synced) != 1 || status.synced[0] != want {
+	got := status.synced[0]
+	if len(status.synced) != 1 || got.Name != "docs" || got.Outcome != ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL ||
+		!got.Start.Equal(start) || !got.End.Equal(start.Add(time.Minute)) || got.Documents == nil || *got.Documents != 4 ||
+		got.Error != "1 items failed" || got.Kind != "folder" || !got.Enabled || got.Interval != 5*time.Minute {
 		t.Errorf("synced = %+v", status.synced)
 	}
 	// A run that failed before it started has no start time.
-	ev.StartTime = nil
-	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil || !status.synced[1].Start.IsZero() {
+	// An unknown document count stays unknown.
+	ev.StartTime, ev.Documents = nil, nil
+	if err := applyConnector(t.Context(), status, SubjectConnectorSynced, marshal(t, ev)); err != nil ||
+		!status.synced[1].Start.IsZero() || status.synced[1].Documents != nil {
 		t.Errorf("without start: %+v, %v", status.synced, err)
 	}
 }

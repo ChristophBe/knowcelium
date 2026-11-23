@@ -49,14 +49,19 @@ type Config struct {
 	Error string
 }
 
-// Sync is the outcome of one sync run.
+// Sync is the outcome of one sync run, with the connector's configuration.
 type Sync struct {
-	Name      string
-	Outcome   ingestionv1.SyncOutcome
-	Start     time.Time // zero when the run failed before it started
-	End       time.Time
-	Documents int32
+	Name    string
+	Outcome ingestionv1.SyncOutcome
+	Start   time.Time // zero when the run failed before it started
+	End     time.Time
+	// Documents is nil when the worker could not tell; the last count stays.
+	Documents *int32
 	Error     string
+	// Kind is empty when the report carries no configuration.
+	Kind     string
+	Enabled  bool
+	Interval time.Duration
 }
 
 // Repository persists connector statuses. Record keeps the newest report per
@@ -123,25 +128,26 @@ func (s *Service) ApplySynced(ctx context.Context, sync Sync) error {
 
 // Health derives the health of a connector at now.
 //
-// A failed last run is FAILING and a partly failed one DEGRADED, whatever
-// their age: the error says what to fix. A run that succeeded is HEALTHY
-// unless the success is older than StaleFactor intervals, which means syncs
-// stopped. A disabled connector is not expected to sync and so never STALE,
-// nor is one whose interval is unknown (an invalid entry). One that never
-// reported a run is UNKNOWN.
+// A connector whose last run ended more than StaleFactor intervals ago is
+// STALE whatever that run's outcome: syncs have stopped (the worker is down
+// or stuck), which is what to look at first. Otherwise a failed last run is
+// FAILING and a partly failed one DEGRADED, and a success is HEALTHY. A
+// disabled connector is not expected to sync and so never STALE, nor is one
+// whose interval is unknown (an invalid entry). One that never reported a run
+// is UNKNOWN.
 func Health(st Status, now time.Time) ingestionv1.ConnectorHealth {
+	if st.Outcome == ingestionv1.SyncOutcome_SYNC_OUTCOME_UNSPECIFIED {
+		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_UNKNOWN
+	}
+	if st.Enabled && st.Interval > 0 && !st.LastEnd.IsZero() && now.Sub(st.LastEnd) > StaleFactor*st.Interval {
+		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_STALE
+	}
 	switch st.Outcome {
 	case ingestionv1.SyncOutcome_SYNC_OUTCOME_FAILED:
 		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_FAILING
 	case ingestionv1.SyncOutcome_SYNC_OUTCOME_PARTIAL:
 		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_DEGRADED
-	case ingestionv1.SyncOutcome_SYNC_OUTCOME_SUCCEEDED:
-		if st.Enabled && st.Interval > 0 && !st.LastSuccess.IsZero() &&
-			now.Sub(st.LastSuccess) > StaleFactor*st.Interval {
-			return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_STALE
-		}
-		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_HEALTHY
 	default:
-		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_UNKNOWN
+		return ingestionv1.ConnectorHealth_CONNECTOR_HEALTH_HEALTHY
 	}
 }

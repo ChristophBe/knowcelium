@@ -134,8 +134,8 @@ func run(cfg Config) error {
 		events.NewPublisher(events.NewJetStream(js)),
 	)
 	status := connectors.New(store.NewConnectors(queries))
-	srv := grpcserver.New(log, grpcserver.Principals(callers)...)
-	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log).WithConnectors(status))
+	srv := grpcserver.New(log)
+	ingestionv1.RegisterIngestionServiceServer(srv, server.New(service, log).WithConnectors(status, callers))
 
 	g, ctx := errgroup.WithContext(ctx)
 	g.Go(func() error { return events.Consume(ctx, js, service, log) })

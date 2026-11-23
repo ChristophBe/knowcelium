@@ -461,7 +461,9 @@ func (x *ProcessingFailed) GetRun() int32 {
 // Published by the worker after each sync run of a connector, for the
 // connector status of the ingestion service (ListConnectors). The service
 // keeps the newest report per connector (by end_time); a lost report only
-// delays the status until the next run.
+// delays the status until the next run. It carries the connector's
+// configuration too, so that a connector appears even when
+// ConnectorsConfigured was lost.
 type ConnectorSynced struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// The connector's configured name.
@@ -469,12 +471,17 @@ type ConnectorSynced struct {
 	Outcome   SyncOutcome            `protobuf:"varint,2,opt,name=outcome,proto3,enum=knowcel.ingestion.v1.SyncOutcome" json:"outcome,omitempty"`
 	StartTime *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=start_time,json=startTime,proto3" json:"start_time,omitempty"`
 	EndTime   *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=end_time,json=endTime,proto3" json:"end_time,omitempty"`
-	// Documents the connector keeps in sync after the run.
-	Documents int32 `protobuf:"varint,5,opt,name=documents,proto3" json:"documents,omitempty"`
+	// Documents the connector keeps in sync after the run; unset when the
+	// worker could not tell (its state store failed), which keeps the last count.
+	Documents *int32 `protobuf:"varint,5,opt,name=documents,proto3,oneof" json:"documents,omitempty"`
 	// Why the run failed, or a note about it; empty for a clean run.
-	Error         string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+	Error   string `protobuf:"bytes,6,opt,name=error,proto3" json:"error,omitempty"`
+	Kind    string `protobuf:"bytes,7,opt,name=kind,proto3" json:"kind,omitempty"`
+	Enabled bool   `protobuf:"varint,8,opt,name=enabled,proto3" json:"enabled,omitempty"`
+	// Seconds between syncs.
+	IntervalSeconds int32 `protobuf:"varint,9,opt,name=interval_seconds,json=intervalSeconds,proto3" json:"interval_seconds,omitempty"`
+	unknownFields   protoimpl.UnknownFields
+	sizeCache       protoimpl.SizeCache
 }
 
 func (x *ConnectorSynced) Reset() {
@@ -536,8 +543,8 @@ func (x *ConnectorSynced) GetEndTime() *timestamppb.Timestamp {
 }
 
 func (x *ConnectorSynced) GetDocuments() int32 {
-	if x != nil {
-		return x.Documents
+	if x != nil && x.Documents != nil {
+		return *x.Documents
 	}
 	return 0
 }
@@ -547,6 +554,27 @@ func (x *ConnectorSynced) GetError() string {
 		return x.Error
 	}
 	return ""
+}
+
+func (x *ConnectorSynced) GetKind() string {
+	if x != nil {
+		return x.Kind
+	}
+	return ""
+}
+
+func (x *ConnectorSynced) GetEnabled() bool {
+	if x != nil {
+		return x.Enabled
+	}
+	return false
+}
+
+func (x *ConnectorSynced) GetIntervalSeconds() int32 {
+	if x != nil {
+		return x.IntervalSeconds
+	}
+	return 0
 }
 
 // ConnectorConfig is one entry of the connectors file.
@@ -632,10 +660,11 @@ func (x *ConnectorConfig) GetError() string {
 }
 
 // Subject: knowcel.ingestion.connectors_configured
-// Published by the worker at start with every entry of its connectors file.
-// The service adds the connectors it does not know, updates the others'
-// configuration and forgets the ones no longer listed, so that a removed
-// connector disappears and a connector that never synced is UNKNOWN.
+// Published by the worker at start and every few minutes after, with every
+// entry of its connectors file (an empty list when it has none). The service
+// adds the connectors it does not know, updates the others' configuration and
+// forgets the ones no longer listed, so that a removed connector disappears
+// and a connector that never synced is UNKNOWN.
 type ConnectorsConfigured struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Connectors    []*ConnectorConfig     `protobuf:"bytes,1,rep,name=connectors,proto3" json:"connectors,omitempty"`
@@ -726,15 +755,20 @@ const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
 	"\vdocument_id\x18\x02 \x01(\tR\n" +
 	"documentId\x12\x14\n" +
 	"\x05error\x18\x03 \x01(\tR\x05error\x12\x10\n" +
-	"\x03run\x18\x04 \x01(\x05R\x03run\"\x88\x02\n" +
+	"\x03run\x18\x04 \x01(\x05R\x03run\"\xf4\x02\n" +
 	"\x0fConnectorSynced\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12;\n" +
 	"\aoutcome\x18\x02 \x01(\x0e2!.knowcel.ingestion.v1.SyncOutcomeR\aoutcome\x129\n" +
 	"\n" +
 	"start_time\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tstartTime\x125\n" +
-	"\bend_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12\x1c\n" +
-	"\tdocuments\x18\x05 \x01(\x05R\tdocuments\x12\x14\n" +
-	"\x05error\x18\x06 \x01(\tR\x05error\"\x94\x01\n" +
+	"\bend_time\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\aendTime\x12!\n" +
+	"\tdocuments\x18\x05 \x01(\x05H\x00R\tdocuments\x88\x01\x01\x12\x14\n" +
+	"\x05error\x18\x06 \x01(\tR\x05error\x12\x12\n" +
+	"\x04kind\x18\a \x01(\tR\x04kind\x12\x18\n" +
+	"\aenabled\x18\b \x01(\bR\aenabled\x12)\n" +
+	"\x10interval_seconds\x18\t \x01(\x05R\x0fintervalSecondsB\f\n" +
+	"\n" +
+	"_documents\"\x94\x01\n" +
 	"\x0fConnectorConfig\x12\x12\n" +
 	"\x04name\x18\x01 \x01(\tR\x04name\x12\x12\n" +
 	"\x04kind\x18\x02 \x01(\tR\x04kind\x12\x18\n" +
@@ -799,6 +833,7 @@ func file_knowcel_ingestion_v1_events_proto_init() {
 		return
 	}
 	file_knowcel_ingestion_v1_ingestion_proto_init()
+	file_knowcel_ingestion_v1_events_proto_msgTypes[5].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{

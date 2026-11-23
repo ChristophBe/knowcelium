@@ -113,7 +113,7 @@ class Runner:
                 except Exception:
                     # The lease expires on its own.
                     log.exception("connector %s: cannot release its lease", spec.name)
-        await self._reporter.synced(_report(spec.name, started, ended, outcome, failure, status))
+        await self._reporter.synced(_report(spec, started, ended, outcome, failure, status))
         return outcome
 
     async def _keep_lease(self, spec: ConnectorSpec) -> None:
@@ -273,7 +273,7 @@ class Runner:
 
 
 def _report(
-    name: str,
+    spec: ConnectorSpec,
     started: datetime,
     ended: datetime,
     outcome: Outcome | None,
@@ -282,18 +282,28 @@ def _report(
 ) -> SyncReport:
     """What a sync run says about its connector: it failed as a whole, failed
     in part (some items synced, others did not) or went through."""
-    status = status or {}
     if outcome is None:
         result, error = SyncResult.FAILED, failure
     else:
-        error = status.get("last_error", "")
+        error = (status or {}).get("last_error", "")
         if not outcome.failed:
             result = SyncResult.SUCCEEDED
         elif outcome.created + outcome.updated + outcome.deleted + outcome.unchanged:
             result = SyncResult.PARTIAL
         else:
             result = SyncResult.FAILED
-    return SyncReport(name, result, started, ended, int(status.get("documents", 0)), error)
+    documents = status.get("documents") if status else None
+    return SyncReport(
+        spec.name,
+        result,
+        started,
+        ended,
+        None if documents is None else int(documents),
+        error,
+        spec.kind,
+        spec.enabled,
+        spec.interval_seconds,
+    )
 
 
 def _parse(value: str | None) -> datetime | None:

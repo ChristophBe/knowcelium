@@ -1,5 +1,6 @@
 """What the runtime reports to the ingestion service about each connector."""
 
+import asyncio
 from collections.abc import AsyncIterator
 from datetime import UTC, datetime, timedelta
 from typing import Any
@@ -7,6 +8,8 @@ from typing import Any
 import pytest
 from google.protobuf.message import Message
 from knowcel.ingestion.v1 import events_pb2
+from knowcel_ingestion_worker.config import Settings
+from knowcel_ingestion_worker.connectors import service
 from knowcel_ingestion_worker.connectors.model import ConnectorError, Record
 from knowcel_ingestion_worker.connectors.registry import KINDS, Kind
 from knowcel_ingestion_worker.connectors.reporting import (
@@ -18,6 +21,7 @@ from knowcel_ingestion_worker.connectors.reporting import (
     SyncResult,
 )
 from knowcel_ingestion_worker.connectors.runner import Runner
+from knowcel_ingestion_worker.connectors.service import announce
 from knowcel_ingestion_worker.connectors.spec import ConnectorSpec, parse_specs
 from knowcel_ingestion_worker.connectors.state import MemoryState
 from knowcel_ingestion_worker.connectors.testkit import MemoryLibrary
@@ -76,11 +80,14 @@ class Published:
     def __init__(self, fail: bool = False) -> None:
         self.events: list[tuple[str, Message, str]] = []
         self.fail = fail
+        self.three = asyncio.Event()  # set once three events were published
 
     async def __call__(self, subject: str, message: Message, dedupe_id: str) -> None:
         if self.fail:
             raise ConnectionError("nats is down")
         self.events.append((subject, message, dedupe_id))
+        if len(self.events) >= 3:
+            self.three.set()
 
     def synced(self) -> list[events_pb2.ConnectorSynced]:
         return [m for _, m, _ in self.events if isinstance(m, events_pb2.ConnectorSynced)]
@@ -124,6 +131,7 @@ async def test_a_successful_sync_is_reported_with_its_times_and_documents(
     assert event.outcome == events_pb2.SYNC_OUTCOME_SUCCEEDED
     assert event.documents == 2
     assert event.error == ""
+    assert (event.kind, event.enabled, event.interval_seconds) == ("folder", True, 300)
     assert event.start_time.ToDatetime(tzinfo=UTC) < event.end_time.ToDatetime(tzinfo=UTC)
     subject, _, dedupe_id = published.events[0]
     assert subject == SUBJECT_SYNCED
@@ -161,6 +169,8 @@ async def test_a_run_that_cannot_start_failed_with_the_reason(
     (event,) = published.synced()
     assert event.outcome == events_pb2.SYNC_OUTCOME_FAILED
     assert "not a platform admin" in event.error
+    # Nothing was counted this run, but the connector has none yet either.
+    assert event.documents == 0
 
 
 async def test_skipped_items_are_a_success_with_a_note(
@@ -233,6 +243,45 @@ async def test_a_report_of_a_run_that_never_started_has_no_start_time(published:
     (event,) = published.synced()
     assert not event.HasField("start_time")
     assert event.HasField("end_time")
+
+
+async def test_an_unreadable_state_store_leaves_the_document_count_unknown(
+    source: ListSource, library: FakeLibrary, published: Published
+):
+    class BrokenState(MemoryState):
+        async def get(self, key: str):
+            if key.endswith(".status"):
+                raise ConnectionError("nats is down")
+            return await super().get(key)
+
+    runner = Runner(library, BrokenState(), clock=Clock(), reporter=EventReporter(published))
+    await runner.sync(spec())
+    (event,) = published.synced()
+    assert event.outcome == events_pb2.SYNC_OUTCOME_FAILED
+    assert not event.HasField("documents")
+    assert "nats is down" in event.error
+
+
+async def test_the_configured_connectors_are_announced_again_until_stopped(
+    source: ListSource, published: Published
+):
+    stop = asyncio.Event()
+    task = asyncio.create_task(
+        announce(EventReporter(published), parse_specs([]), stop, every=0.01)
+    )
+    await asyncio.wait_for(published.three.wait(), 5)
+    stop.set()
+    await task
+    assert {subject for subject, _, _ in published.events} == {SUBJECT_CONFIGURED}
+
+
+async def test_a_worker_without_a_connectors_file_announces_none(published: Published):
+    settings = Settings(connectors_file="")
+    await service.run(settings, None, None, published, asyncio.Event())  # type: ignore[arg-type]
+    ((subject, event, _),) = published.events
+    assert subject == SUBJECT_CONFIGURED
+    assert isinstance(event, events_pb2.ConnectorsConfigured)
+    assert len(event.connectors) == 0
 
 
 async def test_the_null_reporter_does_nothing():

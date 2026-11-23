@@ -21,9 +21,24 @@ VALUES (
 )
 ON CONFLICT (name) DO UPDATE
 SET kind = EXCLUDED.kind, enabled = EXCLUDED.enabled, interval_seconds = EXCLUDED.interval_seconds,
-    last_outcome = CASE WHEN $5::text = '' THEN ingestion.connector_status.last_outcome ELSE 3 END,
-    last_end = CASE WHEN $5::text = '' THEN ingestion.connector_status.last_end ELSE $6::timestamptz END,
-    last_error = CASE WHEN $5::text = '' THEN ingestion.connector_status.last_error ELSE $5 END,
+    last_outcome = CASE
+        WHEN $5::text <> '' THEN
+            CASE WHEN ingestion.connector_status.last_end IS NULL OR ingestion.connector_status.last_end <= $6::timestamptz
+                 THEN 3 ELSE ingestion.connector_status.last_outcome END
+        WHEN ingestion.connector_status.kind = '' AND ingestion.connector_status.last_outcome = 3 THEN 0
+        ELSE ingestion.connector_status.last_outcome END,
+    last_end = CASE
+        WHEN $5::text <> '' THEN
+            CASE WHEN ingestion.connector_status.last_end IS NULL OR ingestion.connector_status.last_end <= $6::timestamptz
+                 THEN $6::timestamptz ELSE ingestion.connector_status.last_end END
+        WHEN ingestion.connector_status.kind = '' AND ingestion.connector_status.last_outcome = 3 THEN NULL
+        ELSE ingestion.connector_status.last_end END,
+    last_error = CASE
+        WHEN $5::text <> '' THEN
+            CASE WHEN ingestion.connector_status.last_end IS NULL OR ingestion.connector_status.last_end <= $6::timestamptz
+                 THEN $5 ELSE ingestion.connector_status.last_error END
+        WHEN ingestion.connector_status.kind = '' AND ingestion.connector_status.last_outcome = 3 THEN ''
+        ELSE ingestion.connector_status.last_error END,
     updated_at = now()
 `
 
@@ -38,7 +53,9 @@ type ConfigureConnectorParams struct {
 
 // ConfigureConnector adds a connector the worker lists in its connectors file
 // or updates its configuration, leaving what its last run reported alone. An
-// invalid entry (error is not empty) has failed: its last run is the error.
+// invalid entry (error is not empty) has failed: its last run is the error,
+// unless a run reported since (the events can arrive again or late). An entry
+// that was invalid (no kind, failed) and is valid now starts over unknown.
 func (q *Queries) ConfigureConnector(ctx context.Context, arg ConfigureConnectorParams) error {
 	_, err := q.db.Exec(ctx, configureConnector,
 		arg.Name,
@@ -124,36 +141,48 @@ func (q *Queries) ListConnectorStatuses(ctx context.Context) ([]IngestionConnect
 }
 
 const recordConnectorSync = `-- name: RecordConnectorSync :exec
-INSERT INTO ingestion.connector_status (name, last_outcome, last_start, last_end, last_success, documents, last_error)
+INSERT INTO ingestion.connector_status (name, kind, enabled, interval_seconds, last_outcome, last_start, last_end, last_success, documents, last_error)
 VALUES (
-    $1, $2, $3::timestamptz, $4::timestamptz,
-    CASE WHEN $2::smallint = 1 THEN $4::timestamptz END,
-    $5, $6
+    $1, $2, $3, $4,
+    $5, $6::timestamptz, $7::timestamptz,
+    CASE WHEN $5::smallint = 1 THEN $7::timestamptz END,
+    coalesce($8::integer, 0), $9
 )
 ON CONFLICT (name) DO UPDATE
-SET last_outcome = EXCLUDED.last_outcome, last_start = EXCLUDED.last_start, last_end = EXCLUDED.last_end,
+SET kind = CASE WHEN EXCLUDED.kind = '' THEN ingestion.connector_status.kind ELSE EXCLUDED.kind END,
+    enabled = CASE WHEN EXCLUDED.kind = '' THEN ingestion.connector_status.enabled ELSE EXCLUDED.enabled END,
+    interval_seconds = CASE WHEN EXCLUDED.kind = '' THEN ingestion.connector_status.interval_seconds ELSE EXCLUDED.interval_seconds END,
+    last_outcome = EXCLUDED.last_outcome, last_start = EXCLUDED.last_start, last_end = EXCLUDED.last_end,
     last_success = CASE WHEN EXCLUDED.last_outcome = 1 THEN EXCLUDED.last_end ELSE ingestion.connector_status.last_success END,
-    documents = EXCLUDED.documents, last_error = EXCLUDED.last_error, updated_at = now()
+    documents = coalesce($8::integer, ingestion.connector_status.documents),
+    last_error = EXCLUDED.last_error, updated_at = now()
 WHERE ingestion.connector_status.last_end IS NULL OR ingestion.connector_status.last_end <= EXCLUDED.last_end
 `
 
 type RecordConnectorSyncParams struct {
-	Name      string
-	Outcome   int16
-	StartTime pgtype.Timestamptz
-	EndTime   pgtype.Timestamptz
-	Documents int32
-	Error     string
+	Name            string
+	Kind            string
+	Enabled         bool
+	IntervalSeconds int32
+	Outcome         int16
+	StartTime       pgtype.Timestamptz
+	EndTime         pgtype.Timestamptz
+	Documents       pgtype.Int4
+	Error           string
 }
 
-// RecordConnectorSync stores the outcome of a sync run. A report that ended
-// before the stored one is stale (events can arrive out of order) and changes
+// RecordConnectorSync stores the outcome of a sync run, with the connector's
+// configuration when the report has one (a kind). A report that ended before
+// the stored one is stale (events can arrive out of order) and changes
 // nothing. Only a clean run (outcome 1) moves last_success. A report for a
-// connector that is not known (yet) adds it, to be completed by
-// ConfigureConnector.
+// connector that is not known adds it. An unknown document count keeps the
+// last one.
 func (q *Queries) RecordConnectorSync(ctx context.Context, arg RecordConnectorSyncParams) error {
 	_, err := q.db.Exec(ctx, recordConnectorSync,
 		arg.Name,
+		arg.Kind,
+		arg.Enabled,
+		arg.IntervalSeconds,
 		arg.Outcome,
 		arg.StartTime,
 		arg.EndTime,

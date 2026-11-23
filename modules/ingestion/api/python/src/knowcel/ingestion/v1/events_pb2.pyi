@@ -89,20 +89,26 @@ class ProcessingFailed(_message.Message):
     def __init__(self, job_id: _Optional[str] = ..., document_id: _Optional[str] = ..., error: _Optional[str] = ..., run: _Optional[int] = ...) -> None: ...
 
 class ConnectorSynced(_message.Message):
-    __slots__ = ("name", "outcome", "start_time", "end_time", "documents", "error")
+    __slots__ = ("name", "outcome", "start_time", "end_time", "documents", "error", "kind", "enabled", "interval_seconds")
     NAME_FIELD_NUMBER: _ClassVar[int]
     OUTCOME_FIELD_NUMBER: _ClassVar[int]
     START_TIME_FIELD_NUMBER: _ClassVar[int]
     END_TIME_FIELD_NUMBER: _ClassVar[int]
     DOCUMENTS_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
+    KIND_FIELD_NUMBER: _ClassVar[int]
+    ENABLED_FIELD_NUMBER: _ClassVar[int]
+    INTERVAL_SECONDS_FIELD_NUMBER: _ClassVar[int]
     name: str
     outcome: SyncOutcome
     start_time: _timestamp_pb2.Timestamp
     end_time: _timestamp_pb2.Timestamp
     documents: int
     error: str
-    def __init__(self, name: _Optional[str] = ..., outcome: _Optional[_Union[SyncOutcome, str]] = ..., start_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., end_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., documents: _Optional[int] = ..., error: _Optional[str] = ...) -> None: ...
+    kind: str
+    enabled: bool
+    interval_seconds: int
+    def __init__(self, name: _Optional[str] = ..., outcome: _Optional[_Union[SyncOutcome, str]] = ..., start_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., end_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., documents: _Optional[int] = ..., error: _Optional[str] = ..., kind: _Optional[str] = ..., enabled: _Optional[bool] = ..., interval_seconds: _Optional[int] = ...) -> None: ...
 
 class ConnectorConfig(_message.Message):
     __slots__ = ("name", "kind", "enabled", "interval_seconds", "error")

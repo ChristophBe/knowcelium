@@ -37,7 +37,10 @@ type Server struct {
 	ingestionv1.UnimplementedIngestionServiceServer
 	app        *app.Service
 	connectors *connectors.Service
-	log        *slog.Logger
+	// callers tells who is a platform admin; only the connector RPCs ask, so
+	// the other calls do not depend on iam.
+	callers *grpcserver.Resolver
+	log     *slog.Logger
 	// PollInterval controls how often WatchJob checks for changes.
 	PollInterval time.Duration
 }
@@ -46,10 +49,10 @@ func New(service *app.Service, log *slog.Logger) *Server {
 	return &Server{app: service, log: log, PollInterval: 500 * time.Millisecond}
 }
 
-// WithConnectors serves the connectors' status from c. Without it
-// ListConnectors and GetConnector are unimplemented.
-func (s *Server) WithConnectors(c *connectors.Service) *Server {
-	s.connectors = c
+// WithConnectors serves the connectors' status from c to the platform admins
+// callers knows. Without it ListConnectors and GetConnector are unimplemented.
+func (s *Server) WithConnectors(c *connectors.Service, callers *grpcserver.Resolver) *Server {
+	s.connectors, s.callers = c, callers
 	return s
 }
 

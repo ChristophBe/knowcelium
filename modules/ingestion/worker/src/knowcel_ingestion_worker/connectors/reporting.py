@@ -45,9 +45,15 @@ class SyncReport:
     # None when the run failed before it started.
     started: datetime | None
     ended: datetime
-    documents: int
+    # None when the state store could not tell; the service keeps the last count.
+    documents: int | None
     # Why the run failed, or a note about it (items skipped).
     error: str = ""
+    # The connector's configuration, so that its status appears even when the
+    # announcement at start was lost.
+    kind: str = ""
+    enabled: bool = True
+    interval_seconds: int = 0
 
 
 class Reporter(Protocol):
@@ -94,6 +100,9 @@ class EventReporter:
             end_time=_timestamp(report.ended),
             documents=report.documents,
             error=report.error,
+            kind=report.kind,
+            enabled=report.enabled,
+            interval_seconds=report.interval_seconds,
         )
         if report.started:
             event.start_time.CopyFrom(_timestamp(report.started))

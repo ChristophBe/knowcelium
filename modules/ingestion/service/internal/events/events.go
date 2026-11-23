@@ -240,11 +240,16 @@ func applyConnector(ctx context.Context, status ConnectorStatus, subject string,
 			return nil // malformed events can never succeed; drop them
 		}
 		sync := connectors.Sync{
-			Name:      ev.GetName(),
-			Outcome:   ev.GetOutcome(),
-			End:       ev.GetEndTime().AsTime(),
-			Documents: ev.GetDocuments(),
-			Error:     ev.GetError(),
+			Name:     ev.GetName(),
+			Outcome:  ev.GetOutcome(),
+			End:      ev.GetEndTime().AsTime(),
+			Error:    ev.GetError(),
+			Kind:     ev.GetKind(),
+			Enabled:  ev.GetEnabled(),
+			Interval: time.Duration(ev.GetIntervalSeconds()) * time.Second,
+		}
+		if ev.Documents != nil {
+			sync.Documents = ev.Documents
 		}
 		if ev.GetStartTime() != nil {
 			sync.Start = ev.GetStartTime().AsTime()
