@@ -146,7 +146,7 @@ Each role takes a `family` and optionally a `file` and a `weight`:
 - A name must be one of these (each is the kebab-case name of an icon of the UI; a test keeps the list in step with the code):
 
 <!-- icons:start -->
-`alert-triangle`, `arrow-left`, `arrow-right`, `arrow-up`, `bar-chart-3`, `check`, `check-circle-2`, `chevron-left`, `circle-alert`, `circle-help`, `circle-user`, `copy`, `cpu`, `download`, `file-text`, `file-up`, `info`, `layers`, `library`, `log-out`, `menu`, `message-square`, `message-square-text`, `monitor`, `moon`, `plus`, `rotate-ccw`, `search`, `search-x`, `shield-alert`, `square`, `sun`, `thumbs-down`, `thumbs-up`, `trash-2`, `triangle-alert`, `upload`, `user-minus`, `user-round-cog`, `users-round`, `x`
+`alert-triangle`, `arrow-left`, `arrow-right`, `arrow-up`, `bar-chart-3`, `check`, `check-circle-2`, `chevron-left`, `circle-alert`, `circle-help`, `circle-user`, `clock`, `copy`, `cpu`, `download`, `file-text`, `file-up`, `info`, `layers`, `library`, `log-out`, `menu`, `message-square`, `message-square-text`, `monitor`, `moon`, `plug`, `plus`, `rotate-ccw`, `search`, `search-x`, `shield-alert`, `square`, `sun`, `thumbs-down`, `thumbs-up`, `trash-2`, `triangle-alert`, `upload`, `user-minus`, `user-round-cog`, `users-round`, `x`
 <!-- icons:end -->
 
 ## Checks at start

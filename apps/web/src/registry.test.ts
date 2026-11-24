@@ -39,7 +39,7 @@ describe("navEntries", () => {
       ["Chat", "/m/chat", false],
       ["Documents", "/m/document", false],
       ["Document checks", "/m/curation", false],
-      ["Upload", "/m/ingestion", false],
+      ["Upload", "/m/ingestion", true],
       ["Teams", "/m/iam/teams", false],
       ["Models", "/m/llm", false],
     ]);

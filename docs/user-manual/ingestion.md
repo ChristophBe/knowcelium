@@ -77,3 +77,29 @@ A file whose processing failed shows the reason and a **Retry processing** butto
 You can also get here from the document: when processing of a document, or of its new version, failed, its page shows the reason with **View job and retry processing**. That opens **Upload** with the document's row highlighted, where **Retry processing** is. If the row isn't there, because many uploads came after it, the page says so; open the document again from [Documents](documents.md).
 
 If it fails again with the same reason, the file itself is probably the problem, for example a damaged PDF. If the reason says a service isn't available, check [Models](models.md) and try again later.
+
+## Connectors
+
+A connector keeps your documents in step with an external system, such as a wiki or a drive: it adds documents for new items, replaces the ones that changed and removes the ones that are gone. Platform admins see the connectors under **Connectors** in the sidebar; other people don't see the entry, and the page tells them that only platform admins can see the connectors. Your administrator sets connectors up; the page only shows how they are doing.
+
+Each row shows:
+
+- **Connector**: its name and the kind of system it reads. A connector that is switched off shows **Disabled**, and it does not sync. A connector whose settings are invalid shows **Invalid settings** and does not sync until your administrator corrects them. Neither has a **What to do** link.
+- **Health**: one of the states below, as an icon and a word. Unless a connector is healthy, a **What to do** link takes you to [Fix an unhealthy connector](#fix-an-unhealthy-connector).
+- **Last successful sync**: how long ago the connector last synced without failing (hover for the exact time), or **Never**.
+- **Documents**: how many documents the connector keeps in sync.
+- **Last error**: why the last sync failed, or a note about it, such as files that were skipped. **None** when it went through cleanly.
+
+The list refreshes by itself every half minute. On a narrow screen the table scrolls sideways inside its card. Until a connector has been set up, the page says **No connectors yet** and links to the guide for building one. If the list can't be loaded, the page says so and offers **Try again**.
+
+## Fix an unhealthy connector
+
+Health says whether a connector keeps its documents up to date.
+
+- **Healthy**: the last sync succeeded and it was recent. Nothing to do. A note under **Last error** (for example about empty files that were skipped) is only information.
+- **Degraded**: the last sync worked for some items and failed for others. **Last error** names the first one that failed. Fix that item in the source system or ask your administrator; the next sync tries again, and the connector turns healthy when all items work.
+- **Failing**: the last sync failed. **Last error** says why, for example that the system can't be reached or that the connector's owner is no longer a platform admin. Fix what it names, or hand the message to your administrator. The connector tries again at the next sync.
+- **Stale**: the connector has not synced for more than twice its usual interval, whatever its last result was, so its documents may be out of date. The part of Knowcelium that runs connectors is probably down or stuck; ask your administrator to check it.
+- **Not synced yet**: the connector has not run so far. This is normal for a few minutes after it was set up or the system restarted. If it stays this way, ask your administrator to check its settings.
+
+The documents a connector created stay available while it is unhealthy; they only get no updates.

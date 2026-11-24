@@ -7,11 +7,13 @@ import { describe, expect, it } from "vitest";
 // (docs/operations/branding.md). Allowed: tests, comments, and the places below.
 const root = join(import.meta.dirname, "..", "..", "..");
 
-/** Where the default product name legitimately appears: the default logo and the theme's key migration. */
+/** Where the default product name legitimately appears: the default logo, the theme's key migration and the repository address. */
 const ALLOWED_FILES = new Set([
   join("platform", "ui", "kit", "src", "branding.ts"),
   join("platform", "ui", "kit", "src", "logo.tsx"),
   join("platform", "ui", "kit", "src", "theme.ts"),
+  // The address of the project's repository, not display text.
+  join("modules", "ingestion", "ui", "src", "links.ts"),
 ]);
 
 function sources(dir: string): string[] {
