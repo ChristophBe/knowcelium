@@ -24,6 +24,7 @@ from .base import (
     Status,
     ToolCall,
     ToolSpec,
+    tool_schema,
 )
 from .rerank import rerank_with_chat
 
@@ -120,6 +121,8 @@ class AnthropicProvider:
             raise translate_error(exc) from exc
         if final.stop_reason == "refusal":
             log.warning("anthropic declined the request (model %s)", model)
+        if final.stop_reason == "max_tokens" and any(b.type == "tool_use" for b in final.content):
+            raise ProviderError("anthropic: the answer was cut off inside a tool call")
         usage = final.usage
         yield Chunk(
             done=True,
@@ -170,7 +173,7 @@ def _tool_param(tool: ToolSpec) -> BetaToolParam:
     return {
         "name": tool.name,
         "description": tool.description,
-        "input_schema": json.loads(tool.parameters_json_schema or "{}") or {"type": "object"},
+        "input_schema": cast(Any, tool_schema(tool)),
     }
 
 
@@ -214,6 +217,8 @@ def to_anthropic_messages(messages: list[Message]) -> tuple[str, list[BetaMessag
             turns.append((role, blocks))
     params: list[BetaMessageParam] = []
     for role, blocks in turns:
+        # The API wants the results of tool calls ahead of any other text in a user turn.
+        blocks.sort(key=lambda b: b["type"] != "tool_result")
         if all(b["type"] == "text" for b in blocks):
             content: Any = "\n\n".join(b["text"] for b in blocks)
         else:

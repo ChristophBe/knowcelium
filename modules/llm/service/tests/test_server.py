@@ -288,3 +288,24 @@ async def test_list_models_reports_tool_support(stub: llm_pb2_grpc.LlmServiceStu
     embedding = next(m for m in models if m.kind == llm_pb2.MODEL_KIND_EMBEDDING)
     assert chat.supports_tools
     assert not embedding.supports_tools
+
+
+async def test_malformed_tool_json_is_an_invalid_argument(
+    stub: llm_pb2_grpc.LlmServiceStub,
+) -> None:
+    ask = llm_pb2.Message(role=llm_pb2.ROLE_USER, content="hi")
+    bad_call = llm_pb2.Message(
+        role=llm_pb2.ROLE_ASSISTANT,
+        tool_calls=[llm_pb2.ToolCall(id="c", name="weather", arguments_json="[1]")],
+    )
+    for request in (
+        llm_pb2.GenerateRequest(
+            messages=[ask], tools=[llm_pb2.ToolSpec(name="t", parameters_json_schema="{oops")]
+        ),
+        llm_pb2.GenerateRequest(messages=[ask], tools=[llm_pb2.ToolSpec(name="")]),
+        llm_pb2.GenerateRequest(messages=[ask, bad_call]),
+    ):
+        with pytest.raises(grpc.aio.AioRpcError) as err:
+            async for _ in stub.Generate(request):
+                pass
+        assert err.value.code() == grpc.StatusCode.INVALID_ARGUMENT

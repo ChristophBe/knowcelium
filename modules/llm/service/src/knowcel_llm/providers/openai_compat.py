@@ -23,6 +23,7 @@ from .base import (
     Status,
     ToolCall,
     ToolSpec,
+    tool_schema,
 )
 from .rerank import rerank_with_chat
 
@@ -122,20 +123,26 @@ class OpenAICompatProvider:
                         if text := delta.get("content"):
                             yield Chunk(delta=text)
                         for part in delta.get("tool_calls") or []:
-                            call = calls.setdefault(
-                                part.get("index", 0), {"id": "", "name": "", "arguments": ""}
-                            )
+                            index = part.get("index", 0)
+                            # Some servers send every call at index 0: a new id starts a new call.
+                            while (
+                                index in calls
+                                and part.get("id")
+                                and calls[index]["id"] not in ("", part["id"])
+                            ):
+                                index += 1
+                            call = calls.setdefault(index, {"id": "", "name": "", "arguments": ""})
                             call["id"] = part.get("id") or call["id"]
                             function = part.get("function") or {}
-                            call["name"] += function.get("name") or ""
+                            call["name"] = call["name"] or function.get("name") or ""
                             call["arguments"] += function.get("arguments") or ""
         except httpx.HTTPError as exc:
             raise _translate(exc) from exc
         yield Chunk(
             done=True,
             tool_calls=tuple(
-                ToolCall(c["id"], c["name"], c["arguments"] or "{}")
-                for _, c in sorted(calls.items())
+                ToolCall(c["id"] or f"call_{i}", c["name"], c["arguments"] or "{}")
+                for i, c in sorted(calls.items())
             ),
             input_tokens=input_tokens,
             output_tokens=output_tokens,
@@ -210,8 +217,7 @@ def _tool_param(tool: ToolSpec) -> dict[str, Any]:
         "function": {
             "name": tool.name,
             "description": tool.description,
-            "parameters": json.loads(tool.parameters_json_schema or "{}")
-            or {"type": "object", "properties": {}},
+            "parameters": tool_schema(tool),
         },
     }
 

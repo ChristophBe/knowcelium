@@ -21,11 +21,15 @@ from .base import (
     Status,
     ToolCall,
     ToolSpec,
+    tool_schema,
 )
 from .rerank import rerank_with_chat
 
 # Statuses that mean "overloaded or restarting" rather than a bad request.
 _RETRYABLE_STATUS = {429, 502, 503, 504}
+
+# Model capabilities are read with one /api/show call per model; this many at a time.
+_SHOW_CONCURRENCY = 4
 
 
 @dataclass(frozen=True)
@@ -99,6 +103,8 @@ class OllamaProvider:
                     event = json.loads(line)
                     if "error" in event:
                         raise ProviderError(f"ollama: {event['error']}")
+                    message = event.get("message", {})
+                    calls.extend(_tool_calls(message))
                     if event.get("done"):
                         yield Chunk(
                             done=True,
@@ -109,16 +115,6 @@ class OllamaProvider:
                         return
                     if asyncio.get_running_loop().time() > deadline:
                         raise ProviderUnavailableError("ollama generation exceeded its time limit")
-                    message = event.get("message", {})
-                    for call in message.get("tool_calls") or []:
-                        function = call.get("function", {})
-                        calls.append(
-                            ToolCall(
-                                f"call_{uuid.uuid4().hex[:12]}",
-                                function.get("name", ""),
-                                json.dumps(function.get("arguments") or {}),
-                            )
-                        )
                     if content := message.get("content", ""):
                         yield Chunk(delta=content)
         except httpx.HTTPError as exc:
@@ -140,8 +136,14 @@ class OllamaProvider:
             name: str = m["name"]
             families = m.get("details", {}).get("families") or []
             found.append((name, "embed" in name or any("bert" in f for f in families)))
+        limit = asyncio.Semaphore(_SHOW_CONCURRENCY)
+
+        async def supports_tools(name: str) -> bool:
+            async with limit:
+                return await self._supports_tools(name)
+
         tools = await asyncio.gather(
-            *(self._supports_tools(name) for name, is_embedding in found if not is_embedding)
+            *(supports_tools(name) for name, is_embedding in found if not is_embedding)
         )
         with_tools = iter(tools)
         return [
@@ -159,9 +161,9 @@ class OllamaProvider:
             resp = await self._idempotent(
                 "POST", "/api/show", self._limits.list_timeout, json={"model": model}
             )
-        except ProviderError:
+            return "tools" in (resp.json().get("capabilities") or [])
+        except (ProviderError, ValueError):
             return False
-        return "tools" in (resp.json().get("capabilities") or [])
 
     async def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:
         return await rerank_with_chat(self, model, query, documents)
@@ -239,10 +241,24 @@ def _tool_param(tool: ToolSpec) -> dict[str, Any]:
         "function": {
             "name": tool.name,
             "description": tool.description,
-            "parameters": json.loads(tool.parameters_json_schema or "{}")
-            or {"type": "object", "properties": {}},
+            "parameters": tool_schema(tool),
         },
     }
+
+
+def _tool_calls(message: dict[str, Any]) -> list[ToolCall]:
+    """Ollama has no call ids, so each call gets a fresh one."""
+    calls = []
+    for call in message.get("tool_calls") or []:
+        function = call.get("function", {})
+        calls.append(
+            ToolCall(
+                f"call_{uuid.uuid4().hex[:12]}",
+                function.get("name", ""),
+                json.dumps(function.get("arguments") or {}),
+            )
+        )
+    return calls
 
 
 def _message_params(messages: list[Message]) -> list[dict[str, Any]]:

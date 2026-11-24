@@ -3,6 +3,7 @@ no network and no API key needed."""
 
 import json
 from collections.abc import AsyncIterator, Awaitable, Callable
+from typing import Any, cast
 
 import anthropic
 import grpc
@@ -498,3 +499,17 @@ async def test_error_during_a_tool_turn_is_translated() -> None:
 async def test_all_claude_models_support_tools() -> None:
     models = await provider(lambda _: error(500, "api_error")).list_models()
     assert all(m.supports_tools for m in models)
+
+
+def test_tool_results_come_first_in_a_user_turn() -> None:
+    call = ToolCall("t1", "weather", "{}")
+    _, turns = to_anthropic_messages(
+        [
+            Message(Role.USER, "hi"),
+            Message(Role.ASSISTANT, "", tool_calls=(call,)),
+            Message(Role.USER, "also"),
+            Message(Role.TOOL, "sunny", tool_call_id="t1"),
+        ]
+    )
+    blocks = cast(list[dict[str, Any]], turns[-1].get("content"))
+    assert [b["type"] for b in blocks] == ["tool_result", "text"]

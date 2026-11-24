@@ -329,3 +329,16 @@ async def test_embedding_models_do_not_support_tools() -> None:
         ("gpt-4o", True),
         ("text-embedding-3-small", False),
     ]
+
+
+async def test_calls_sharing_an_index_are_told_apart_by_id() -> None:
+    p = provider(
+        lambda _: sse(
+            tool_delta(0, id="a", function={"name": "weather", "arguments": "{}"}),
+            tool_delta(0, id="b", function={"name": "time", "arguments": "{}"}),
+            tool_delta(0, function={"name": "time"}),
+            "[DONE]",
+        )
+    )
+    chunks = [c async for c in p.generate("m", HELLO, GenerationOptions(), tools=[WEATHER])]
+    assert [(c.id, c.name) for c in chunks[-1].tool_calls] == [("a", "weather"), ("b", "time")]
