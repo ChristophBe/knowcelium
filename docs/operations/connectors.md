@@ -65,7 +65,7 @@ It reads the file types the worker can process (PDF, Word, HTML, Markdown and pl
 | `timeout_seconds` | Seconds a request may wait for connecting, sending and each answer (default 10). |
 
 - **Engineering** creates a document per part, specification and change request. A document's metadata names the `supplier_id` (and `part_id` or `part_ids`), which links it to the logistics documents.
-- **Logistics** creates a document per supplier and stock record, with `supplier_id` and `part_id` in the metadata. Shipments are not copied: their status changes too quickly, so the connector answers `search` by asking the system (shipment status, delays, shipments of a supplier named by its ID). Live retrieval does not call it yet.
+- **Logistics** creates a document per supplier and stock record, with `supplier_id` and `part_id` in the metadata. Shipments are not copied: their status changes too quickly, so the connector answers `search` by asking the system (shipment status, delays, shipments of a supplier named by its ID). The showcase file sets `live_search: true` on it, so chat asks it whenever someone asks a question.
 - Both ask only for records updated since the last successful sync, so a second sync changes nothing and an edited record replaces its document. The mock systems never delete records, so nothing is deleted.
 
 ## How a sync works

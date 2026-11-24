@@ -1,4 +1,5 @@
-# The showcase connectors (docs/operations/connectors.md): they sync the mock systems into documents.
+# The showcase connectors (docs/operations/connectors.md): they sync the mock systems into documents,
+# and the logistics one also answers live questions about shipments.
 # The main stack does not run them; this file replaces modules/ingestion/connectors.yaml when you start
 # the showcase: task showcase:up (it sets KNOWCEL_CONNECTORS_CONFIG, which overrides a value in .env).
 #
@@ -18,5 +19,7 @@ connectors:
     owner: CgVhbGljZRIFbG9jYWw
     public: true
     interval_seconds: 60
+    # Shipments change too quickly to copy: chat asks the system when a question is asked.
+    live_search: true
     settings:
       base_url: http://showcase-logistics:8092
