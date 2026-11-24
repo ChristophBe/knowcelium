@@ -334,16 +334,18 @@ class Citations(_message.Message):
     def __init__(self, items: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., unavailable_sources: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class PromptTemplates(_message.Message):
-    __slots__ = ("system_prompt", "sources_template", "no_sources_template", "variables")
+    __slots__ = ("system_prompt", "sources_template", "no_sources_template", "variables", "tools_template")
     SYSTEM_PROMPT_FIELD_NUMBER: _ClassVar[int]
     SOURCES_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     NO_SOURCES_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     VARIABLES_FIELD_NUMBER: _ClassVar[int]
+    TOOLS_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     system_prompt: PromptTemplate
     sources_template: PromptTemplate
     no_sources_template: PromptTemplate
     variables: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, system_prompt: _Optional[_Union[PromptTemplate, _Mapping]] = ..., sources_template: _Optional[_Union[PromptTemplate, _Mapping]] = ..., no_sources_template: _Optional[_Union[PromptTemplate, _Mapping]] = ..., variables: _Optional[_Iterable[str]] = ...) -> None: ...
+    tools_template: PromptTemplate
+    def __init__(self, system_prompt: _Optional[_Union[PromptTemplate, _Mapping]] = ..., sources_template: _Optional[_Union[PromptTemplate, _Mapping]] = ..., no_sources_template: _Optional[_Union[PromptTemplate, _Mapping]] = ..., variables: _Optional[_Iterable[str]] = ..., tools_template: _Optional[_Union[PromptTemplate, _Mapping]] = ...) -> None: ...
 
 class PromptTemplate(_message.Message):
     __slots__ = ("content", "default_content", "is_default")
@@ -366,14 +368,16 @@ class GetPromptTemplatesResponse(_message.Message):
     def __init__(self, templates: _Optional[_Union[PromptTemplates, _Mapping]] = ...) -> None: ...
 
 class UpdatePromptTemplatesRequest(_message.Message):
-    __slots__ = ("system_prompt", "sources_template", "no_sources_template")
+    __slots__ = ("system_prompt", "sources_template", "no_sources_template", "tools_template")
     SYSTEM_PROMPT_FIELD_NUMBER: _ClassVar[int]
     SOURCES_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     NO_SOURCES_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
+    TOOLS_TEMPLATE_FIELD_NUMBER: _ClassVar[int]
     system_prompt: str
     sources_template: str
     no_sources_template: str
-    def __init__(self, system_prompt: _Optional[str] = ..., sources_template: _Optional[str] = ..., no_sources_template: _Optional[str] = ...) -> None: ...
+    tools_template: str
+    def __init__(self, system_prompt: _Optional[str] = ..., sources_template: _Optional[str] = ..., no_sources_template: _Optional[str] = ..., tools_template: _Optional[str] = ...) -> None: ...
 
 class UpdatePromptTemplatesResponse(_message.Message):
     __slots__ = ("templates",)

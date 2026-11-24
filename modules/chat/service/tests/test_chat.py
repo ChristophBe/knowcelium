@@ -9,6 +9,7 @@ import pytest
 from knowcel.chat.v1 import chat_pb2
 from knowcel_chat.chat import (
     TITLE_LENGTH,
+    AgentScope,
     AnswerDelta,
     AnswerEvent,
     AnswerFailed,
@@ -26,7 +27,7 @@ from knowcel_chat.chat import (
 )
 from knowcel_chat.config import Settings
 from knowcel_chat.peers import PeerGenerator, PeerRetriever
-from knowcel_chat.prompts import NO_SOURCES_PROMPT, RAG_PROMPT, SYSTEM_PROMPT
+from knowcel_chat.prompts import NO_SOURCES_PROMPT, RAG_PROMPT, SYSTEM_PROMPT, TOOLS_PROMPT
 from knowcel_chat.repository import ConversationRow, MessageRow
 
 USER = chat_pb2.MESSAGE_ROLE_USER
@@ -811,3 +812,141 @@ async def test_no_source_is_searched_without_the_knowledge_base() -> None:
     chat, repo, _, _ = make()
     events = await collect_all(chat, repo, use_kb=False)
     assert not any(isinstance(e, RetrievalChanged) for e in events)
+
+
+class FakeAgent:
+    """Streams what it is told to, like an agent that searched and then wrote."""
+
+    def __init__(self, supports: bool = True, hang: bool = False) -> None:
+        self.supports = supports
+        self.hang = hang
+        self.runs: list[tuple[str, list[PromptMessage], AgentScope]] = []
+        self.closed = False
+        self.waiting = asyncio.Event()
+
+    async def supports_tools(self, model: str) -> bool:
+        return self.supports
+
+    async def run(
+        self, model: str, prompt: list[PromptMessage], scope: AgentScope
+    ) -> AsyncGenerator[AnswerEvent]:
+        self.runs.append((model, prompt, scope))
+        try:
+            yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
+            yield SourcesFound(
+                [
+                    chat_pb2.Citation(document_id="d1", document_title="geo.md", snippet="Paris"),
+                    chat_pb2.Citation(document_id="d2", document_title="eco.md", snippet="Euro"),
+                ],
+                ["Orders"],
+            )
+            yield AnswerDelta("Euro [2]")
+            if self.hang:
+                self.waiting.set()
+                await asyncio.Event().wait()
+            yield AnswerDelta(" and Paris [1]")
+        finally:
+            self.closed = True
+
+
+def make_agentic(
+    agent: FakeAgent, **settings: Any
+) -> tuple[Chat, FakeRepo, FakeRetriever, FakeGenerator]:
+    repo, retriever, generator = FakeRepo(), FakeRetriever(), FakeGenerator()
+    port: Any = repo
+    chat = Chat(Settings(**settings), port, retriever, generator, agent=agent)
+    return chat, repo, retriever, generator
+
+
+async def test_with_tools_the_agent_writes_the_answer_and_the_question_is_not_searched() -> None:
+    agent = FakeAgent()
+    chat, repo, retriever, generator = make_agentic(agent)
+    events = await collect_all(chat, repo)
+
+    assert retriever.calls == []
+    assert generator.calls == []
+    [(model, prompt, scope)] = agent.runs
+    assert model == "m1"
+    assert scope == AgentScope([], [])
+    assert prompt[0].content == f"{SYSTEM_PROMPT}\n\n{TOOLS_PROMPT}"
+    assert prompt[-1] == PromptMessage(PromptRole.USER, "Capital?")
+    assert [type(e).__name__ for e in events] == [
+        "ProgressChanged",  # searching
+        "SourcesFound",
+        "ProgressChanged",  # writing, before the first delta
+        "AnswerDelta",
+        "AnswerDelta",
+        "AnswerSaved",
+    ]
+    assert events[2] == ProgressChanged.of(
+        chat_pb2.PROGRESS_STAGE_WRITING,
+        events[1].citations,  # type: ignore[union-attr]
+    )
+    saved = events[-1]
+    assert isinstance(saved, AnswerSaved)
+    # Renumbered in order of use, as for the fixed pipeline.
+    assert saved.message.content == "Euro [1] and Paris [2]"
+    assert [c["document_title"] for c in saved.message.citations] == ["eco.md", "geo.md"]
+    assert saved.message.unavailable_sources == ["Orders"]
+
+
+async def test_the_agent_gets_the_conversations_documents_and_current_teams() -> None:
+    agent = FakeAgent()
+    chat, repo, _, _ = make_agentic(agent)
+    doc, team, gone = uuid.uuid4(), uuid.uuid4(), uuid.uuid4()
+    repo.conv.document_ids = [doc]
+    repo.conv.team_ids = [team, gone]
+    _ = [e async for e in chat.answer(OWNER, repo.conv.id, "q", "m", True, [team])]
+
+    assert agent.runs[0][2] == AgentScope([doc], [team])
+
+
+@pytest.mark.parametrize(
+    ("supports", "agentic", "use_kb"),
+    [(False, True, True), (True, False, True), (True, True, False)],
+    ids=["model without tools", "agentic off", "no knowledge base"],
+)
+async def test_without_tools_the_fixed_pipeline_answers(
+    supports: bool, agentic: bool, use_kb: bool
+) -> None:
+    agent = FakeAgent(supports)
+    chat, repo, retriever, generator = make_agentic(agent, agentic=agentic)
+    events = await collect(chat, repo, use_kb)
+
+    assert agent.runs == []
+    assert len(generator.calls) == 1
+    assert len(retriever.calls) == (1 if use_kb else 0)
+    assert isinstance(events[-1], AnswerSaved)
+
+
+async def test_stopping_during_a_tool_saves_the_partial_answer_as_stopped() -> None:
+    agent = FakeAgent(hang=True)
+    chat, repo, _, _ = make_agentic(agent)
+    task = asyncio.create_task(collect(chat, repo))
+    await agent.waiting.wait()
+    task.cancel()
+    with pytest.raises(asyncio.CancelledError):
+        await task
+
+    assert agent.closed
+    assert [(m.role, m.content, m.status) for m in repo.messages] == [
+        (USER, "Capital?", COMPLETE),
+        (ASSISTANT, "Euro [1]", STOPPED),
+    ]
+    assert repo.messages[1].citations[0]["document_title"] == "eco.md"
+    assert repo.messages[1].unavailable_sources == ["Orders"]
+
+
+async def test_a_peer_failing_in_the_agent_saves_the_answer_so_far_as_failed() -> None:
+    class Failing(FakeAgent):
+        async def run(
+            self, model: str, prompt: list[PromptMessage], scope: AgentScope
+        ) -> AsyncGenerator[AnswerEvent]:
+            yield AnswerDelta("Eu")
+            raise PeerUnavailableError(Peer.LLM, "down")
+
+    chat, repo, _, _ = make_agentic(Failing())
+    events = await collect(chat, repo)
+
+    assert isinstance(events[-2], AnswerFailed)
+    assert [(m.content, m.status) for m in repo.messages[1:]] == [("Eu", FAILED)]

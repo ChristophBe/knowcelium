@@ -235,6 +235,7 @@ class ChatServicer(chat_pb2_grpc.ChatServiceServicer):
             ("system_prompt", TemplateName.SYSTEM, ()),
             ("sources_template", TemplateName.SOURCES, ("sources",)),
             ("no_sources_template", TemplateName.NO_SOURCES, ()),
+            ("tools_template", TemplateName.TOOLS, ()),
         ):
             if request.HasField(field):
                 text = getattr(request, field).strip()
@@ -308,6 +309,7 @@ def _templates(changed: dict[str, str]) -> chat_pb2.PromptTemplates:
         system_prompt=one(TemplateName.SYSTEM),
         sources_template=one(TemplateName.SOURCES),
         no_sources_template=one(TemplateName.NO_SOURCES),
+        tools_template=one(TemplateName.TOOLS),
         variables=list(VARIABLES),
     )
 

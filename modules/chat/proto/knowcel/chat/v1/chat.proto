@@ -341,6 +341,10 @@ message PromptTemplates {
   PromptTemplate no_sources_template = 3;
   // The variables templates can use.
   repeated string variables = 4;
+  // Added after the system prompt when the model searches with tools
+  // (instead of sources_template and no_sources_template): how and when to
+  // search and how to cite the results.
+  PromptTemplate tools_template = 5;
 }
 
 message PromptTemplate {
@@ -365,6 +369,7 @@ message UpdatePromptTemplatesRequest {
   optional string system_prompt = 1;
   optional string sources_template = 2;
   optional string no_sources_template = 3;
+  optional string tools_template = 4;
 }
 
 message UpdatePromptTemplatesResponse {

@@ -2099,7 +2099,11 @@ type PromptTemplates struct {
 	// was found.
 	NoSourcesTemplate *PromptTemplate `protobuf:"bytes,3,opt,name=no_sources_template,json=noSourcesTemplate,proto3" json:"no_sources_template,omitempty"`
 	// The variables templates can use.
-	Variables     []string `protobuf:"bytes,4,rep,name=variables,proto3" json:"variables,omitempty"`
+	Variables []string `protobuf:"bytes,4,rep,name=variables,proto3" json:"variables,omitempty"`
+	// Added after the system prompt when the model searches with tools
+	// (instead of sources_template and no_sources_template): how and when to
+	// search and how to cite the results.
+	ToolsTemplate *PromptTemplate `protobuf:"bytes,5,opt,name=tools_template,json=toolsTemplate,proto3" json:"tools_template,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -2158,6 +2162,13 @@ func (x *PromptTemplates) GetNoSourcesTemplate() *PromptTemplate {
 func (x *PromptTemplates) GetVariables() []string {
 	if x != nil {
 		return x.Variables
+	}
+	return nil
+}
+
+func (x *PromptTemplates) GetToolsTemplate() *PromptTemplate {
+	if x != nil {
+		return x.ToolsTemplate
 	}
 	return nil
 }
@@ -2313,6 +2324,7 @@ type UpdatePromptTemplatesRequest struct {
 	SystemPrompt      *string `protobuf:"bytes,1,opt,name=system_prompt,json=systemPrompt,proto3,oneof" json:"system_prompt,omitempty"`
 	SourcesTemplate   *string `protobuf:"bytes,2,opt,name=sources_template,json=sourcesTemplate,proto3,oneof" json:"sources_template,omitempty"`
 	NoSourcesTemplate *string `protobuf:"bytes,3,opt,name=no_sources_template,json=noSourcesTemplate,proto3,oneof" json:"no_sources_template,omitempty"`
+	ToolsTemplate     *string `protobuf:"bytes,4,opt,name=tools_template,json=toolsTemplate,proto3,oneof" json:"tools_template,omitempty"`
 	unknownFields     protoimpl.UnknownFields
 	sizeCache         protoimpl.SizeCache
 }
@@ -2364,6 +2376,13 @@ func (x *UpdatePromptTemplatesRequest) GetSourcesTemplate() string {
 func (x *UpdatePromptTemplatesRequest) GetNoSourcesTemplate() string {
 	if x != nil && x.NoSourcesTemplate != nil {
 		return *x.NoSourcesTemplate
+	}
+	return ""
+}
+
+func (x *UpdatePromptTemplatesRequest) GetToolsTemplate() string {
+	if x != nil && x.ToolsTemplate != nil {
+		return *x.ToolsTemplate
 	}
 	return ""
 }
@@ -2533,12 +2552,13 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"m\n" +
 	"\tCitations\x12/\n" +
 	"\x05items\x18\x01 \x03(\v2\x19.knowcel.chat.v1.CitationR\x05items\x12/\n" +
-	"\x13unavailable_sources\x18\x02 \x03(\tR\x12unavailableSources\"\x92\x02\n" +
+	"\x13unavailable_sources\x18\x02 \x03(\tR\x12unavailableSources\"\xda\x02\n" +
 	"\x0fPromptTemplates\x12D\n" +
 	"\rsystem_prompt\x18\x01 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\fsystemPrompt\x12J\n" +
 	"\x10sources_template\x18\x02 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\x0fsourcesTemplate\x12O\n" +
 	"\x13no_sources_template\x18\x03 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\x11noSourcesTemplate\x12\x1c\n" +
-	"\tvariables\x18\x04 \x03(\tR\tvariables\"r\n" +
+	"\tvariables\x18\x04 \x03(\tR\tvariables\x12F\n" +
+	"\x0etools_template\x18\x05 \x01(\v2\x1f.knowcel.chat.v1.PromptTemplateR\rtoolsTemplate\"r\n" +
 	"\x0ePromptTemplate\x12\x18\n" +
 	"\acontent\x18\x01 \x01(\tR\acontent\x12'\n" +
 	"\x0fdefault_content\x18\x02 \x01(\tR\x0edefaultContent\x12\x1d\n" +
@@ -2546,14 +2566,16 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"is_default\x18\x03 \x01(\bR\tisDefault\"\x1b\n" +
 	"\x19GetPromptTemplatesRequest\"\\\n" +
 	"\x1aGetPromptTemplatesResponse\x12>\n" +
-	"\ttemplates\x18\x01 \x01(\v2 .knowcel.chat.v1.PromptTemplatesR\ttemplates\"\xec\x01\n" +
+	"\ttemplates\x18\x01 \x01(\v2 .knowcel.chat.v1.PromptTemplatesR\ttemplates\"\xab\x02\n" +
 	"\x1cUpdatePromptTemplatesRequest\x12(\n" +
 	"\rsystem_prompt\x18\x01 \x01(\tH\x00R\fsystemPrompt\x88\x01\x01\x12.\n" +
 	"\x10sources_template\x18\x02 \x01(\tH\x01R\x0fsourcesTemplate\x88\x01\x01\x123\n" +
-	"\x13no_sources_template\x18\x03 \x01(\tH\x02R\x11noSourcesTemplate\x88\x01\x01B\x10\n" +
+	"\x13no_sources_template\x18\x03 \x01(\tH\x02R\x11noSourcesTemplate\x88\x01\x01\x12*\n" +
+	"\x0etools_template\x18\x04 \x01(\tH\x03R\rtoolsTemplate\x88\x01\x01B\x10\n" +
 	"\x0e_system_promptB\x13\n" +
 	"\x11_sources_templateB\x16\n" +
-	"\x14_no_sources_template\"_\n" +
+	"\x14_no_sources_templateB\x11\n" +
+	"\x0f_tools_template\"_\n" +
 	"\x1dUpdatePromptTemplatesResponse\x12>\n" +
 	"\ttemplates\x18\x01 \x01(\v2 .knowcel.chat.v1.PromptTemplatesR\ttemplates*^\n" +
 	"\vMessageRole\x12\x1c\n" +
@@ -2688,33 +2710,34 @@ var file_knowcel_chat_v1_chat_proto_depIdxs = []int32{
 	34, // 30: knowcel.chat.v1.PromptTemplates.system_prompt:type_name -> knowcel.chat.v1.PromptTemplate
 	34, // 31: knowcel.chat.v1.PromptTemplates.sources_template:type_name -> knowcel.chat.v1.PromptTemplate
 	34, // 32: knowcel.chat.v1.PromptTemplates.no_sources_template:type_name -> knowcel.chat.v1.PromptTemplate
-	33, // 33: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	33, // 34: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	12, // 35: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
-	14, // 36: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
-	16, // 37: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
-	18, // 38: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
-	20, // 39: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
-	22, // 40: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
-	25, // 41: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
-	26, // 42: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
-	35, // 43: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
-	37, // 44: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
-	13, // 45: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
-	15, // 46: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
-	17, // 47: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
-	19, // 48: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
-	21, // 49: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
-	23, // 50: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
-	28, // 51: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
-	27, // 52: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
-	36, // 53: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
-	38, // 54: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
-	45, // [45:55] is the sub-list for method output_type
-	35, // [35:45] is the sub-list for method input_type
-	35, // [35:35] is the sub-list for extension type_name
-	35, // [35:35] is the sub-list for extension extendee
-	0,  // [0:35] is the sub-list for field type_name
+	34, // 33: knowcel.chat.v1.PromptTemplates.tools_template:type_name -> knowcel.chat.v1.PromptTemplate
+	33, // 34: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	33, // 35: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	12, // 36: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
+	14, // 37: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
+	16, // 38: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
+	18, // 39: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
+	20, // 40: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
+	22, // 41: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
+	25, // 42: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
+	26, // 43: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
+	35, // 44: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
+	37, // 45: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
+	13, // 46: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
+	15, // 47: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
+	17, // 48: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
+	19, // 49: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
+	21, // 50: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
+	23, // 51: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
+	28, // 52: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
+	27, // 53: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
+	36, // 54: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
+	38, // 55: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
+	46, // [46:56] is the sub-list for method output_type
+	36, // [36:46] is the sub-list for method input_type
+	36, // [36:36] is the sub-list for extension type_name
+	36, // [36:36] is the sub-list for extension extendee
+	0,  // [0:36] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_chat_v1_chat_proto_init() }

@@ -1123,11 +1123,19 @@ async def test_an_admin_changes_and_resets_the_default_prompts() -> None:
         assert not resp.templates.system_prompt.is_default
         assert resp.templates.sources_template.is_default
         assert resp.templates.system_prompt.default_content.startswith("You are")
+        assert resp.templates.tools_template.is_default
 
         resp = await stub.UpdatePromptTemplates(
-            chat_pb2.UpdatePromptTemplatesRequest(system_prompt="")
+            chat_pb2.UpdatePromptTemplatesRequest(tools_template="Search sparingly.")
+        )
+        assert resp.templates.tools_template.content == "Search sparingly."
+        assert repo.templates["tools"] == "Search sparingly."
+
+        resp = await stub.UpdatePromptTemplates(
+            chat_pb2.UpdatePromptTemplatesRequest(system_prompt="", tools_template="")
         )
         assert resp.templates.system_prompt.is_default
+        assert resp.templates.tools_template.is_default
     assert repo.templates == {}
 
 
@@ -1143,6 +1151,7 @@ async def test_default_templates_are_validated() -> None:
                 chat_pb2.UpdatePromptTemplatesRequest(no_sources_template="{bad}"),
                 "no_sources_template",
             ),
+            (chat_pb2.UpdatePromptTemplatesRequest(tools_template="{bad}"), "tools_template"),
         ):
             with pytest.raises(grpc.aio.AioRpcError) as err:
                 await stub.UpdatePromptTemplates(request)

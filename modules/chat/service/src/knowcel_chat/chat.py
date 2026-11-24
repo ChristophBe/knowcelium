@@ -51,12 +51,36 @@ class PromptRole(StrEnum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+    # The result of a tool call the model made.
+    TOOL = "tool"
+
+
+@dataclass(frozen=True)
+class ToolSpec:
+    """A tool the model may call; `parameters` is the JSON Schema of its arguments."""
+
+    name: str
+    description: str
+    parameters: dict[str, Any]
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """The model asking for a tool to run; `arguments` is a JSON object string."""
+
+    id: str
+    name: str
+    arguments: str
 
 
 @dataclass(frozen=True)
 class PromptMessage:
     role: PromptRole
     content: str
+    # On an assistant message: the tools it called.
+    tool_calls: tuple[ToolCall, ...] = ()
+    # On a tool message: the id of the call it answers.
+    tool_call_id: str = ""
 
 
 class Retriever(Protocol):
@@ -85,6 +109,27 @@ class Generator(Protocol):
     the stream early (or cancelling the task reading it) stops the generation."""
 
     def generate(self, model: str, prompt: list[PromptMessage]) -> AsyncGenerator[str]: ...
+
+
+@dataclass(frozen=True)
+class AgentScope:
+    """What an answer may search: the conversation's documents and teams, each
+    unless empty."""
+
+    document_ids: Sequence[uuid.UUID]
+    team_ids: Sequence[uuid.UUID]
+
+
+class Agent(Protocol):
+    """Writes an answer by letting the model call search tools. It yields
+    AnswerDelta, ProgressChanged, RetrievalChanged and SourcesFound (each of
+    those replaces the one before) events; failures are raised as PeerError."""
+
+    async def supports_tools(self, model: str) -> bool: ...
+
+    def run(
+        self, model: str, prompt: list[PromptMessage], scope: AgentScope
+    ) -> AsyncGenerator["AnswerEvent"]: ...
 
 
 @dataclass(frozen=True)
@@ -168,7 +213,9 @@ class Chat:
         retriever: Retriever,
         generator: Generator,
         counter: TokenCounter | None = None,
+        agent: Agent | None = None,
     ) -> None:
+        self._agent = agent
         self._settings = settings
         self._repo = repo
         self._retriever = retriever
@@ -207,66 +254,112 @@ class Chat:
         citations: list[chat_pb2.Citation] = []
         unavailable: list[str] = []
         status = chat_pb2.MESSAGE_STATUS_COMPLETE
+        # With tools, the model decides what to search; otherwise the question
+        # is searched once, as it is. Without the knowledge base nothing is searched.
+        agentic = (
+            use_knowledge_base
+            and self._agent is not None
+            and self._settings.agentic
+            and await self._agent.supports_tools(model)
+        )
         try:
-            retrieved: list[chat_pb2.Citation] = []
-            if use_knowledge_base:
-                yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
-                # The retriever reports the rating from inside its call, so it
-                # runs as a task and its stages are passed on as they come.
-                stages: asyncio.Queue[ProgressChanged | RetrievalChanged | None] = asyncio.Queue()
+            if agentic:
+                prompts = await self._prompts(conv)
+                budget = self._settings.context_tokens - self._settings.answer_reserve_tokens
+                context = fit(
+                    budget,
+                    self._counter,
+                    lambda _, history: prompts.agent_message(history),
+                    [],
+                    history,
+                    content,
+                    history_in_prompt=prompts.history_in_prompt,
+                )
+                prompt = _prompt(
+                    prompts.agent_message(context.history),
+                    [] if prompts.history_in_prompt else context.history,
+                    content,
+                )
+                scope = AgentScope(
+                    conv.document_ids, _current_teams(conv.team_ids, member_team_ids)
+                )
+                writing = False
+                assert self._agent is not None
+                async with contextlib.aclosing(self._agent.run(model, prompt, scope)) as events:
+                    async for event in events:
+                        if isinstance(event, AnswerDelta):
+                            if not writing:
+                                writing = True
+                                yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
+                            answer.append(event.text)
+                        elif isinstance(event, SourcesFound):
+                            citations = event.citations
+                            unavailable[:] = event.unavailable
+                        yield event
+                if not writing:
+                    yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
+            else:
+                retrieved: list[chat_pb2.Citation] = []
+                if use_knowledge_base:
+                    yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
+                    # The retriever reports the rating from inside its call, so it
+                    # runs as a task and its stages are passed on as they come.
+                    stages: asyncio.Queue[ProgressChanged | RetrievalChanged | None] = (
+                        asyncio.Queue()
+                    )
 
-                async def search() -> list[chat_pb2.Citation]:
+                    async def search() -> list[chat_pb2.Citation]:
+                        try:
+                            return await self._retriever.retrieve(
+                                content,
+                                self._settings.rag_top_k,
+                                conv.document_ids,
+                                _current_teams(conv.team_ids, member_team_ids),
+                                on_rating=lambda found: stages.put_nowait(
+                                    ProgressChanged.of(chat_pb2.PROGRESS_STAGE_RATING, found)
+                                ),
+                                on_unavailable=unavailable.extend,
+                                on_retrieval=lambda sources: stages.put_nowait(
+                                    RetrievalChanged([_copy(s) for s in sources])
+                                ),
+                            )
+                        finally:
+                            stages.put_nowait(None)
+
+                    searching = asyncio.create_task(search())
                     try:
-                        return await self._retriever.retrieve(
-                            content,
-                            self._settings.rag_top_k,
-                            conv.document_ids,
-                            _current_teams(conv.team_ids, member_team_ids),
-                            on_rating=lambda found: stages.put_nowait(
-                                ProgressChanged.of(chat_pb2.PROGRESS_STAGE_RATING, found)
-                            ),
-                            on_unavailable=unavailable.extend,
-                            on_retrieval=lambda sources: stages.put_nowait(
-                                RetrievalChanged([_copy(s) for s in sources])
-                            ),
-                        )
+                        while (progress := await stages.get()) is not None:
+                            yield progress
+                        retrieved = await searching
                     finally:
-                        stages.put_nowait(None)
+                        searching.cancel()
+                budget = self._settings.context_tokens - self._settings.answer_reserve_tokens
+                prompts = await self._prompts(conv)
+                system_prompt = prompts.system_for(use_knowledge_base)
+                context = fit(
+                    budget,
+                    self._counter,
+                    system_prompt,
+                    retrieved,
+                    history,
+                    content,
+                    history_in_prompt=prompts.history_in_prompt,
+                )
+                # Only the sources that made it into the prompt are cited, numbered as there.
+                citations = context.sources
+                if use_knowledge_base:
+                    yield SourcesFound(citations, unavailable)
 
-                searching = asyncio.create_task(search())
-                try:
-                    while (progress := await stages.get()) is not None:
-                        yield progress
-                    retrieved = await searching
-                finally:
-                    searching.cancel()
-            budget = self._settings.context_tokens - self._settings.answer_reserve_tokens
-            prompts = await self._prompts(conv)
-            system_prompt = prompts.system_for(use_knowledge_base)
-            context = fit(
-                budget,
-                self._counter,
-                system_prompt,
-                retrieved,
-                history,
-                content,
-                history_in_prompt=prompts.history_in_prompt,
-            )
-            # Only the sources that made it into the prompt are cited, numbered as there.
-            citations = context.sources
-            if use_knowledge_base:
-                yield SourcesFound(citations, unavailable)
-
-            yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
-            prompt = _prompt(
-                system_prompt(citations, context.history),
-                [] if prompts.history_in_prompt else context.history,
-                content,
-            )
-            async with contextlib.aclosing(self._generator.generate(model, prompt)) as deltas:
-                async for delta in deltas:
-                    answer.append(delta)
-                    yield AnswerDelta(delta)
+                yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
+                prompt = _prompt(
+                    system_prompt(citations, context.history),
+                    [] if prompts.history_in_prompt else context.history,
+                    content,
+                )
+                async with contextlib.aclosing(self._generator.generate(model, prompt)) as deltas:
+                    async for delta in deltas:
+                        answer.append(delta)
+                        yield AnswerDelta(delta)
         except PeerError as err:
             status = chat_pb2.MESSAGE_STATUS_FAILED
             yield AnswerFailed(err)
@@ -295,6 +388,7 @@ class Chat:
             no_sources=_template(
                 overrides.get(TemplateName.NO_SOURCES, ""), TemplateName.NO_SOURCES
             ),
+            tools=_template(overrides.get(TemplateName.TOOLS, ""), TemplateName.TOOLS),
         )
 
     async def _save(
@@ -348,12 +442,16 @@ class _Prompts:
     system: Template
     sources: Template
     no_sources: Template
+    tools: Template
 
     @property
     def history_in_prompt(self) -> bool:
         """Whether a template shows the history, which is then not sent again as
         messages."""
-        return any("history" in t.variables for t in (self.system, self.sources, self.no_sources))
+        return any(
+            "history" in t.variables
+            for t in (self.system, self.sources, self.no_sources, self.tools)
+        )
 
     def system_message(
         self,
@@ -370,13 +468,19 @@ class _Prompts:
             parts.append(self.no_sources.render(values))
         return "\n\n".join(p for p in parts if p)
 
+    def agent_message(self, history: Sequence[MessageRow]) -> str:
+        """The system message of an answer with tools: the sources come from
+        the tools, so the instructions for them replace the sources templates."""
+        values = {"sources": "", "history": _transcript(history)}
+        return "\n\n".join(p for p in (self.system.render(values), self.tools.render(values)) if p)
+
     def system_for(self, use_knowledge_base: bool) -> SystemPrompt:
         return functools.partial(self.system_message, use_knowledge_base)
 
 
 def _sources(citations: Sequence[chat_pb2.Citation]) -> str:
     return "\n\n".join(
-        f"[{i}] {_source_name(c)}:\n{c.snippet}" for i, c in enumerate(citations, start=1)
+        f"[{i}] {source_name(c)}:\n{c.snippet}" for i, c in enumerate(citations, start=1)
     )
 
 
@@ -385,7 +489,7 @@ def _transcript(history: Sequence[MessageRow]) -> str:
     return "\n\n".join(f"{names[m.role]}: {m.content}" for m in history)
 
 
-def _source_name(c: chat_pb2.Citation) -> str:
+def source_name(c: chat_pb2.Citation) -> str:
     # Tells the model that a source explains the tool, not the user's documents,
     # or that it comes live from a connected system.
     if c.manual_page:

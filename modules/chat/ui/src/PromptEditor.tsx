@@ -45,6 +45,12 @@ const GLOBAL_FIELDS = [
     label: "No-sources template",
     hint: "Added when nothing in the knowledge base is related to the question.",
   },
+  {
+    field: "toolsTemplate",
+    violation: "tools_template",
+    label: "Search instructions",
+    hint: "Added instead of the two templates above when the model decides itself what to search: when to search, and how to cite the results.",
+  },
 ] as const;
 
 type GlobalField = (typeof GLOBAL_FIELDS)[number]["field"];
@@ -125,6 +131,7 @@ function drafts(t: PromptTemplates): Drafts {
     systemPrompt: t.systemPrompt?.content ?? "",
     sourcesTemplate: t.sourcesTemplate?.content ?? "",
     noSourcesTemplate: t.noSourcesTemplate?.content ?? "",
+    toolsTemplate: t.toolsTemplate?.content ?? "",
   };
 }
 
