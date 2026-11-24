@@ -5,6 +5,7 @@ import {
   type LucideIcon,
   MessageSquare,
   PlayCircle,
+  Plug,
   Search,
   Upload,
 } from "lucide-react";
@@ -13,33 +14,37 @@ import { useEffect, useState } from "react";
 type Source = { title: string; detail: string; snippet: string };
 
 /** The answer is text runs and citation numbers, so it can stream in word by word. */
-const QUESTION = "How long can I work remotely from abroad, and who has to approve it?";
+const QUESTION = "Is the torque sensor v2 on track, and do we have enough sensors in stock?";
 const ANSWER: (string | number)[] = [
-  "You can work from abroad for up to 30 working days per calendar year",
+  "Not yet: v2 waits for prototype validation, and the prototypes from Sensora Precision are delayed",
   1,
-  ". Each stay needs your team lead's approval at least two weeks before you travel, and stays longer than 10 days also need a check by HR",
+  ". Hamburg has 95 torque sensors on hand, with 120 reserved",
   2,
-  ". Both policies apply to every country outside the EU.",
+  ".",
 ];
-const SOURCES: Source[] = [
+export const SOURCES: Source[] = [
   {
-    title: "Remote work policy 2026",
-    detail: "passage 4",
+    title: "CR-3004 Replace torque sensor with v2",
+    detail: "from showcase-engineering",
     snippet:
-      "Employees may work from a country other than their country of employment for a maximum of 30 working days per calendar year…",
+      "v2 doubles the resolution. Depends on prototype validation; delivery of prototypes from SUP-1004 is delayed…",
   },
   {
-    title: "Travel & approvals handbook",
-    detail: "passage 12",
-    snippet:
-      "Requests are approved by the team lead no later than 14 days before departure. Stays over 10 days are additionally reviewed by HR…",
+    title: "STK-4006 Torque sensor",
+    detail: "from showcase-logistics",
+    snippet: "On hand 95, reserved 120, reorder level 100, warehouse Hamburg…",
   },
 ];
 
-const FILES = ["handbook.pdf", "remote-work-policy.pdf", "pricing-2026.txt"];
+/** What the first scene adds: an uploaded file and two connected systems. */
+const FILES = [
+  { name: "handbook.pdf", icon: FileText },
+  { name: "showcase-engineering", icon: Plug },
+  { name: "showcase-logistics", icon: Plug },
+];
 
 const STEPS = [
-  { label: "Upload", title: "Upload", caption: "1 · Add your files" },
+  { label: "Upload", title: "Add your sources", caption: "1 · Files and systems" },
   { label: "Ask", title: "Chat", caption: "2 · Ask, with sources" },
 ] as const;
 
@@ -82,16 +87,18 @@ const SCENE_END_MS = [UPLOAD_END_MS, ANSWER_END_MS] as const;
  * A looping recording that tells what Knowcelium does: files are uploaded and
  * processed, then a question is answered with cited sources. It plays on its own
  * and can not be used: nothing in it takes focus or reacts to the pointer.
- * Before the page hydrates, and with reduced motion, it shows the first scene done.
+ * Before the page hydrates, and with reduced motion, it shows the answer done.
  */
 export function ChatDemo() {
   const [playing, setPlaying] = useState(false);
-  const [scene, setScene] = useState(0);
+  // Without motion (and before hydration) the recording rests on its answer, the part that matters.
+  const [scene, setScene] = useState(1);
   const [elapsed, setElapsed] = useState(0);
 
   useEffect(() => {
     if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
     setPlaying(true);
+    setScene(0);
     setElapsed(0);
     const id = setInterval(() => setElapsed((t) => t + TICK_MS), TICK_MS);
     return () => clearInterval(id);
@@ -111,8 +118,8 @@ export function ChatDemo() {
 
   return (
     <figure
-      aria-label="Example of uploading files and asking a question, a recording"
-      className="glass pointer-events-none relative flex h-[32rem] flex-col overflow-hidden rounded-panel text-left select-none"
+      aria-label="Example of adding files and connected systems and asking a question, a recording"
+      className="glass pointer-events-none relative flex h-[40rem] flex-col sm:h-[32rem] overflow-hidden rounded-panel text-left select-none"
     >
       <figcaption className="flex items-center gap-2 border-b border-border px-4 py-2.5 font-mono text-xs text-fg-muted">
         <span className="flex gap-1" aria-hidden="true">
@@ -203,10 +210,10 @@ function UploadScene({ t }: { t: number }) {
     <>
       <div className="flex items-center gap-3 rounded-card border-2 border-dashed border-accent/40 bg-accent-subtle/50 px-4 py-4 text-sm text-fg-muted">
         <Upload className="size-6 shrink-0 text-accent" aria-hidden="true" />
-        <span>Drop PDFs, Markdown or text files here</span>
+        <span>Drop PDFs, Markdown or text files here, or connect a system</span>
       </div>
       <ul className="space-y-2">
-        {FILES.map((name, i) => {
+        {FILES.map(({ name, icon: Icon }, i) => {
           const s = stage(i, t);
           return (
             <li
@@ -217,7 +224,7 @@ function UploadScene({ t }: { t: number }) {
               )}
             >
               <div className="flex items-center gap-3">
-                <FileText className="size-5 shrink-0 text-accent" aria-hidden="true" />
+                <Icon className="size-5 shrink-0 text-accent" aria-hidden="true" />
                 <span className="min-w-0 flex-1 truncate font-mono text-sm">{name}</span>
                 <Badge tone={s.tone}>{s.label || "Queued"}</Badge>
               </div>

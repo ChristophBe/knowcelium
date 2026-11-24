@@ -4,6 +4,7 @@ import {
   Contrast,
   type LucideIcon,
   MessageSquare,
+  Plug,
   ScanText,
   ShieldCheck,
   Upload,
@@ -16,6 +17,11 @@ const STEPS: { icon: LucideIcon; title: string; text: string }[] = [
     icon: Upload,
     title: "Upload",
     text: "Drop your PDFs, Markdown and text files onto the upload area.",
+  },
+  {
+    icon: Plug,
+    title: "Connect your systems",
+    text: "Or let a connector bring in what your other systems hold, synced on a schedule or looked up live when you ask.",
   },
   {
     icon: ScanText,
@@ -55,9 +61,9 @@ export function HowItWorks() {
         <SectionTitle
           id="how-title"
           eyebrow="How it works"
-          title="From a pile of files to answers in three steps"
+          title="From files and systems to answers in four steps"
         />
-        <ol className="grid gap-4 md:grid-cols-[1fr_auto_1fr_auto_1fr] md:items-center">
+        <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] lg:items-center">
           {STEPS.map((s, i) => (
             <Step key={s.title} n={i + 1} {...s} last={i === STEPS.length - 1} />
           ))}
@@ -112,7 +118,7 @@ function Step({
         </Card>
       </li>
       {!last && (
-        <li aria-hidden="true" className="hidden justify-center text-fg-muted md:flex">
+        <li aria-hidden="true" className="hidden justify-center text-fg-muted lg:flex">
           <ArrowRight className="size-7 animate-pulse-node text-accent" />
         </li>
       )}

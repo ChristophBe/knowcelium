@@ -26,9 +26,10 @@ export function Hero() {
             className="mt-6 max-w-xl animate-rise text-lg text-pretty text-fg-muted sm:text-xl"
             style={delay(160)}
           >
-            Knowcelium grows into the systems you already use, connects what they know, and answers
-            your people and your tools in plain language, with the passages to prove it. Open
-            source, modular, and on your own infrastructure.
+            Knowcelium takes in your documents and connects the systems you already use, from a
+            watched folder to your own tools through the connector SDK. It answers your people and
+            your tools in plain language, with the passages to prove it. Open source, modular, and
+            on your own infrastructure.
           </p>
           <div className="mt-8 flex animate-rise flex-wrap gap-3" style={delay(240)}>
             <a href="#quick-start" className={buttonClass("primary", "px-6 py-3 text-base")}>
