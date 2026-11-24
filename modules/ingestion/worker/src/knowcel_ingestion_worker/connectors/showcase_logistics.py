@@ -18,13 +18,14 @@ _STOP_WORDS = frozenset(
     {
         *("a", "an", "and", "are", "as", "at", "be", "by", "did", "do", "does", "for", "from"),
         *("has", "have", "how", "in", "is", "it", "its", "me", "of", "on", "or", "the", "there"),
-        *("to", "was", "we", "what", "when", "where", "which", "who", "why", "with"),
+        *("to", "was", "we", "what", "when", "where", "which", "who", "why", "with", "whose"),
+        *("any", "all", "can", "many", "much", "our", "that", "their", "these", "this", "those"),
         *("shipment", "shipments", "status"),
     }
 )
 _SUPPLIER_ID = re.compile(r"sup-\d+")
 # Words of a question that are tried; more would only slow the search down.
-_MAX_TERMS = 6
+_MAX_TERMS = 10
 
 
 class ShowcaseLogisticsConfig(ShowcaseConfig):

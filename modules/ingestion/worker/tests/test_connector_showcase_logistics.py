@@ -96,6 +96,14 @@ async def test_search_finds_shipments_by_status(fake_system: FakeSystems):
     assert {r.url.params["type"] for r in fake.requests} == {"shipment"}
 
 
+async def test_search_tries_the_last_word_of_a_long_question(fake_system: FakeSystems):
+    fake = system(fake_system)
+    question = "Which open change requests affect parts whose supplier has a delayed shipment?"
+    snippets = await connector(fake).search(question, 5)
+    assert snippets
+    assert all("delayed" in s.text.lower() for s in snippets)
+
+
 async def test_search_ranks_shipments_matching_more_words_first(fake_system: FakeSystems):
     fake = system(fake_system)
     snippets = await connector(fake).search("cells delivered motors", 1)
