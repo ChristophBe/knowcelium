@@ -51,6 +51,7 @@ func TestSearchConnectorsAsksWithTheCallersTeamsFromIAM(t *testing.T) {
 	f := &fakeSearcher{reply: &ingestionv1.ConnectorSearchReply{
 		Snippets:              []*ingestionv1.ConnectorSnippet{{Connector: "stock", Text: "40 boxes", SourceUrl: "https://wms/1"}},
 		UnavailableConnectors: []string{"slow"},
+		SearchedConnectors:    []string{"stock", "slow"},
 	}}
 	resp, err := searchServer(f, "t1", "t2").SearchConnectors(as(t, alice), &ingestionv1.SearchConnectorsRequest{
 		Query:        "  boxes ",
@@ -68,7 +69,7 @@ func TestSearchConnectorsAsksWithTheCallersTeamsFromIAM(t *testing.T) {
 	if !proto.Equal(f.got, want) {
 		t.Errorf("asked %v, want %v", f.got, want)
 	}
-	if len(resp.GetSnippets()) != 1 || resp.GetUnavailableConnectors()[0] != "slow" {
+	if len(resp.GetSnippets()) != 1 || resp.GetUnavailableConnectors()[0] != "slow" || len(resp.GetSearchedConnectors()) != 2 {
 		t.Errorf("response = %v", resp)
 	}
 }

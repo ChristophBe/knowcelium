@@ -1,8 +1,12 @@
 import { create } from "@bufbuild/protobuf";
 import { Code, ConnectError } from "@connectrpc/connect";
-import { ConversationSchema } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
+import {
+  ChatMessageSchema,
+  CitationSchema,
+  ConversationSchema,
+} from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import { KbRuntimeProvider, useToasts } from "@knowcel/module-sdk";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { ConversationHeader } from "./ConversationHeader.tsx";
@@ -102,5 +106,50 @@ describe("ConversationHeader", () => {
     expect(screen.queryByRole("textbox")).toBeNull();
     expect(updateConversation).not.toHaveBeenCalled();
     expect(document.activeElement).toBe(screen.getByRole("button", { name: "Rename" }));
+  });
+
+  describe("sources in this chat", () => {
+    const answer = (id: string, ...connectors: string[]) =>
+      create(ChatMessageSchema, {
+        id,
+        citations: connectors.map((connector) => create(CitationSchema, { connector })),
+      });
+
+    function renderWith(messages: ReturnType<typeof answer>[]) {
+      return render(
+        <KbRuntimeProvider config={{ apiBaseUrl: "http://test" }}>
+          <MemoryRouter>
+            <ConversationHeader
+              conversation={create(ConversationSchema, { id: "c1", title: "T" })}
+              messages={messages}
+            />
+          </MemoryRouter>
+        </KbRuntimeProvider>,
+      );
+    }
+
+    it("says so when no connector was used", () => {
+      renderWith([answer("a1")]);
+      fireEvent.click(screen.getByRole("button", { name: /Sources in this chat/ }));
+      expect(screen.getByText("No connectors used yet")).toBeTruthy();
+    });
+
+    it("lists each connector once, with a link to the first answer that used it", () => {
+      const target = document.createElement("div");
+      target.id = "message-a2";
+      document.body.append(target);
+      renderWith([answer("a1"), answer("a2", "orders", "orders", "crm"), answer("a3", "orders")]);
+      fireEvent.click(screen.getByRole("button", { name: /Sources in this chat/ }));
+      const items = within(
+        screen.getByRole("region", { name: "Sources in this chat" }),
+      ).getAllByRole("listitem");
+      expect(items.map((i) => i.textContent)).toEqual([
+        "orders · 3 snippets, first used in this answer",
+        "crm · 1 snippet, first used in this answer",
+      ]);
+      fireEvent.click(within(items[0] as HTMLElement).getByRole("button"));
+      expect(document.activeElement).toBe(target);
+      target.remove();
+    });
   });
 });

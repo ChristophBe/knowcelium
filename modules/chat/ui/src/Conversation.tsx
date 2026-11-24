@@ -6,6 +6,8 @@ import {
   MessageRole,
   MessageStatus,
   ProgressStage,
+  type RetrievalSource,
+  RetrievalSourceKind,
 } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import {
   Code,
@@ -34,6 +36,7 @@ import { ACTIVITY_KEY } from "./badge.ts";
 import { ConversationHeader } from "./ConversationHeader.tsx";
 import { ModelPicker, useModelChoice } from "./model.tsx";
 import { notifyAnswerReady, offerNotifications } from "./notify.ts";
+import { messageAnchor, RetrievalSteps } from "./retrieval.tsx";
 import type { StartState } from "./StartChat.tsx";
 import { ScopeChips, SourcesControl } from "./scope.tsx";
 
@@ -64,6 +67,8 @@ interface Stage {
   manualSections: number;
   /** The platform knowledge is searched for this answer. */
   searched: boolean;
+  /** The sources searched and how each is going. */
+  sources: RetrievalSource[];
 }
 
 const count = (n: number, noun: string) => `${n} ${noun}${n === 1 ? "" : "s"}`;
@@ -87,9 +92,14 @@ function stageLabel({ stage, passages, documents, manualSections, searched }: St
 /** What the system is doing while no words of the answer are there yet. */
 function ProgressLine({ stage }: { stage: Stage }) {
   return (
-    <div className="flex items-center gap-2 rounded-card border border-border bg-surface px-4 py-2 text-base text-fg-muted">
-      <Spinner />
-      {stageLabel(stage)}
+    <div className="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-2 text-base text-fg-muted">
+      <div className="flex items-center gap-2">
+        <Spinner />
+        {stageLabel(stage)}
+      </div>
+      {stage.sources.some((s) => s.kind === RetrievalSourceKind.CONNECTOR) && (
+        <RetrievalSteps sources={stage.sources} />
+      )}
     </div>
   );
 }
@@ -192,6 +202,7 @@ export function Conversation() {
       documents: 0,
       manualSections: 0,
       searched: useKnowledgeBase,
+      sources: [],
     };
     let state: Pending = { question, answer: "", citations: [], unavailable: [], stage };
     setPending(state);
@@ -227,6 +238,9 @@ export function Conversation() {
           const next = { ...state.stage, stage, passages, documents, manualSections };
           state = { ...state, stage: next };
           setStatus(stageLabel(next));
+        }
+        if (event.case === "retrieval") {
+          state = { ...state, stage: { ...state.stage, sources: event.value.sources } };
         }
         if (event.case === "delta") {
           if (!state.answer) setStatus("");
@@ -315,7 +329,7 @@ export function Conversation() {
       {/* The header and composer float over the messages (frosted); scroll padding keeps focus clear of both (WCAG 2.4.11). */}
       <div className="flex flex-1 scroll-pt-24 scroll-pb-48 flex-col overflow-y-auto px-4 md:px-8">
         {conversation.data?.conversation && (
-          <ConversationHeader conversation={conversation.data.conversation} />
+          <ConversationHeader conversation={conversation.data.conversation} messages={messages} />
         )}
         <div className="mx-auto flex w-full max-w-3xl flex-1 flex-col gap-4 pt-6">
           {conversation.isPending && <Spinner />}
@@ -323,6 +337,7 @@ export function Conversation() {
           {messages.map((m) => (
             <Bubble
               key={m.id}
+              id={messageAnchor(m.id)}
               role={m.role}
               content={m.content}
               citations={m.citations}
@@ -373,6 +388,7 @@ export function Conversation() {
                 documents: 0,
                 manualSections: 0,
                 searched: false,
+                sources: [],
               }}
             />
           )}
@@ -450,6 +466,7 @@ export function Conversation() {
 }
 
 function Bubble({
+  id,
   role,
   content,
   citations,
@@ -462,6 +479,8 @@ function Bubble({
   streaming = false,
   onRetry,
 }: Pick<ChatMessage, "role" | "content" | "citations"> & {
+  /** Lets links point at the answer. */
+  id?: string;
   /** Connectors that were asked live and did not answer, by name. */
   unavailableSources?: string[];
   /** The conversation the answer is in, for what other modules add to its sources. */
@@ -488,7 +507,10 @@ function Bubble({
     );
   }
   return (
-    <div className="flex flex-col gap-2 rounded-card border border-border bg-surface px-4 py-2 text-base @container">
+    <div
+      id={id}
+      className="flex flex-col gap-2 scroll-mt-24 rounded-card border border-border bg-surface px-4 py-2 text-base @container"
+    >
       {content && (
         <Answer
           content={content}

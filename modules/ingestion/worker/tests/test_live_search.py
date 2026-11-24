@@ -84,6 +84,7 @@ async def test_a_failing_or_slow_connector_is_named_and_the_others_answer():
     reply = await LiveSearch(specs, admin).search(request())
     assert {s.connector for s in reply.snippets} == {"good"}
     assert sorted(reply.unavailable_connectors) == ["broken", "denied", "slow"]
+    assert sorted(reply.searched_connectors) == ["broken", "denied", "good", "slow"]
 
 
 async def test_connectors_are_interleaved_and_the_total_is_limited():

@@ -273,7 +273,42 @@ message StreamChatResponse {
     // first delta. Stages that don't happen are skipped; the last one is
     // always WRITING.
     Progress status = 6;
+    // Where the answer looks for sources and how each search is going, sent
+    // before the first delta and again whenever a source changes.
+    Retrieval retrieval = 7;
   }
+}
+
+// The sources searched for an answer, each with its state. A snapshot: it
+// replaces the one sent before.
+message Retrieval {
+  repeated RetrievalSource sources = 1;
+}
+
+message RetrievalSource {
+  RetrievalSourceKind kind = 1;
+  // The connector's name; empty on documents, and on a connector entry sent
+  // while the connectors are asked and their names are not yet known.
+  string connector = 2;
+  RetrievalState state = 3;
+  // The passages or snippets found; set when the state is DONE.
+  int32 results = 4;
+}
+
+enum RetrievalSourceKind {
+  RETRIEVAL_SOURCE_KIND_UNSPECIFIED = 0;
+  // The documents of the knowledge base (and the user manual).
+  RETRIEVAL_SOURCE_KIND_DOCUMENTS = 1;
+  // Connected systems, searched live.
+  RETRIEVAL_SOURCE_KIND_CONNECTOR = 2;
+}
+
+enum RetrievalState {
+  RETRIEVAL_STATE_UNSPECIFIED = 0;
+  RETRIEVAL_STATE_SEARCHING = 1;
+  RETRIEVAL_STATE_DONE = 2;
+  // The source did not answer in time or failed; the answer is written without it.
+  RETRIEVAL_STATE_UNAVAILABLE = 3;
 }
 
 message ChatError {

@@ -150,4 +150,6 @@ message ConnectorSearchRequest {
 message ConnectorSearchReply {
   repeated ConnectorSnippet snippets = 1;
   repeated string unavailable_connectors = 2;
+  // Every connector that was asked, by name, answering or not.
+  repeated string searched_connectors = 3;
 }

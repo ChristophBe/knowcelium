@@ -269,13 +269,17 @@ describe("Answer", () => {
       expect(marker.getAttribute("rel")).toBe("noopener noreferrer");
     });
 
-    it("lists the connector as a live group, apart from documents", () => {
+    it("lists the connector as a live group in its own list, apart from documents", () => {
       renderAnswer("No markers.", [live, ...sources]);
-      const list = within(screen.getByRole("list", { name: "Sources" }));
+      const documents = within(screen.getByRole("list", { name: "Sources" }));
+      expect(documents.queryByRole("button", { name: /stock/ })).toBeNull();
+      expect(documents.getByRole("button", { name: /Report\.pdf/ }).textContent).not.toContain(
+        "Live",
+      );
+      const list = within(screen.getByRole("list", { name: "Connector sources" }));
       const group = list.getByRole("button", { name: /stock/ });
       expect(group.textContent).toContain("Live");
       expect(group.textContent).toContain("1 snippet");
-      expect(list.getByRole("button", { name: /Report\.pdf/ }).textContent).not.toContain("Live");
       fireEvent.click(group);
       const link = list.getByRole("link", {
         name: "Aisle 3, live from stock (opens in a new tab)",
@@ -283,6 +287,11 @@ describe("Answer", () => {
       expect(link.getAttribute("href")).toBe("https://wms.example/aisle-3");
       expect(link.closest("li")?.textContent).toContain("40 boxes in aisle 3");
       expect(list.getAllByText("live from stock").length).toBeGreaterThan(0);
+    });
+
+    it("shows no connector list when the answer used no connector", () => {
+      renderAnswer("No markers.", sources);
+      expect(screen.queryByRole("list", { name: "Connector sources" })).toBeNull();
     });
 
     it("offers no document actions on a live snippet", async () => {

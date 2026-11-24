@@ -268,15 +268,15 @@ class FakeDocuments:
 
 
 def kinds_of(events: Sequence[Any]) -> list[str]:
-    """The kinds of the events, without the progress ones."""
-    return [k for e in events if (k := e.WhichOneof("event")) != "status"]
+    """The kinds of the events, without the progress and retrieval ones."""
+    return [k for e in events if (k := e.WhichOneof("event")) not in ("status", "retrieval")]
 
 
 async def read_kinds(call: Any, count: int) -> list[str]:
-    """The kinds of the next `count` events, without the progress ones."""
+    """The kinds of the next `count` events, without the progress and retrieval ones."""
     kinds: list[str] = []
     while len(kinds) < count:
-        if (kind := (await call.read()).WhichOneof("event")) != "status":
+        if (kind := (await call.read()).WhichOneof("event")) not in ("status", "retrieval"):
             kinds.append(kind)
     return kinds
 
@@ -314,7 +314,7 @@ async def test_stream_chat_with_knowledge_base(env: Env) -> None:
     assert kinds[0] == "citations"
     assert kinds[-1] == "message"
     assert set(kinds[1:-1]) == {"delta"}
-    events = [e for e in events if e.WhichOneof("event") != "status"]
+    events = [e for e in events if e.WhichOneof("event") not in ("status", "retrieval")]
     assert events[0].citations.items[0].document_title == "geo.md"
     assert events[-1].message.content == "Paris is the capital [1]."
     assert events[-1].message.citations[0].document_id == "d1"
@@ -401,7 +401,7 @@ async def test_an_unavailable_peer_ends_the_stream_with_an_error(
     events, got = await stream_with(documents, llm)
 
     assert kinds_of(events) == ["error", "message"]
-    events = [e for e in events if e.WhichOneof("event") != "status"]
+    events = [e for e in events if e.WhichOneof("event") not in ("status", "retrieval")]
     assert events[0].error.code == chat_pb2.CHAT_ERROR_CODE_UNAVAILABLE
     assert events[0].error.message == (
         f"The {service} service isn't available. Try again in a moment."
@@ -609,7 +609,7 @@ async def test_other_peer_errors_are_hidden_from_the_user() -> None:
     events, _ = await stream_with(FakeDocuments(), BrokenLlm(), use_knowledge_base=False)
 
     assert kinds_of(events) == ["error", "message"]
-    events = [e for e in events if e.WhichOneof("event") != "status"]
+    events = [e for e in events if e.WhichOneof("event") not in ("status", "retrieval")]
     assert events[0].error.code == chat_pb2.CHAT_ERROR_CODE_INTERNAL
     assert events[0].error.message == "The Models service couldn't complete the answer."
     assert "no such model" not in events[0].error.message
@@ -1209,3 +1209,24 @@ async def test_live_sources_and_the_ones_that_did_not_answer_reach_the_client() 
         assert list(events[-1].message.unavailable_sources) == ["crm"]
         got = await stub.GetConversation(chat_pb2.GetConversationRequest(id=conv.id))
         assert list(got.messages[1].unavailable_sources) == ["crm"]
+
+
+async def test_stream_chat_reports_the_state_of_the_documents_search(env: Env) -> None:
+    stub, _repo, _llm, _documents = env
+    conv = (await stub.CreateConversation(chat_pb2.CreateConversationRequest())).conversation
+    events = [
+        e
+        async for e in stub.StreamChat(
+            chat_pb2.StreamChatRequest(
+                conversation_id=conv.id, content="Capital of France?", use_knowledge_base=True
+            )
+        )
+    ]
+    retrieval = [e.retrieval for e in events if e.WhichOneof("event") == "retrieval"]
+    assert retrieval
+    assert retrieval[0].sources[0].state == chat_pb2.RETRIEVAL_STATE_SEARCHING
+    last = retrieval[-1].sources[0]
+    assert (last.kind, last.state) == (
+        chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS,
+        chat_pb2.RETRIEVAL_STATE_DONE,
+    )

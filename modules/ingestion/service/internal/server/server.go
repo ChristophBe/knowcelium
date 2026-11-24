@@ -322,6 +322,7 @@ func (s *Server) SearchConnectors(ctx context.Context, req *ingestionv1.SearchCo
 	return &ingestionv1.SearchConnectorsResponse{
 		Snippets:              reply.GetSnippets(),
 		UnavailableConnectors: reply.GetUnavailableConnectors(),
+		SearchedConnectors:    reply.GetSearchedConnectors(),
 	}, nil
 }
 

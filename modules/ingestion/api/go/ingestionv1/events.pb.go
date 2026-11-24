@@ -815,8 +815,10 @@ type ConnectorSearchReply struct {
 	state                 protoimpl.MessageState `protogen:"open.v1"`
 	Snippets              []*ConnectorSnippet    `protobuf:"bytes,1,rep,name=snippets,proto3" json:"snippets,omitempty"`
 	UnavailableConnectors []string               `protobuf:"bytes,2,rep,name=unavailable_connectors,json=unavailableConnectors,proto3" json:"unavailable_connectors,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Every connector that was asked, by name, answering or not.
+	SearchedConnectors []string `protobuf:"bytes,3,rep,name=searched_connectors,json=searchedConnectors,proto3" json:"searched_connectors,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *ConnectorSearchReply) Reset() {
@@ -859,6 +861,13 @@ func (x *ConnectorSearchReply) GetSnippets() []*ConnectorSnippet {
 func (x *ConnectorSearchReply) GetUnavailableConnectors() []string {
 	if x != nil {
 		return x.UnavailableConnectors
+	}
+	return nil
+}
+
+func (x *ConnectorSearchReply) GetSearchedConnectors() []string {
+	if x != nil {
+		return x.SearchedConnectors
 	}
 	return nil
 }
@@ -932,10 +941,11 @@ const file_knowcel_ingestion_v1_events_proto_rawDesc = "" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12&\n" +
 	"\x0fmember_team_ids\x18\x04 \x03(\tR\rmemberTeamIds\x12$\n" +
 	"\x0escope_team_ids\x18\x05 \x03(\tR\fscopeTeamIds\x12'\n" +
-	"\x0ftimeout_seconds\x18\x06 \x01(\x02R\x0etimeoutSeconds\"\x91\x01\n" +
+	"\x0ftimeout_seconds\x18\x06 \x01(\x02R\x0etimeoutSeconds\"\xc2\x01\n" +
 	"\x14ConnectorSearchReply\x12B\n" +
 	"\bsnippets\x18\x01 \x03(\v2&.knowcel.ingestion.v1.ConnectorSnippetR\bsnippets\x125\n" +
-	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors*z\n" +
+	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors\x12/\n" +
+	"\x13searched_connectors\x18\x03 \x03(\tR\x12searchedConnectors*z\n" +
 	"\vSyncOutcome\x12\x1c\n" +
 	"\x18SYNC_OUTCOME_UNSPECIFIED\x10\x00\x12\x1a\n" +
 	"\x16SYNC_OUTCOME_SUCCEEDED\x10\x01\x12\x18\n" +
