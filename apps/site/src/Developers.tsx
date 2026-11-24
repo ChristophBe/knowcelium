@@ -1,10 +1,15 @@
-import { Badge } from "@knowcel/ui";
-import { ArrowDown, Blocks, Braces, type LucideIcon, Workflow } from "lucide-react";
+import { Badge, buttonClass } from "@knowcel/ui";
+import { ArrowDown, Blocks, Braces, type LucideIcon, Plug, Workflow } from "lucide-react";
 import { SectionTitle } from "./Features.tsx";
 import { DotGrid } from "./Graphics.tsx";
 import { repoPath } from "./links.ts";
 
-const POINTS: { icon: LucideIcon; title: string; text: string }[] = [
+const POINTS: {
+  icon: LucideIcon;
+  title: string;
+  text: string;
+  link?: { label: string; href: string };
+}[] = [
   {
     icon: Blocks,
     title: "Modules, not layers",
@@ -19,6 +24,12 @@ const POINTS: { icon: LucideIcon; title: string; text: string }[] = [
     icon: Workflow,
     title: "Generated wiring",
     text: "Routes, compose files, the UI registry and the import boundaries are generated from the module manifests, and CI checks they stay in sync.",
+  },
+  {
+    icon: Plug,
+    title: "Connectors in a few lines",
+    text: "Subclass one Python class and implement list_changes to sync a system, or search to query it live. A scaffold and a contract test come with it.",
+    link: { label: "Read the connector SDK guide", href: repoPath("docs/connectors.md") },
   },
 ];
 
@@ -59,27 +70,24 @@ export function Developers() {
                 <div>
                   <p className="text-lg font-semibold">{p.title}</p>
                   <p className="mt-1 text-base text-fg-muted">{p.text}</p>
+                  {p.link && (
+                    <a
+                      href={p.link.href}
+                      className="mt-1 inline-block text-sm text-accent underline"
+                    >
+                      {p.link.label}
+                    </a>
+                  )}
                 </div>
               </li>
             ))}
           </ul>
-          <ul className="mt-8 space-y-2 text-sm">
-            <li>
-              <a href={repoPath("docs/connectors.md")} className="text-accent underline">
-                Build a connector to your own system
-              </a>
-            </li>
-            <li>
-              <a href={repoPath("examples/showcase/README.md")} className="text-accent underline">
-                Try the showcase mock systems
-              </a>
-            </li>
-            <li>
-              <a href={repoPath("docs/architecture/overview.md")} className="text-accent underline">
-                Read the architecture overview
-              </a>
-            </li>
-          </ul>
+          <a
+            href={repoPath("docs/architecture/overview.md")}
+            className={buttonClass("secondary", "mt-8 px-6 py-3 text-base")}
+          >
+            Read the architecture overview
+          </a>
         </div>
 
         <Architecture />
@@ -95,7 +103,7 @@ function Architecture() {
       <figcaption className="sr-only">
         Architecture: the browser talks gRPC-Web to Envoy, which routes to the document, ingestion,
         chat, llm, iam and curation modules; they store data in Postgres with pgvector, S3 and NATS
-        JetStream.
+        JetStream. Connectors in the ingestion worker sync or search your own systems.
       </figcaption>
       <div aria-hidden="true" className="flex flex-col items-center gap-2 font-mono text-xs">
         <Box>browser</Box>
@@ -119,6 +127,10 @@ function Architecture() {
           <Box>S3</Box>
           <Box>NATS JetStream</Box>
         </div>
+        <Arrow label="connectors: sync or live search" />
+        <span className="w-full rounded-control border border-dashed border-border bg-surface px-3 py-1.5 text-center text-fg">
+          your systems: wiki, drive, tickets
+        </span>
       </div>
     </figure>
   );

@@ -2,6 +2,7 @@ import { Card } from "@knowcel/ui";
 import {
   ArrowRight,
   Contrast,
+  Download,
   type LucideIcon,
   MessageSquare,
   Plug,
@@ -12,21 +13,33 @@ import {
 } from "lucide-react";
 import { SectionTitle } from "./Features.tsx";
 
-const STEPS: { icon: LucideIcon; title: string; text: string }[] = [
+type Source = { icon: LucideIcon; title: string; text: string };
+
+/** Uploads and connectors are equal ways in; both end up as documents. */
+const SOURCES: Source[] = [
   {
     icon: Upload,
-    title: "Upload",
-    text: "Drop your PDFs, Markdown and text files onto the upload area.",
+    title: "Upload files",
+    text: "Drop PDFs, Markdown and text files onto the upload area.",
   },
   {
     icon: Plug,
-    title: "Connect your systems",
-    text: "Or let a connector bring in what your other systems hold, synced on a schedule or looked up live when you ask.",
+    title: "Connect systems",
+    text: "A connector syncs what your systems hold, or looks it up live when you ask.",
+  },
+];
+
+const STEPS: { icon: LucideIcon; title: string; text: string; sources?: Source[] }[] = [
+  {
+    icon: Download,
+    title: "Bring in your knowledge",
+    text: "Add content from either source. Both end up as documents and are treated the same from here on.",
+    sources: SOURCES,
   },
   {
     icon: ScanText,
     title: "Knowcelium reads them",
-    text: "Each file is split into passages, and a model you choose, local by default, captures what every passage means.",
+    text: "Each document is split into passages, and a model you choose, local by default, captures what every passage means.",
   },
   {
     icon: MessageSquare,
@@ -53,7 +66,7 @@ const PROMISES: { icon: LucideIcon; title: string; text: string }[] = [
   },
 ];
 
-/** The three steps from file to answer, and why it is safe to give Knowcelium your documents. */
+/** The three steps from sources to answer, and why it is safe to give Knowcelium your documents. */
 export function HowItWorks() {
   return (
     <section id="how-it-works" aria-labelledby="how-title" className="px-4 py-24 sm:px-8">
@@ -61,9 +74,9 @@ export function HowItWorks() {
         <SectionTitle
           id="how-title"
           eyebrow="How it works"
-          title="From files and systems to answers in four steps"
+          title="From files and systems to answers in three steps"
         />
-        <ol className="grid gap-4 md:grid-cols-2 lg:grid-cols-[1fr_auto_1fr_auto_1fr_auto_1fr] lg:items-center">
+        <ol className="grid gap-4 lg:grid-cols-[1fr_auto_1fr_auto_1fr] lg:items-center">
           {STEPS.map((s, i) => (
             <Step key={s.title} n={i + 1} {...s} last={i === STEPS.length - 1} />
           ))}
@@ -96,12 +109,14 @@ function Step({
   title,
   text,
   last,
+  sources,
 }: {
   n: number;
   icon: LucideIcon;
   title: string;
   text: string;
   last: boolean;
+  sources?: Source[];
 }) {
   return (
     <>
@@ -115,6 +130,22 @@ function Step({
           </div>
           <h3 className="text-xl font-semibold tracking-tight">{title}</h3>
           <p className="text-base text-fg-muted">{text}</p>
+          {sources && (
+            <ul className="mt-auto grid gap-2">
+              {sources.map((src) => (
+                <li
+                  key={src.title}
+                  className="flex gap-2 rounded-control border border-border bg-canvas p-3"
+                >
+                  <src.icon className="mt-0.5 size-4 shrink-0 text-accent" aria-hidden="true" />
+                  <div>
+                    <p className="text-sm font-medium">{src.title}</p>
+                    <p className="text-sm text-fg-muted">{src.text}</p>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          )}
         </Card>
       </li>
       {!last && (

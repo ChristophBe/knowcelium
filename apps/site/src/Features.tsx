@@ -13,7 +13,6 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { DotGrid } from "./Graphics.tsx";
-import { repoPath } from "./links.ts";
 
 type Feature = { icon: LucideIcon; title: string; text: string; demo: ReactNode };
 
@@ -130,36 +129,21 @@ export function Features() {
   );
 }
 
-type Pillar = {
-  icon: LucideIcon;
-  title: string;
-  text: string;
-  roadmap?: boolean;
-  /** Connectors that ship today; everything else is built with the SDK. */
-  shipped?: string[];
-  link?: { label: string; href: string };
-};
-
-const PILLARS: Pillar[] = [
+const PILLARS: { icon: LucideIcon; title: string; text: string; roadmap?: boolean }[] = [
   {
     icon: Download,
     title: "Absorb",
-    text: "Upload documents, or connect the systems that hold them. A connector either syncs a source into documents on a schedule or looks it up live when someone asks a question, and the connector SDK lets you connect any system.",
-    shipped: ["Watched folder", "Showcase engineering", "Showcase logistics"],
-    link: {
-      label: "Build a connector",
-      href: repoPath("docs/connectors.md"),
-    },
+    text: "Upload your documents or connect the systems that hold them. Everything lands in one searchable place.",
   },
   {
     icon: Share2,
     title: "Connect",
-    text: "Search by meaning, chat with sources, and an API for your other systems.",
+    text: "Search by meaning, chat with cited sources and reach it all from your other systems through an API.",
   },
   {
     icon: RefreshCw,
     title: "Renew",
-    text: "Curation and content generation tied to their sources.",
+    text: "Curation and content generation that stay tied to their sources, so what you know stays current.",
     roadmap: true,
   },
 ];
@@ -179,29 +163,6 @@ function Pillars() {
             </div>
             <h3 className="text-xl font-semibold tracking-tight">{p.title}</h3>
             <p className="text-base text-fg-muted">{p.text}</p>
-            {p.shipped && (
-              <div>
-                <p className="mb-2 text-sm font-medium">Connectors that ship today</p>
-                <ul className="flex flex-wrap gap-2">
-                  {p.shipped.map((c) => (
-                    <li key={c}>
-                      <Badge tone="success">{c}</Badge>
-                    </li>
-                  ))}
-                </ul>
-                <p className="mt-2 text-sm text-fg-muted">
-                  The showcase connectors read made-up example systems. For any other system, build
-                  your own.
-                </p>
-              </div>
-            )}
-            {p.link && (
-              <p className="mt-auto text-sm">
-                <a href={p.link.href} className="text-accent underline">
-                  {p.link.label}
-                </a>
-              </p>
-            )}
           </Card>
         </li>
       ))}
