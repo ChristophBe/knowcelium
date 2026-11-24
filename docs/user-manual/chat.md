@@ -42,9 +42,13 @@ Answers from your documents contain numbers like [1] and [2]. Each number points
 
 ### Sources from connected systems
 
-If your administrator has connected a system that is searched live, such as a stock or shipment system, an answer can also use what that system returns at the moment you ask. Such a source is listed under the name of the connector with a **Live** label, one row per connector. Its entries are marked **live from** and the connector's name instead of a passage number, show a short excerpt, and the title and the number in the answer link to the original in the connected system (it opens in a new tab). Unlike passages of your documents, they have no page in Knowcelium to open, and you cannot rate them.
+If your administrator has connected a system that is searched live, such as a stock or shipment system, an answer can also use what that system returns at the moment you ask. Such a source is listed in its own **Connector sources** list, apart from the sources in your documents, under the name of the connector with a **Live** label, one row per connector. An answer that used no connected system has no such list. Its entries are marked **live from** and the connector's name instead of a passage number, show a short excerpt, and the title and the number in the answer link to the original in the connected system (it opens in a new tab). Unlike passages of your documents, they have no page in Knowcelium to open, and you cannot rate them.
 
 You only get what your administrator allows you to see in a connected system, as for documents: a system shared with a team shows its live results to that team's members. When a conversation is limited to chosen documents, no connected system is asked; when it is limited to teams, only systems shared with those teams are.
+
+While the answer is prepared and a connected system is searched, a list under the status line shows each source with its state in words: **Your documents: found 2 results**, **orders: searching…**, **orders: found 3 results**. The list disappears when the first words of the answer appear. A system that did not answer shows as **unavailable**, and the answer still arrives. While the connected systems are asked, their names are not yet known and one entry reads **Connectors: searching…**.
+
+**Sources in this chat** in the conversation's header lists every connected system the conversation has used so far, with the number of snippets taken from it. Select a name to jump to the first answer that used it. Without any, it says **No connectors used yet**. The list is built from the saved answers, so it is the same when you reopen the conversation.
 
 If a connected system did not answer in time or failed, the answer says **Some sources were unavailable** and names them. The answer was then written without them and may be missing what they know; ask again in a moment. When Knowcelium's connector service is stopped, answers use your documents only, without a notice.
 

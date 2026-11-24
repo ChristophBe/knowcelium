@@ -12,6 +12,10 @@ import {
   MessageStatus,
   ProgressSchema,
   ProgressStage,
+  RetrievalSchema,
+  RetrievalSourceKind,
+  RetrievalSourceSchema,
+  RetrievalState,
   type StreamChatRequest,
   type StreamChatResponse,
   StreamChatResponseSchema,
@@ -355,6 +359,75 @@ describe("Conversation", () => {
       await next();
       expect(screen.getByText("Paris.")).toBeTruthy();
       expect(screen.queryByText(/^Writing the answer/)).toBeNull();
+    });
+
+    describe("connectors", () => {
+      const retrieval = (
+        ...sources: { connector?: string; state: RetrievalState; results?: number }[]
+      ): StreamChatResponse["event"] => ({
+        case: "retrieval",
+        value: create(RetrievalSchema, {
+          sources: [
+            { kind: RetrievalSourceKind.DOCUMENTS, state: RetrievalState.DONE, results: 2 },
+            ...sources.map((s) => ({ kind: RetrievalSourceKind.CONNECTOR, ...s })),
+          ].map((s) => create(RetrievalSourceSchema, s)),
+        }),
+      });
+
+      it("lists each connector with its state, in words as well as icons", async () => {
+        const { stream, next } = steppedStream(
+          [
+            retrieval({ state: RetrievalState.SEARCHING }),
+            retrieval(
+              { connector: "orders", state: RetrievalState.DONE, results: 3 },
+              { connector: "crm", state: RetrievalState.UNAVAILABLE },
+            ),
+          ],
+          true,
+        );
+        streamChat.mockImplementation(stream);
+        await renderConversation();
+        await ask("Which orders?");
+        await next();
+
+        const list = within(screen.getByRole("status", { name: "Sources searched" }));
+        expect(list.getByText("Connectors").parentElement?.textContent).toBe(
+          "Connectors: searching…",
+        );
+
+        await next();
+        const steps = screen.getByRole("status", { name: "Sources searched" });
+        expect(Array.from(steps.querySelectorAll("li"), (li) => li.textContent)).toEqual([
+          "Your documents: found 2 results",
+          "orders: found 3 results",
+          "crm: unavailable",
+        ]);
+      });
+
+      it("shows no step list when no connector is searched", async () => {
+        const { stream, next } = steppedStream([retrieval()], true);
+        streamChat.mockImplementation(stream);
+        await renderConversation();
+        await ask("Capital?");
+        await next();
+        expect(screen.queryByRole("status", { name: "Sources searched" })).toBeNull();
+      });
+
+      it("still delivers the answer when a connector is unavailable", async () => {
+        const done = message(MessageRole.ASSISTANT, "From documents.");
+        const { stream, next } = steppedStream([
+          retrieval({ connector: "crm", state: RetrievalState.UNAVAILABLE }),
+          { case: "delta", value: "From documents." },
+          { case: "message", value: done },
+        ]);
+        streamChat.mockImplementation(stream);
+        await renderConversation();
+        await ask("Who?");
+        await next();
+        await next();
+        expect(screen.getByText("From documents.")).toBeTruthy();
+        expect(screen.queryByRole("status", { name: "Sources searched" })).toBeNull();
+      });
     });
 
     it("uses the singular for one passage, document and section", async () => {

@@ -235,6 +235,110 @@ func (ProgressStage) EnumDescriptor() ([]byte, []int) {
 	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{3}
 }
 
+type RetrievalSourceKind int32
+
+const (
+	RetrievalSourceKind_RETRIEVAL_SOURCE_KIND_UNSPECIFIED RetrievalSourceKind = 0
+	// The documents of the knowledge base (and the user manual).
+	RetrievalSourceKind_RETRIEVAL_SOURCE_KIND_DOCUMENTS RetrievalSourceKind = 1
+	// Connected systems, searched live.
+	RetrievalSourceKind_RETRIEVAL_SOURCE_KIND_CONNECTOR RetrievalSourceKind = 2
+)
+
+// Enum value maps for RetrievalSourceKind.
+var (
+	RetrievalSourceKind_name = map[int32]string{
+		0: "RETRIEVAL_SOURCE_KIND_UNSPECIFIED",
+		1: "RETRIEVAL_SOURCE_KIND_DOCUMENTS",
+		2: "RETRIEVAL_SOURCE_KIND_CONNECTOR",
+	}
+	RetrievalSourceKind_value = map[string]int32{
+		"RETRIEVAL_SOURCE_KIND_UNSPECIFIED": 0,
+		"RETRIEVAL_SOURCE_KIND_DOCUMENTS":   1,
+		"RETRIEVAL_SOURCE_KIND_CONNECTOR":   2,
+	}
+)
+
+func (x RetrievalSourceKind) Enum() *RetrievalSourceKind {
+	p := new(RetrievalSourceKind)
+	*p = x
+	return p
+}
+
+func (x RetrievalSourceKind) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RetrievalSourceKind) Descriptor() protoreflect.EnumDescriptor {
+	return file_knowcel_chat_v1_chat_proto_enumTypes[4].Descriptor()
+}
+
+func (RetrievalSourceKind) Type() protoreflect.EnumType {
+	return &file_knowcel_chat_v1_chat_proto_enumTypes[4]
+}
+
+func (x RetrievalSourceKind) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RetrievalSourceKind.Descriptor instead.
+func (RetrievalSourceKind) EnumDescriptor() ([]byte, []int) {
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{4}
+}
+
+type RetrievalState int32
+
+const (
+	RetrievalState_RETRIEVAL_STATE_UNSPECIFIED RetrievalState = 0
+	RetrievalState_RETRIEVAL_STATE_SEARCHING   RetrievalState = 1
+	RetrievalState_RETRIEVAL_STATE_DONE        RetrievalState = 2
+	// The source did not answer in time or failed; the answer is written without it.
+	RetrievalState_RETRIEVAL_STATE_UNAVAILABLE RetrievalState = 3
+)
+
+// Enum value maps for RetrievalState.
+var (
+	RetrievalState_name = map[int32]string{
+		0: "RETRIEVAL_STATE_UNSPECIFIED",
+		1: "RETRIEVAL_STATE_SEARCHING",
+		2: "RETRIEVAL_STATE_DONE",
+		3: "RETRIEVAL_STATE_UNAVAILABLE",
+	}
+	RetrievalState_value = map[string]int32{
+		"RETRIEVAL_STATE_UNSPECIFIED": 0,
+		"RETRIEVAL_STATE_SEARCHING":   1,
+		"RETRIEVAL_STATE_DONE":        2,
+		"RETRIEVAL_STATE_UNAVAILABLE": 3,
+	}
+)
+
+func (x RetrievalState) Enum() *RetrievalState {
+	p := new(RetrievalState)
+	*p = x
+	return p
+}
+
+func (x RetrievalState) String() string {
+	return protoimpl.X.EnumStringOf(x.Descriptor(), protoreflect.EnumNumber(x))
+}
+
+func (RetrievalState) Descriptor() protoreflect.EnumDescriptor {
+	return file_knowcel_chat_v1_chat_proto_enumTypes[5].Descriptor()
+}
+
+func (RetrievalState) Type() protoreflect.EnumType {
+	return &file_knowcel_chat_v1_chat_proto_enumTypes[5]
+}
+
+func (x RetrievalState) Number() protoreflect.EnumNumber {
+	return protoreflect.EnumNumber(x)
+}
+
+// Deprecated: Use RetrievalState.Descriptor instead.
+func (RetrievalState) EnumDescriptor() ([]byte, []int) {
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{5}
+}
+
 // What the system is doing while an answer is prepared, with what it has found.
 type Progress struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
@@ -1587,6 +1691,7 @@ type StreamChatResponse struct {
 	//	*StreamChatResponse_Error
 	//	*StreamChatResponse_Progress
 	//	*StreamChatResponse_Status
+	//	*StreamChatResponse_Retrieval
 	Event         isStreamChatResponse_Event `protobuf_oneof:"event"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
@@ -1684,6 +1789,15 @@ func (x *StreamChatResponse) GetStatus() *Progress {
 	return nil
 }
 
+func (x *StreamChatResponse) GetRetrieval() *Retrieval {
+	if x != nil {
+		if x, ok := x.Event.(*StreamChatResponse_Retrieval); ok {
+			return x.Retrieval
+		}
+	}
+	return nil
+}
+
 type isStreamChatResponse_Event interface {
 	isStreamChatResponse_Event()
 }
@@ -1724,6 +1838,12 @@ type StreamChatResponse_Status struct {
 	Status *Progress `protobuf:"bytes,6,opt,name=status,proto3,oneof"`
 }
 
+type StreamChatResponse_Retrieval struct {
+	// Where the answer looks for sources and how each search is going, sent
+	// before the first delta and again whenever a source changes.
+	Retrieval *Retrieval `protobuf:"bytes,7,opt,name=retrieval,proto3,oneof"`
+}
+
 func (*StreamChatResponse_Citations) isStreamChatResponse_Event() {}
 
 func (*StreamChatResponse_Delta) isStreamChatResponse_Event() {}
@@ -1736,6 +1856,125 @@ func (*StreamChatResponse_Progress) isStreamChatResponse_Event() {}
 
 func (*StreamChatResponse_Status) isStreamChatResponse_Event() {}
 
+func (*StreamChatResponse_Retrieval) isStreamChatResponse_Event() {}
+
+// The sources searched for an answer, each with its state. A snapshot: it
+// replaces the one sent before.
+type Retrieval struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Sources       []*RetrievalSource     `protobuf:"bytes,1,rep,name=sources,proto3" json:"sources,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *Retrieval) Reset() {
+	*x = Retrieval{}
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[23]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *Retrieval) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Retrieval) ProtoMessage() {}
+
+func (x *Retrieval) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[23]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Retrieval.ProtoReflect.Descriptor instead.
+func (*Retrieval) Descriptor() ([]byte, []int) {
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{23}
+}
+
+func (x *Retrieval) GetSources() []*RetrievalSource {
+	if x != nil {
+		return x.Sources
+	}
+	return nil
+}
+
+type RetrievalSource struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Kind  RetrievalSourceKind    `protobuf:"varint,1,opt,name=kind,proto3,enum=knowcel.chat.v1.RetrievalSourceKind" json:"kind,omitempty"`
+	// The connector's name; empty on documents, and on a connector entry sent
+	// while the connectors are asked and their names are not yet known.
+	Connector string         `protobuf:"bytes,2,opt,name=connector,proto3" json:"connector,omitempty"`
+	State     RetrievalState `protobuf:"varint,3,opt,name=state,proto3,enum=knowcel.chat.v1.RetrievalState" json:"state,omitempty"`
+	// The passages or snippets found; set when the state is DONE.
+	Results       int32 `protobuf:"varint,4,opt,name=results,proto3" json:"results,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *RetrievalSource) Reset() {
+	*x = RetrievalSource{}
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[24]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *RetrievalSource) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*RetrievalSource) ProtoMessage() {}
+
+func (x *RetrievalSource) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[24]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use RetrievalSource.ProtoReflect.Descriptor instead.
+func (*RetrievalSource) Descriptor() ([]byte, []int) {
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{24}
+}
+
+func (x *RetrievalSource) GetKind() RetrievalSourceKind {
+	if x != nil {
+		return x.Kind
+	}
+	return RetrievalSourceKind_RETRIEVAL_SOURCE_KIND_UNSPECIFIED
+}
+
+func (x *RetrievalSource) GetConnector() string {
+	if x != nil {
+		return x.Connector
+	}
+	return ""
+}
+
+func (x *RetrievalSource) GetState() RetrievalState {
+	if x != nil {
+		return x.State
+	}
+	return RetrievalState_RETRIEVAL_STATE_UNSPECIFIED
+}
+
+func (x *RetrievalSource) GetResults() int32 {
+	if x != nil {
+		return x.Results
+	}
+	return 0
+}
+
 type ChatError struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Code  ChatErrorCode          `protobuf:"varint,1,opt,name=code,proto3,enum=knowcel.chat.v1.ChatErrorCode" json:"code,omitempty"`
@@ -1747,7 +1986,7 @@ type ChatError struct {
 
 func (x *ChatError) Reset() {
 	*x = ChatError{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[23]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[25]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1759,7 +1998,7 @@ func (x *ChatError) String() string {
 func (*ChatError) ProtoMessage() {}
 
 func (x *ChatError) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[23]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[25]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1772,7 +2011,7 @@ func (x *ChatError) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ChatError.ProtoReflect.Descriptor instead.
 func (*ChatError) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{23}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{25}
 }
 
 func (x *ChatError) GetCode() ChatErrorCode {
@@ -1800,7 +2039,7 @@ type Citations struct {
 
 func (x *Citations) Reset() {
 	*x = Citations{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[24]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[26]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1812,7 +2051,7 @@ func (x *Citations) String() string {
 func (*Citations) ProtoMessage() {}
 
 func (x *Citations) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[24]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[26]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1825,7 +2064,7 @@ func (x *Citations) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Citations.ProtoReflect.Descriptor instead.
 func (*Citations) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{24}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{26}
 }
 
 func (x *Citations) GetItems() []*Citation {
@@ -1867,7 +2106,7 @@ type PromptTemplates struct {
 
 func (x *PromptTemplates) Reset() {
 	*x = PromptTemplates{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[25]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[27]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1879,7 +2118,7 @@ func (x *PromptTemplates) String() string {
 func (*PromptTemplates) ProtoMessage() {}
 
 func (x *PromptTemplates) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[25]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[27]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1892,7 +2131,7 @@ func (x *PromptTemplates) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PromptTemplates.ProtoReflect.Descriptor instead.
 func (*PromptTemplates) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{25}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{27}
 }
 
 func (x *PromptTemplates) GetSystemPrompt() *PromptTemplate {
@@ -1937,7 +2176,7 @@ type PromptTemplate struct {
 
 func (x *PromptTemplate) Reset() {
 	*x = PromptTemplate{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[26]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[28]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1949,7 +2188,7 @@ func (x *PromptTemplate) String() string {
 func (*PromptTemplate) ProtoMessage() {}
 
 func (x *PromptTemplate) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[26]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[28]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1962,7 +2201,7 @@ func (x *PromptTemplate) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PromptTemplate.ProtoReflect.Descriptor instead.
 func (*PromptTemplate) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{26}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{28}
 }
 
 func (x *PromptTemplate) GetContent() string {
@@ -1994,7 +2233,7 @@ type GetPromptTemplatesRequest struct {
 
 func (x *GetPromptTemplatesRequest) Reset() {
 	*x = GetPromptTemplatesRequest{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[27]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[29]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2006,7 +2245,7 @@ func (x *GetPromptTemplatesRequest) String() string {
 func (*GetPromptTemplatesRequest) ProtoMessage() {}
 
 func (x *GetPromptTemplatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[27]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[29]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2019,7 +2258,7 @@ func (x *GetPromptTemplatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPromptTemplatesRequest.ProtoReflect.Descriptor instead.
 func (*GetPromptTemplatesRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{27}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{29}
 }
 
 type GetPromptTemplatesResponse struct {
@@ -2031,7 +2270,7 @@ type GetPromptTemplatesResponse struct {
 
 func (x *GetPromptTemplatesResponse) Reset() {
 	*x = GetPromptTemplatesResponse{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[28]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[30]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2043,7 +2282,7 @@ func (x *GetPromptTemplatesResponse) String() string {
 func (*GetPromptTemplatesResponse) ProtoMessage() {}
 
 func (x *GetPromptTemplatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[28]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[30]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2056,7 +2295,7 @@ func (x *GetPromptTemplatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetPromptTemplatesResponse.ProtoReflect.Descriptor instead.
 func (*GetPromptTemplatesResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{28}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{30}
 }
 
 func (x *GetPromptTemplatesResponse) GetTemplates() *PromptTemplates {
@@ -2080,7 +2319,7 @@ type UpdatePromptTemplatesRequest struct {
 
 func (x *UpdatePromptTemplatesRequest) Reset() {
 	*x = UpdatePromptTemplatesRequest{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[29]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[31]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2092,7 +2331,7 @@ func (x *UpdatePromptTemplatesRequest) String() string {
 func (*UpdatePromptTemplatesRequest) ProtoMessage() {}
 
 func (x *UpdatePromptTemplatesRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[29]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[31]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2105,7 +2344,7 @@ func (x *UpdatePromptTemplatesRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePromptTemplatesRequest.ProtoReflect.Descriptor instead.
 func (*UpdatePromptTemplatesRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{29}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{31}
 }
 
 func (x *UpdatePromptTemplatesRequest) GetSystemPrompt() string {
@@ -2138,7 +2377,7 @@ type UpdatePromptTemplatesResponse struct {
 
 func (x *UpdatePromptTemplatesResponse) Reset() {
 	*x = UpdatePromptTemplatesResponse{}
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[30]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[32]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -2150,7 +2389,7 @@ func (x *UpdatePromptTemplatesResponse) String() string {
 func (*UpdatePromptTemplatesResponse) ProtoMessage() {}
 
 func (x *UpdatePromptTemplatesResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[30]
+	mi := &file_knowcel_chat_v1_chat_proto_msgTypes[32]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -2163,7 +2402,7 @@ func (x *UpdatePromptTemplatesResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UpdatePromptTemplatesResponse.ProtoReflect.Descriptor instead.
 func (*UpdatePromptTemplatesResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{30}
+	return file_knowcel_chat_v1_chat_proto_rawDescGZIP(), []int{32}
 }
 
 func (x *UpdatePromptTemplatesResponse) GetTemplates() *PromptTemplates {
@@ -2272,15 +2511,23 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x05model\x18\x04 \x01(\tR\x05model\":\n" +
 	"\x0fStopChatRequest\x12'\n" +
 	"\x0fconversation_id\x18\x01 \x01(\tR\x0econversationId\"\x12\n" +
-	"\x10StopChatResponse\"\xd6\x02\n" +
+	"\x10StopChatResponse\"\x92\x03\n" +
 	"\x12StreamChatResponse\x12:\n" +
 	"\tcitations\x18\x01 \x01(\v2\x1a.knowcel.chat.v1.CitationsH\x00R\tcitations\x12\x16\n" +
 	"\x05delta\x18\x02 \x01(\tH\x00R\x05delta\x128\n" +
 	"\amessage\x18\x03 \x01(\v2\x1c.knowcel.chat.v1.ChatMessageH\x00R\amessage\x122\n" +
 	"\x05error\x18\x04 \x01(\v2\x1a.knowcel.chat.v1.ChatErrorH\x00R\x05error\x12@\n" +
 	"\bprogress\x18\x05 \x01(\x0e2\x1e.knowcel.chat.v1.ProgressStageB\x02\x18\x01H\x00R\bprogress\x123\n" +
-	"\x06status\x18\x06 \x01(\v2\x19.knowcel.chat.v1.ProgressH\x00R\x06statusB\a\n" +
-	"\x05event\"Y\n" +
+	"\x06status\x18\x06 \x01(\v2\x19.knowcel.chat.v1.ProgressH\x00R\x06status\x12:\n" +
+	"\tretrieval\x18\a \x01(\v2\x1a.knowcel.chat.v1.RetrievalH\x00R\tretrievalB\a\n" +
+	"\x05event\"G\n" +
+	"\tRetrieval\x12:\n" +
+	"\asources\x18\x01 \x03(\v2 .knowcel.chat.v1.RetrievalSourceR\asources\"\xba\x01\n" +
+	"\x0fRetrievalSource\x128\n" +
+	"\x04kind\x18\x01 \x01(\x0e2$.knowcel.chat.v1.RetrievalSourceKindR\x04kind\x12\x1c\n" +
+	"\tconnector\x18\x02 \x01(\tR\tconnector\x125\n" +
+	"\x05state\x18\x03 \x01(\x0e2\x1f.knowcel.chat.v1.RetrievalStateR\x05state\x12\x18\n" +
+	"\aresults\x18\x04 \x01(\x05R\aresults\"Y\n" +
 	"\tChatError\x122\n" +
 	"\x04code\x18\x01 \x01(\x0e2\x1e.knowcel.chat.v1.ChatErrorCodeR\x04code\x12\x18\n" +
 	"\amessage\x18\x02 \x01(\tR\amessage\"m\n" +
@@ -2326,7 +2573,16 @@ const file_knowcel_chat_v1_chat_proto_rawDesc = "" +
 	"\x1aPROGRESS_STAGE_UNSPECIFIED\x10\x00\x12\x1c\n" +
 	"\x18PROGRESS_STAGE_SEARCHING\x10\x01\x12\x19\n" +
 	"\x15PROGRESS_STAGE_RATING\x10\x02\x12\x1a\n" +
-	"\x16PROGRESS_STAGE_WRITING\x10\x032\xaf\b\n" +
+	"\x16PROGRESS_STAGE_WRITING\x10\x03*\x86\x01\n" +
+	"\x13RetrievalSourceKind\x12%\n" +
+	"!RETRIEVAL_SOURCE_KIND_UNSPECIFIED\x10\x00\x12#\n" +
+	"\x1fRETRIEVAL_SOURCE_KIND_DOCUMENTS\x10\x01\x12#\n" +
+	"\x1fRETRIEVAL_SOURCE_KIND_CONNECTOR\x10\x02*\x8b\x01\n" +
+	"\x0eRetrievalState\x12\x1f\n" +
+	"\x1bRETRIEVAL_STATE_UNSPECIFIED\x10\x00\x12\x1d\n" +
+	"\x19RETRIEVAL_STATE_SEARCHING\x10\x01\x12\x18\n" +
+	"\x14RETRIEVAL_STATE_DONE\x10\x02\x12\x1f\n" +
+	"\x1bRETRIEVAL_STATE_UNAVAILABLE\x10\x032\xaf\b\n" +
 	"\vChatService\x12m\n" +
 	"\x12CreateConversation\x12*.knowcel.chat.v1.CreateConversationRequest\x1a+.knowcel.chat.v1.CreateConversationResponse\x12d\n" +
 	"\x0fGetConversation\x12'.knowcel.chat.v1.GetConversationRequest\x1a(.knowcel.chat.v1.GetConversationResponse\x12j\n" +
@@ -2352,105 +2608,113 @@ func file_knowcel_chat_v1_chat_proto_rawDescGZIP() []byte {
 	return file_knowcel_chat_v1_chat_proto_rawDescData
 }
 
-var file_knowcel_chat_v1_chat_proto_enumTypes = make([]protoimpl.EnumInfo, 4)
-var file_knowcel_chat_v1_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 31)
+var file_knowcel_chat_v1_chat_proto_enumTypes = make([]protoimpl.EnumInfo, 6)
+var file_knowcel_chat_v1_chat_proto_msgTypes = make([]protoimpl.MessageInfo, 33)
 var file_knowcel_chat_v1_chat_proto_goTypes = []any{
 	(MessageRole)(0),                      // 0: knowcel.chat.v1.MessageRole
 	(MessageStatus)(0),                    // 1: knowcel.chat.v1.MessageStatus
 	(ChatErrorCode)(0),                    // 2: knowcel.chat.v1.ChatErrorCode
 	(ProgressStage)(0),                    // 3: knowcel.chat.v1.ProgressStage
-	(*Progress)(nil),                      // 4: knowcel.chat.v1.Progress
-	(*Citation)(nil),                      // 5: knowcel.chat.v1.Citation
-	(*ChatMessage)(nil),                   // 6: knowcel.chat.v1.ChatMessage
-	(*Conversation)(nil),                  // 7: knowcel.chat.v1.Conversation
-	(*TeamIds)(nil),                       // 8: knowcel.chat.v1.TeamIds
-	(*DocumentIds)(nil),                   // 9: knowcel.chat.v1.DocumentIds
-	(*CreateConversationRequest)(nil),     // 10: knowcel.chat.v1.CreateConversationRequest
-	(*CreateConversationResponse)(nil),    // 11: knowcel.chat.v1.CreateConversationResponse
-	(*GetConversationRequest)(nil),        // 12: knowcel.chat.v1.GetConversationRequest
-	(*GetConversationResponse)(nil),       // 13: knowcel.chat.v1.GetConversationResponse
-	(*ListConversationsRequest)(nil),      // 14: knowcel.chat.v1.ListConversationsRequest
-	(*ListConversationsResponse)(nil),     // 15: knowcel.chat.v1.ListConversationsResponse
-	(*DeleteConversationRequest)(nil),     // 16: knowcel.chat.v1.DeleteConversationRequest
-	(*DeleteConversationResponse)(nil),    // 17: knowcel.chat.v1.DeleteConversationResponse
-	(*UpdateConversationRequest)(nil),     // 18: knowcel.chat.v1.UpdateConversationRequest
-	(*UpdateConversationResponse)(nil),    // 19: knowcel.chat.v1.UpdateConversationResponse
-	(*SearchConversationsRequest)(nil),    // 20: knowcel.chat.v1.SearchConversationsRequest
-	(*SearchConversationsResponse)(nil),   // 21: knowcel.chat.v1.SearchConversationsResponse
-	(*ConversationMatch)(nil),             // 22: knowcel.chat.v1.ConversationMatch
-	(*StreamChatRequest)(nil),             // 23: knowcel.chat.v1.StreamChatRequest
-	(*StopChatRequest)(nil),               // 24: knowcel.chat.v1.StopChatRequest
-	(*StopChatResponse)(nil),              // 25: knowcel.chat.v1.StopChatResponse
-	(*StreamChatResponse)(nil),            // 26: knowcel.chat.v1.StreamChatResponse
-	(*ChatError)(nil),                     // 27: knowcel.chat.v1.ChatError
-	(*Citations)(nil),                     // 28: knowcel.chat.v1.Citations
-	(*PromptTemplates)(nil),               // 29: knowcel.chat.v1.PromptTemplates
-	(*PromptTemplate)(nil),                // 30: knowcel.chat.v1.PromptTemplate
-	(*GetPromptTemplatesRequest)(nil),     // 31: knowcel.chat.v1.GetPromptTemplatesRequest
-	(*GetPromptTemplatesResponse)(nil),    // 32: knowcel.chat.v1.GetPromptTemplatesResponse
-	(*UpdatePromptTemplatesRequest)(nil),  // 33: knowcel.chat.v1.UpdatePromptTemplatesRequest
-	(*UpdatePromptTemplatesResponse)(nil), // 34: knowcel.chat.v1.UpdatePromptTemplatesResponse
-	(*timestamppb.Timestamp)(nil),         // 35: google.protobuf.Timestamp
-	(*commonv1.PageRequest)(nil),          // 36: knowcel.common.v1.PageRequest
-	(*commonv1.PageResponse)(nil),         // 37: knowcel.common.v1.PageResponse
+	(RetrievalSourceKind)(0),              // 4: knowcel.chat.v1.RetrievalSourceKind
+	(RetrievalState)(0),                   // 5: knowcel.chat.v1.RetrievalState
+	(*Progress)(nil),                      // 6: knowcel.chat.v1.Progress
+	(*Citation)(nil),                      // 7: knowcel.chat.v1.Citation
+	(*ChatMessage)(nil),                   // 8: knowcel.chat.v1.ChatMessage
+	(*Conversation)(nil),                  // 9: knowcel.chat.v1.Conversation
+	(*TeamIds)(nil),                       // 10: knowcel.chat.v1.TeamIds
+	(*DocumentIds)(nil),                   // 11: knowcel.chat.v1.DocumentIds
+	(*CreateConversationRequest)(nil),     // 12: knowcel.chat.v1.CreateConversationRequest
+	(*CreateConversationResponse)(nil),    // 13: knowcel.chat.v1.CreateConversationResponse
+	(*GetConversationRequest)(nil),        // 14: knowcel.chat.v1.GetConversationRequest
+	(*GetConversationResponse)(nil),       // 15: knowcel.chat.v1.GetConversationResponse
+	(*ListConversationsRequest)(nil),      // 16: knowcel.chat.v1.ListConversationsRequest
+	(*ListConversationsResponse)(nil),     // 17: knowcel.chat.v1.ListConversationsResponse
+	(*DeleteConversationRequest)(nil),     // 18: knowcel.chat.v1.DeleteConversationRequest
+	(*DeleteConversationResponse)(nil),    // 19: knowcel.chat.v1.DeleteConversationResponse
+	(*UpdateConversationRequest)(nil),     // 20: knowcel.chat.v1.UpdateConversationRequest
+	(*UpdateConversationResponse)(nil),    // 21: knowcel.chat.v1.UpdateConversationResponse
+	(*SearchConversationsRequest)(nil),    // 22: knowcel.chat.v1.SearchConversationsRequest
+	(*SearchConversationsResponse)(nil),   // 23: knowcel.chat.v1.SearchConversationsResponse
+	(*ConversationMatch)(nil),             // 24: knowcel.chat.v1.ConversationMatch
+	(*StreamChatRequest)(nil),             // 25: knowcel.chat.v1.StreamChatRequest
+	(*StopChatRequest)(nil),               // 26: knowcel.chat.v1.StopChatRequest
+	(*StopChatResponse)(nil),              // 27: knowcel.chat.v1.StopChatResponse
+	(*StreamChatResponse)(nil),            // 28: knowcel.chat.v1.StreamChatResponse
+	(*Retrieval)(nil),                     // 29: knowcel.chat.v1.Retrieval
+	(*RetrievalSource)(nil),               // 30: knowcel.chat.v1.RetrievalSource
+	(*ChatError)(nil),                     // 31: knowcel.chat.v1.ChatError
+	(*Citations)(nil),                     // 32: knowcel.chat.v1.Citations
+	(*PromptTemplates)(nil),               // 33: knowcel.chat.v1.PromptTemplates
+	(*PromptTemplate)(nil),                // 34: knowcel.chat.v1.PromptTemplate
+	(*GetPromptTemplatesRequest)(nil),     // 35: knowcel.chat.v1.GetPromptTemplatesRequest
+	(*GetPromptTemplatesResponse)(nil),    // 36: knowcel.chat.v1.GetPromptTemplatesResponse
+	(*UpdatePromptTemplatesRequest)(nil),  // 37: knowcel.chat.v1.UpdatePromptTemplatesRequest
+	(*UpdatePromptTemplatesResponse)(nil), // 38: knowcel.chat.v1.UpdatePromptTemplatesResponse
+	(*timestamppb.Timestamp)(nil),         // 39: google.protobuf.Timestamp
+	(*commonv1.PageRequest)(nil),          // 40: knowcel.common.v1.PageRequest
+	(*commonv1.PageResponse)(nil),         // 41: knowcel.common.v1.PageResponse
 }
 var file_knowcel_chat_v1_chat_proto_depIdxs = []int32{
 	3,  // 0: knowcel.chat.v1.Progress.stage:type_name -> knowcel.chat.v1.ProgressStage
 	0,  // 1: knowcel.chat.v1.ChatMessage.role:type_name -> knowcel.chat.v1.MessageRole
-	5,  // 2: knowcel.chat.v1.ChatMessage.citations:type_name -> knowcel.chat.v1.Citation
-	35, // 3: knowcel.chat.v1.ChatMessage.create_time:type_name -> google.protobuf.Timestamp
+	7,  // 2: knowcel.chat.v1.ChatMessage.citations:type_name -> knowcel.chat.v1.Citation
+	39, // 3: knowcel.chat.v1.ChatMessage.create_time:type_name -> google.protobuf.Timestamp
 	1,  // 4: knowcel.chat.v1.ChatMessage.status:type_name -> knowcel.chat.v1.MessageStatus
-	35, // 5: knowcel.chat.v1.Conversation.create_time:type_name -> google.protobuf.Timestamp
-	35, // 6: knowcel.chat.v1.Conversation.update_time:type_name -> google.protobuf.Timestamp
-	35, // 7: knowcel.chat.v1.Conversation.last_message_time:type_name -> google.protobuf.Timestamp
-	7,  // 8: knowcel.chat.v1.CreateConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
-	7,  // 9: knowcel.chat.v1.GetConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
-	6,  // 10: knowcel.chat.v1.GetConversationResponse.messages:type_name -> knowcel.chat.v1.ChatMessage
-	36, // 11: knowcel.chat.v1.ListConversationsRequest.page:type_name -> knowcel.common.v1.PageRequest
-	7,  // 12: knowcel.chat.v1.ListConversationsResponse.conversations:type_name -> knowcel.chat.v1.Conversation
-	37, // 13: knowcel.chat.v1.ListConversationsResponse.page:type_name -> knowcel.common.v1.PageResponse
-	9,  // 14: knowcel.chat.v1.UpdateConversationRequest.document_ids:type_name -> knowcel.chat.v1.DocumentIds
-	8,  // 15: knowcel.chat.v1.UpdateConversationRequest.team_ids:type_name -> knowcel.chat.v1.TeamIds
-	7,  // 16: knowcel.chat.v1.UpdateConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
-	22, // 17: knowcel.chat.v1.SearchConversationsResponse.results:type_name -> knowcel.chat.v1.ConversationMatch
-	7,  // 18: knowcel.chat.v1.ConversationMatch.conversation:type_name -> knowcel.chat.v1.Conversation
-	28, // 19: knowcel.chat.v1.StreamChatResponse.citations:type_name -> knowcel.chat.v1.Citations
-	6,  // 20: knowcel.chat.v1.StreamChatResponse.message:type_name -> knowcel.chat.v1.ChatMessage
-	27, // 21: knowcel.chat.v1.StreamChatResponse.error:type_name -> knowcel.chat.v1.ChatError
+	39, // 5: knowcel.chat.v1.Conversation.create_time:type_name -> google.protobuf.Timestamp
+	39, // 6: knowcel.chat.v1.Conversation.update_time:type_name -> google.protobuf.Timestamp
+	39, // 7: knowcel.chat.v1.Conversation.last_message_time:type_name -> google.protobuf.Timestamp
+	9,  // 8: knowcel.chat.v1.CreateConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
+	9,  // 9: knowcel.chat.v1.GetConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
+	8,  // 10: knowcel.chat.v1.GetConversationResponse.messages:type_name -> knowcel.chat.v1.ChatMessage
+	40, // 11: knowcel.chat.v1.ListConversationsRequest.page:type_name -> knowcel.common.v1.PageRequest
+	9,  // 12: knowcel.chat.v1.ListConversationsResponse.conversations:type_name -> knowcel.chat.v1.Conversation
+	41, // 13: knowcel.chat.v1.ListConversationsResponse.page:type_name -> knowcel.common.v1.PageResponse
+	11, // 14: knowcel.chat.v1.UpdateConversationRequest.document_ids:type_name -> knowcel.chat.v1.DocumentIds
+	10, // 15: knowcel.chat.v1.UpdateConversationRequest.team_ids:type_name -> knowcel.chat.v1.TeamIds
+	9,  // 16: knowcel.chat.v1.UpdateConversationResponse.conversation:type_name -> knowcel.chat.v1.Conversation
+	24, // 17: knowcel.chat.v1.SearchConversationsResponse.results:type_name -> knowcel.chat.v1.ConversationMatch
+	9,  // 18: knowcel.chat.v1.ConversationMatch.conversation:type_name -> knowcel.chat.v1.Conversation
+	32, // 19: knowcel.chat.v1.StreamChatResponse.citations:type_name -> knowcel.chat.v1.Citations
+	8,  // 20: knowcel.chat.v1.StreamChatResponse.message:type_name -> knowcel.chat.v1.ChatMessage
+	31, // 21: knowcel.chat.v1.StreamChatResponse.error:type_name -> knowcel.chat.v1.ChatError
 	3,  // 22: knowcel.chat.v1.StreamChatResponse.progress:type_name -> knowcel.chat.v1.ProgressStage
-	4,  // 23: knowcel.chat.v1.StreamChatResponse.status:type_name -> knowcel.chat.v1.Progress
-	2,  // 24: knowcel.chat.v1.ChatError.code:type_name -> knowcel.chat.v1.ChatErrorCode
-	5,  // 25: knowcel.chat.v1.Citations.items:type_name -> knowcel.chat.v1.Citation
-	30, // 26: knowcel.chat.v1.PromptTemplates.system_prompt:type_name -> knowcel.chat.v1.PromptTemplate
-	30, // 27: knowcel.chat.v1.PromptTemplates.sources_template:type_name -> knowcel.chat.v1.PromptTemplate
-	30, // 28: knowcel.chat.v1.PromptTemplates.no_sources_template:type_name -> knowcel.chat.v1.PromptTemplate
-	29, // 29: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	29, // 30: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
-	10, // 31: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
-	12, // 32: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
-	14, // 33: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
-	16, // 34: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
-	18, // 35: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
-	20, // 36: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
-	23, // 37: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
-	24, // 38: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
-	31, // 39: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
-	33, // 40: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
-	11, // 41: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
-	13, // 42: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
-	15, // 43: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
-	17, // 44: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
-	19, // 45: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
-	21, // 46: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
-	26, // 47: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
-	25, // 48: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
-	32, // 49: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
-	34, // 50: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
-	41, // [41:51] is the sub-list for method output_type
-	31, // [31:41] is the sub-list for method input_type
-	31, // [31:31] is the sub-list for extension type_name
-	31, // [31:31] is the sub-list for extension extendee
-	0,  // [0:31] is the sub-list for field type_name
+	6,  // 23: knowcel.chat.v1.StreamChatResponse.status:type_name -> knowcel.chat.v1.Progress
+	29, // 24: knowcel.chat.v1.StreamChatResponse.retrieval:type_name -> knowcel.chat.v1.Retrieval
+	30, // 25: knowcel.chat.v1.Retrieval.sources:type_name -> knowcel.chat.v1.RetrievalSource
+	4,  // 26: knowcel.chat.v1.RetrievalSource.kind:type_name -> knowcel.chat.v1.RetrievalSourceKind
+	5,  // 27: knowcel.chat.v1.RetrievalSource.state:type_name -> knowcel.chat.v1.RetrievalState
+	2,  // 28: knowcel.chat.v1.ChatError.code:type_name -> knowcel.chat.v1.ChatErrorCode
+	7,  // 29: knowcel.chat.v1.Citations.items:type_name -> knowcel.chat.v1.Citation
+	34, // 30: knowcel.chat.v1.PromptTemplates.system_prompt:type_name -> knowcel.chat.v1.PromptTemplate
+	34, // 31: knowcel.chat.v1.PromptTemplates.sources_template:type_name -> knowcel.chat.v1.PromptTemplate
+	34, // 32: knowcel.chat.v1.PromptTemplates.no_sources_template:type_name -> knowcel.chat.v1.PromptTemplate
+	33, // 33: knowcel.chat.v1.GetPromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	33, // 34: knowcel.chat.v1.UpdatePromptTemplatesResponse.templates:type_name -> knowcel.chat.v1.PromptTemplates
+	12, // 35: knowcel.chat.v1.ChatService.CreateConversation:input_type -> knowcel.chat.v1.CreateConversationRequest
+	14, // 36: knowcel.chat.v1.ChatService.GetConversation:input_type -> knowcel.chat.v1.GetConversationRequest
+	16, // 37: knowcel.chat.v1.ChatService.ListConversations:input_type -> knowcel.chat.v1.ListConversationsRequest
+	18, // 38: knowcel.chat.v1.ChatService.DeleteConversation:input_type -> knowcel.chat.v1.DeleteConversationRequest
+	20, // 39: knowcel.chat.v1.ChatService.UpdateConversation:input_type -> knowcel.chat.v1.UpdateConversationRequest
+	22, // 40: knowcel.chat.v1.ChatService.SearchConversations:input_type -> knowcel.chat.v1.SearchConversationsRequest
+	25, // 41: knowcel.chat.v1.ChatService.StreamChat:input_type -> knowcel.chat.v1.StreamChatRequest
+	26, // 42: knowcel.chat.v1.ChatService.StopChat:input_type -> knowcel.chat.v1.StopChatRequest
+	35, // 43: knowcel.chat.v1.ChatService.GetPromptTemplates:input_type -> knowcel.chat.v1.GetPromptTemplatesRequest
+	37, // 44: knowcel.chat.v1.ChatService.UpdatePromptTemplates:input_type -> knowcel.chat.v1.UpdatePromptTemplatesRequest
+	13, // 45: knowcel.chat.v1.ChatService.CreateConversation:output_type -> knowcel.chat.v1.CreateConversationResponse
+	15, // 46: knowcel.chat.v1.ChatService.GetConversation:output_type -> knowcel.chat.v1.GetConversationResponse
+	17, // 47: knowcel.chat.v1.ChatService.ListConversations:output_type -> knowcel.chat.v1.ListConversationsResponse
+	19, // 48: knowcel.chat.v1.ChatService.DeleteConversation:output_type -> knowcel.chat.v1.DeleteConversationResponse
+	21, // 49: knowcel.chat.v1.ChatService.UpdateConversation:output_type -> knowcel.chat.v1.UpdateConversationResponse
+	23, // 50: knowcel.chat.v1.ChatService.SearchConversations:output_type -> knowcel.chat.v1.SearchConversationsResponse
+	28, // 51: knowcel.chat.v1.ChatService.StreamChat:output_type -> knowcel.chat.v1.StreamChatResponse
+	27, // 52: knowcel.chat.v1.ChatService.StopChat:output_type -> knowcel.chat.v1.StopChatResponse
+	36, // 53: knowcel.chat.v1.ChatService.GetPromptTemplates:output_type -> knowcel.chat.v1.GetPromptTemplatesResponse
+	38, // 54: knowcel.chat.v1.ChatService.UpdatePromptTemplates:output_type -> knowcel.chat.v1.UpdatePromptTemplatesResponse
+	45, // [45:55] is the sub-list for method output_type
+	35, // [35:45] is the sub-list for method input_type
+	35, // [35:35] is the sub-list for extension type_name
+	35, // [35:35] is the sub-list for extension extendee
+	0,  // [0:35] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_chat_v1_chat_proto_init() }
@@ -2466,15 +2730,16 @@ func file_knowcel_chat_v1_chat_proto_init() {
 		(*StreamChatResponse_Error)(nil),
 		(*StreamChatResponse_Progress)(nil),
 		(*StreamChatResponse_Status)(nil),
+		(*StreamChatResponse_Retrieval)(nil),
 	}
-	file_knowcel_chat_v1_chat_proto_msgTypes[29].OneofWrappers = []any{}
+	file_knowcel_chat_v1_chat_proto_msgTypes[31].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_chat_v1_chat_proto_rawDesc), len(file_knowcel_chat_v1_chat_proto_rawDesc)),
-			NumEnums:      4,
-			NumMessages:   31,
+			NumEnums:      6,
+			NumMessages:   33,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

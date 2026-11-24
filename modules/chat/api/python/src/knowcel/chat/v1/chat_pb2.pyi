@@ -36,6 +36,19 @@ class ProgressStage(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     PROGRESS_STAGE_SEARCHING: _ClassVar[ProgressStage]
     PROGRESS_STAGE_RATING: _ClassVar[ProgressStage]
     PROGRESS_STAGE_WRITING: _ClassVar[ProgressStage]
+
+class RetrievalSourceKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    RETRIEVAL_SOURCE_KIND_UNSPECIFIED: _ClassVar[RetrievalSourceKind]
+    RETRIEVAL_SOURCE_KIND_DOCUMENTS: _ClassVar[RetrievalSourceKind]
+    RETRIEVAL_SOURCE_KIND_CONNECTOR: _ClassVar[RetrievalSourceKind]
+
+class RetrievalState(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
+    __slots__ = ()
+    RETRIEVAL_STATE_UNSPECIFIED: _ClassVar[RetrievalState]
+    RETRIEVAL_STATE_SEARCHING: _ClassVar[RetrievalState]
+    RETRIEVAL_STATE_DONE: _ClassVar[RetrievalState]
+    RETRIEVAL_STATE_UNAVAILABLE: _ClassVar[RetrievalState]
 MESSAGE_ROLE_UNSPECIFIED: MessageRole
 MESSAGE_ROLE_USER: MessageRole
 MESSAGE_ROLE_ASSISTANT: MessageRole
@@ -50,6 +63,13 @@ PROGRESS_STAGE_UNSPECIFIED: ProgressStage
 PROGRESS_STAGE_SEARCHING: ProgressStage
 PROGRESS_STAGE_RATING: ProgressStage
 PROGRESS_STAGE_WRITING: ProgressStage
+RETRIEVAL_SOURCE_KIND_UNSPECIFIED: RetrievalSourceKind
+RETRIEVAL_SOURCE_KIND_DOCUMENTS: RetrievalSourceKind
+RETRIEVAL_SOURCE_KIND_CONNECTOR: RetrievalSourceKind
+RETRIEVAL_STATE_UNSPECIFIED: RetrievalState
+RETRIEVAL_STATE_SEARCHING: RetrievalState
+RETRIEVAL_STATE_DONE: RetrievalState
+RETRIEVAL_STATE_UNAVAILABLE: RetrievalState
 
 class Progress(_message.Message):
     __slots__ = ("stage", "passages", "documents", "manual_sections")
@@ -262,20 +282,40 @@ class StopChatResponse(_message.Message):
     def __init__(self) -> None: ...
 
 class StreamChatResponse(_message.Message):
-    __slots__ = ("citations", "delta", "message", "error", "progress", "status")
+    __slots__ = ("citations", "delta", "message", "error", "progress", "status", "retrieval")
     CITATIONS_FIELD_NUMBER: _ClassVar[int]
     DELTA_FIELD_NUMBER: _ClassVar[int]
     MESSAGE_FIELD_NUMBER: _ClassVar[int]
     ERROR_FIELD_NUMBER: _ClassVar[int]
     PROGRESS_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
+    RETRIEVAL_FIELD_NUMBER: _ClassVar[int]
     citations: Citations
     delta: str
     message: ChatMessage
     error: ChatError
     progress: ProgressStage
     status: Progress
-    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[ProgressStage, str]] = ..., status: _Optional[_Union[Progress, _Mapping]] = ...) -> None: ...
+    retrieval: Retrieval
+    def __init__(self, citations: _Optional[_Union[Citations, _Mapping]] = ..., delta: _Optional[str] = ..., message: _Optional[_Union[ChatMessage, _Mapping]] = ..., error: _Optional[_Union[ChatError, _Mapping]] = ..., progress: _Optional[_Union[ProgressStage, str]] = ..., status: _Optional[_Union[Progress, _Mapping]] = ..., retrieval: _Optional[_Union[Retrieval, _Mapping]] = ...) -> None: ...
+
+class Retrieval(_message.Message):
+    __slots__ = ("sources",)
+    SOURCES_FIELD_NUMBER: _ClassVar[int]
+    sources: _containers.RepeatedCompositeFieldContainer[RetrievalSource]
+    def __init__(self, sources: _Optional[_Iterable[_Union[RetrievalSource, _Mapping]]] = ...) -> None: ...
+
+class RetrievalSource(_message.Message):
+    __slots__ = ("kind", "connector", "state", "results")
+    KIND_FIELD_NUMBER: _ClassVar[int]
+    CONNECTOR_FIELD_NUMBER: _ClassVar[int]
+    STATE_FIELD_NUMBER: _ClassVar[int]
+    RESULTS_FIELD_NUMBER: _ClassVar[int]
+    kind: RetrievalSourceKind
+    connector: str
+    state: RetrievalState
+    results: int
+    def __init__(self, kind: _Optional[_Union[RetrievalSourceKind, str]] = ..., connector: _Optional[str] = ..., state: _Optional[_Union[RetrievalState, str]] = ..., results: _Optional[int] = ...) -> None: ...
 
 class ChatError(_message.Message):
     __slots__ = ("code", "message")

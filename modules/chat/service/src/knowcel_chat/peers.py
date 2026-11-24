@@ -6,7 +6,7 @@ import contextlib
 import logging
 import uuid
 from collections.abc import AsyncGenerator, Callable, Collection, Iterator, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Any
 
 import grpc
@@ -128,6 +128,10 @@ class LiveSources:
     citations: list[chat_pb2.Citation]
     # The connectors that did not answer in time or failed, by name.
     unavailable: list[str]
+    # Every connector that was asked, by name.
+    searched: list[str] = field(default_factory=list)
+    # The connectors could not be asked at all (ingestion or its worker is down).
+    failed: bool = False
 
 
 class PeerConnectors:
@@ -157,7 +161,7 @@ class PeerConnectors:
                 )
         except PeerError as err:
             log.warning("connectors unavailable, answering from documents: %s", err)
-            return LiveSources([], [])
+            return LiveSources([], [], failed=True)
         citations = [
             chat_pb2.Citation(
                 document_title=s.title or s.connector,
@@ -170,7 +174,39 @@ class PeerConnectors:
             )
             for rank, s in enumerate(found.snippets)
         ]
-        return LiveSources(citations, list(found.unavailable_connectors))
+        return LiveSources(
+            citations, list(found.unavailable_connectors), list(found.searched_connectors)
+        )
+
+
+def _source(kind: chat_pb2.RetrievalSourceKind, connector: str = "") -> chat_pb2.RetrievalSource:
+    return chat_pb2.RetrievalSource(
+        kind=kind, connector=connector, state=chat_pb2.RETRIEVAL_STATE_SEARCHING
+    )
+
+
+def _connector_states(live: LiveSources) -> list[chat_pb2.RetrievalSource]:
+    if live.failed:
+        return [
+            chat_pb2.RetrievalSource(
+                kind=chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR,
+                state=chat_pb2.RETRIEVAL_STATE_UNAVAILABLE,
+            )
+        ]
+    states = []
+    for name in live.searched:
+        down = name in live.unavailable
+        states.append(
+            chat_pb2.RetrievalSource(
+                kind=chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR,
+                connector=name,
+                state=chat_pb2.RETRIEVAL_STATE_UNAVAILABLE
+                if down
+                else chat_pb2.RETRIEVAL_STATE_DONE,
+                results=0 if down else sum(c.connector == name for c in live.citations),
+            )
+        )
+    return states
 
 
 class PeerRetriever:
@@ -219,7 +255,15 @@ class PeerRetriever:
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
         on_unavailable: Callable[[Sequence[str]], None] | None = None,
+        on_retrieval: Callable[[list[chat_pb2.RetrievalSource]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
+        documents_state = _source(chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS)
+        connector_states: list[chat_pb2.RetrievalSource] = []
+
+        def report() -> None:
+            if on_retrieval:
+                on_retrieval([documents_state, *connector_states])
+
         # Asked while the documents are searched; a question limited to chosen
         # documents is about those, not about connected systems.
         live = (
@@ -227,8 +271,23 @@ class PeerRetriever:
             if self._connectors and not document_ids
             else None
         )
+        if live:
+            # Their names are known only when they answer; until then one entry.
+            connector_states.append(_source(chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR))
+
+            def connectors_answered(task: "asyncio.Task[LiveSources]") -> None:
+                if task.cancelled() or task.exception():
+                    return
+                connector_states[:] = _connector_states(task.result())
+                report()
+
+            live.add_done_callback(connectors_answered)
+        report()
         try:
             found = await self._retrieve_documents(query, limit, document_ids, team_ids, on_rating)
+            documents_state.state = chat_pb2.RETRIEVAL_STATE_DONE
+            documents_state.results = len(found)
+            report()
             sources = await live if live else LiveSources([], [])
         finally:
             if live:

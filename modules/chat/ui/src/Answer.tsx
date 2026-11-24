@@ -274,21 +274,28 @@ export function Answer({
         </Markdown>
       </div>
       {unavailableSources.length > 0 && <UnavailableNotice sources={unavailableSources} />}
-      {!streaming && groups.length > 0 && (
-        <ul aria-label="Sources" className="space-y-1 border-t border-border pt-2">
-          {groups.map((group) => (
-            <SourceGroupRow
-              key={group.key}
-              group={group}
-              open={open.has(group.key)}
-              onToggle={() => toggle(group.key)}
-              active={active}
-              linked={linked}
-              conversationId={conversationId}
-            />
-          ))}
-        </ul>
-      )}
+      {!streaming &&
+        [
+          { label: "Sources", groups: groups.filter((g) => g.kind !== "connector") },
+          { label: "Connector sources", groups: groups.filter((g) => g.kind === "connector") },
+        ].map(
+          ({ label, groups }) =>
+            groups.length > 0 && (
+              <ul key={label} aria-label={label} className="space-y-1 border-t border-border pt-2">
+                {groups.map((group) => (
+                  <SourceGroupRow
+                    key={group.key}
+                    group={group}
+                    open={open.has(group.key)}
+                    onToggle={() => toggle(group.key)}
+                    active={active}
+                    linked={linked}
+                    conversationId={conversationId}
+                  />
+                ))}
+              </ul>
+            ),
+        )}
     </div>
   );
 }

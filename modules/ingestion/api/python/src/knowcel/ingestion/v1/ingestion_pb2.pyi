@@ -262,12 +262,14 @@ class SearchConnectorsRequest(_message.Message):
     def __init__(self, query: _Optional[str] = ..., connector_ids: _Optional[_Iterable[str]] = ..., limit: _Optional[int] = ..., team_ids: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class SearchConnectorsResponse(_message.Message):
-    __slots__ = ("snippets", "unavailable_connectors")
+    __slots__ = ("snippets", "unavailable_connectors", "searched_connectors")
     SNIPPETS_FIELD_NUMBER: _ClassVar[int]
     UNAVAILABLE_CONNECTORS_FIELD_NUMBER: _ClassVar[int]
+    SEARCHED_CONNECTORS_FIELD_NUMBER: _ClassVar[int]
     snippets: _containers.RepeatedCompositeFieldContainer[ConnectorSnippet]
     unavailable_connectors: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, snippets: _Optional[_Iterable[_Union[ConnectorSnippet, _Mapping]]] = ..., unavailable_connectors: _Optional[_Iterable[str]] = ...) -> None: ...
+    searched_connectors: _containers.RepeatedScalarFieldContainer[str]
+    def __init__(self, snippets: _Optional[_Iterable[_Union[ConnectorSnippet, _Mapping]]] = ..., unavailable_connectors: _Optional[_Iterable[str]] = ..., searched_connectors: _Optional[_Iterable[str]] = ...) -> None: ...
 
 class ConnectorSnippet(_message.Message):
     __slots__ = ("connector", "title", "text", "source_url", "external_id")

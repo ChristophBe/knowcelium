@@ -3,11 +3,13 @@
 import asyncio
 import logging
 import uuid
+from copy import copy
 from types import SimpleNamespace
 from typing import Any
 
 import grpc
 import pytest
+from knowcel.chat.v1 import chat_pb2
 from knowcel.ingestion.v1 import ingestion_pb2
 from knowcel_chat.chat import PeerError
 from knowcel_chat.peers import PeerConnectors, PeerRetriever
@@ -22,11 +24,13 @@ class FakeIngestion:
         self,
         snippets: list[ingestion_pb2.ConnectorSnippet] | None = None,
         unavailable: list[str] | None = None,
+        searched: list[str] | None = None,
         error: grpc.StatusCode | None = None,
         hang: bool = False,
     ) -> None:
         self.snippets = snippets or []
         self.unavailable = unavailable or []
+        self.searched = searched or []
         self.error = error
         self.hang = hang
         self.requests: list[ingestion_pb2.SearchConnectorsRequest] = []
@@ -44,7 +48,9 @@ class FakeIngestion:
         if self.error:
             raise rpc_error(self.error)
         return ingestion_pb2.SearchConnectorsResponse(
-            snippets=self.snippets, unavailable_connectors=self.unavailable
+            snippets=self.snippets,
+            unavailable_connectors=self.unavailable,
+            searched_connectors=self.searched,
         )
 
 
@@ -160,3 +166,58 @@ async def test_retrieval_without_connectors_is_unchanged() -> None:
     plain = PeerRetriever(FakeDocuments(), FakeLlm())  # type: ignore[arg-type]
     found = await plain.retrieve("q", 5, [])
     assert [c.document_id for c in found] == ["d1"]
+
+
+def states(snapshots: list[list[Any]]) -> list[list[tuple[int, str, int, int]]]:
+    return [[(s.kind, s.connector, s.state, s.results) for s in snap] for snap in snapshots]
+
+
+async def test_each_connector_asked_is_reported_with_its_state_and_result_count() -> None:
+    ingestion = FakeIngestion(
+        [snippet(), snippet()], unavailable=["crm"], searched=["stock", "crm", "wiki"]
+    )
+    snapshots: list[list[Any]] = []
+    await retriever(ingestion).retrieve(
+        "q", 5, [], on_retrieval=lambda sources: snapshots.append([copy(s) for s in sources])
+    )
+    docs, connector = (
+        chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS,
+        chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR,
+    )
+    searching, done, down = (
+        chat_pb2.RETRIEVAL_STATE_SEARCHING,
+        chat_pb2.RETRIEVAL_STATE_DONE,
+        chat_pb2.RETRIEVAL_STATE_UNAVAILABLE,
+    )
+    final = states(snapshots)[-1]
+    assert final[0][:3] == (docs, "", done)
+    assert final[1:] == [
+        (connector, "stock", done, 2),
+        (connector, "crm", down, 0),
+        (connector, "wiki", done, 0),
+    ]
+    # Until the connectors answer there is one entry without a name.
+    assert states(snapshots)[0] == [(docs, "", searching, 0), (connector, "", searching, 0)]
+
+
+@pytest.mark.parametrize("error", [grpc.StatusCode.UNAVAILABLE, grpc.StatusCode.INTERNAL])
+async def test_connectors_that_cannot_be_asked_at_all_are_reported_unavailable(
+    error: grpc.StatusCode,
+) -> None:
+    snapshots: list[list[Any]] = []
+    await retriever(FakeIngestion(error=error)).retrieve(
+        "q", 5, [], on_retrieval=lambda sources: snapshots.append([copy(s) for s in sources])
+    )
+    connector = chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR
+    assert states(snapshots)[-1][1:] == [(connector, "", chat_pb2.RETRIEVAL_STATE_UNAVAILABLE, 0)]
+
+
+async def test_a_question_limited_to_documents_reports_only_the_documents() -> None:
+    snapshots: list[list[Any]] = []
+    await retriever(FakeIngestion([snippet()])).retrieve(
+        "q",
+        5,
+        [uuid.uuid4()],
+        on_retrieval=lambda sources: snapshots.append([copy(s) for s in sources]),
+    )
+    assert all(len(s) == 1 for s in snapshots)

@@ -21,6 +21,7 @@ from knowcel_chat.chat import (
     ProgressChanged,
     PromptMessage,
     PromptRole,
+    RetrievalChanged,
     SourcesFound,
 )
 from knowcel_chat.config import Settings
@@ -87,7 +88,9 @@ class FakeRetriever:
         results: list[chat_pb2.Citation] | None = None,
         rates: bool = False,
         unavailable: Sequence[str] = (),
+        retrieval: Sequence[chat_pb2.RetrievalSource] = (),
     ) -> None:
+        self.retrieval = list(retrieval)
         self.unavailable = list(unavailable)
         self.rates = rates
         self.error = error
@@ -103,9 +106,12 @@ class FakeRetriever:
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
         on_unavailable: Callable[[Sequence[str]], None] | None = None,
+        on_retrieval: Callable[[list[chat_pb2.RetrievalSource]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
         if self.unavailable and on_unavailable:
             on_unavailable(self.unavailable)
+        if on_retrieval:
+            on_retrieval(self.retrieval)
         self.calls.append((query, limit, list(document_ids)))
         self.team_calls.append(list(team_ids))
         if self.error:
@@ -178,7 +184,7 @@ async def collect_all(chat: Chat, repo: FakeRepo, use_kb: bool = True) -> list[A
 async def collect(chat: Chat, repo: FakeRepo, use_kb: bool = True) -> list[AnswerEvent]:
     """The events without the progress ones, which have their own tests."""
     events = await collect_all(chat, repo, use_kb)
-    return [e for e in events if not isinstance(e, ProgressChanged)]
+    return [e for e in events if not isinstance(e, ProgressChanged | RetrievalChanged)]
 
 
 async def test_answer_streams_sources_then_deltas_then_the_saved_message() -> None:
@@ -460,6 +466,7 @@ async def test_manual_sources_are_named_as_such_and_saved_with_their_section() -
             team_ids: Sequence[uuid.UUID] = (),
             on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
             on_unavailable: Callable[[Sequence[str]], None] | None = None,
+            on_retrieval: Callable[[list[chat_pb2.RetrievalSource]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(
@@ -707,6 +714,7 @@ async def test_only_the_sources_that_fit_are_cited() -> None:
             team_ids: Sequence[uuid.UUID] = (),
             on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
             on_unavailable: Callable[[Sequence[str]], None] | None = None,
+            on_retrieval: Callable[[list[chat_pb2.RetrievalSource]], None] | None = None,
         ) -> list[chat_pb2.Citation]:
             return [
                 chat_pb2.Citation(document_id="best", snippet="best " * 5, score=0.9),
@@ -780,3 +788,26 @@ def test_progress_counts_live_snippets_as_passages_without_a_document() -> None:
     ]
     progress = ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, found)
     assert (progress.passages, progress.documents, progress.manual_sections) == (2, 1, 1)
+
+
+async def test_the_state_of_each_source_searched_is_passed_on_before_the_sources() -> None:
+    searching = chat_pb2.RetrievalSource(
+        kind=chat_pb2.RETRIEVAL_SOURCE_KIND_CONNECTOR,
+        connector="orders",
+        state=chat_pb2.RETRIEVAL_STATE_DONE,
+        results=3,
+    )
+    chat, repo, _, _ = make()
+    chat._retriever = FakeRetriever(retrieval=[searching])  # type: ignore[attr-defined]
+    events = await collect_all(chat, repo)
+    retrieval = [e for e in events if isinstance(e, RetrievalChanged)]
+    assert retrieval == [RetrievalChanged([searching])]
+    assert events.index(retrieval[0]) < next(
+        i for i, e in enumerate(events) if isinstance(e, SourcesFound)
+    )
+
+
+async def test_no_source_is_searched_without_the_knowledge_base() -> None:
+    chat, repo, _, _ = make()
+    events = await collect_all(chat, repo, use_kb=False)
+    assert not any(isinstance(e, RetrievalChanged) for e in events)

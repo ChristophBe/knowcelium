@@ -64,7 +64,7 @@ class LiveSearch:
         results = await asyncio.gather(
             *(self._ask(s, request.query, limit, timeout) for s in asked)
         )
-        reply = events_pb2.ConnectorSearchReply()
+        reply = events_pb2.ConnectorSearchReply(searched_connectors=[s.name for s in asked])
         found: list[list[ingestion_pb2.ConnectorSnippet]] = []
         for spec, result in zip(asked, results, strict=True):
             if result is None:

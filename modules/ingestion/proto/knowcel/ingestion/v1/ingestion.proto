@@ -273,6 +273,9 @@ message SearchConnectorsResponse {
   repeated ConnectorSnippet snippets = 1;
   // The connectors that failed or did not answer in time, by name.
   repeated string unavailable_connectors = 2;
+  // Every connector that was asked, by name, including those that failed or
+  // found nothing.
+  repeated string searched_connectors = 3;
 }
 
 // A passage a connector found when searched live.

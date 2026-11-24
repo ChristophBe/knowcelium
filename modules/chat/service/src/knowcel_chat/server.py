@@ -28,6 +28,7 @@ from .chat import (
     PeerError,
     PeerUnavailableError,
     ProgressChanged,
+    RetrievalChanged,
     SourcesFound,
 )
 from .prompts import DEFAULTS, VARIABLES, TemplateError, TemplateName, parse
@@ -441,6 +442,8 @@ def _response(event: AnswerEvent) -> chat_pb2.StreamChatResponse:
                     manual_sections=manual_sections,
                 )
             )
+        case RetrievalChanged(sources):
+            return chat_pb2.StreamChatResponse(retrieval=chat_pb2.Retrieval(sources=sources))
         case AnswerDelta(text):
             return chat_pb2.StreamChatResponse(delta=text)
         case AnswerFailed(error):

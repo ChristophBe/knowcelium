@@ -1522,8 +1522,11 @@ type SearchConnectorsResponse struct {
 	Snippets []*ConnectorSnippet    `protobuf:"bytes,1,rep,name=snippets,proto3" json:"snippets,omitempty"`
 	// The connectors that failed or did not answer in time, by name.
 	UnavailableConnectors []string `protobuf:"bytes,2,rep,name=unavailable_connectors,json=unavailableConnectors,proto3" json:"unavailable_connectors,omitempty"`
-	unknownFields         protoimpl.UnknownFields
-	sizeCache             protoimpl.SizeCache
+	// Every connector that was asked, by name, including those that failed or
+	// found nothing.
+	SearchedConnectors []string `protobuf:"bytes,3,rep,name=searched_connectors,json=searchedConnectors,proto3" json:"searched_connectors,omitempty"`
+	unknownFields      protoimpl.UnknownFields
+	sizeCache          protoimpl.SizeCache
 }
 
 func (x *SearchConnectorsResponse) Reset() {
@@ -1566,6 +1569,13 @@ func (x *SearchConnectorsResponse) GetSnippets() []*ConnectorSnippet {
 func (x *SearchConnectorsResponse) GetUnavailableConnectors() []string {
 	if x != nil {
 		return x.UnavailableConnectors
+	}
+	return nil
+}
+
+func (x *SearchConnectorsResponse) GetSearchedConnectors() []string {
+	if x != nil {
+		return x.SearchedConnectors
 	}
 	return nil
 }
@@ -1746,10 +1756,11 @@ const file_knowcel_ingestion_v1_ingestion_proto_rawDesc = "" +
 	"\x05query\x18\x01 \x01(\tR\x05query\x12#\n" +
 	"\rconnector_ids\x18\x02 \x03(\tR\fconnectorIds\x12\x14\n" +
 	"\x05limit\x18\x03 \x01(\x05R\x05limit\x12\x19\n" +
-	"\bteam_ids\x18\x04 \x03(\tR\ateamIds\"\x95\x01\n" +
+	"\bteam_ids\x18\x04 \x03(\tR\ateamIds\"\xc6\x01\n" +
 	"\x18SearchConnectorsResponse\x12B\n" +
 	"\bsnippets\x18\x01 \x03(\v2&.knowcel.ingestion.v1.ConnectorSnippetR\bsnippets\x125\n" +
-	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors\"\x9a\x01\n" +
+	"\x16unavailable_connectors\x18\x02 \x03(\tR\x15unavailableConnectors\x12/\n" +
+	"\x13searched_connectors\x18\x03 \x03(\tR\x12searchedConnectors\"\x9a\x01\n" +
 	"\x10ConnectorSnippet\x12\x1c\n" +
 	"\tconnector\x18\x01 \x01(\tR\tconnector\x12\x14\n" +
 	"\x05title\x18\x02 \x01(\tR\x05title\x12\x12\n" +

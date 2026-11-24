@@ -64,7 +64,8 @@ class Retriever(Protocol):
     and only in documents of `team_ids`, each unless empty. `on_rating` is called
     with the passages found when they are about to be rated. `on_unavailable` is
     called with the names of the live sources (connectors) that did not answer,
-    when there are any; their absence never fails the retrieval. Failures are
+    when there are any; their absence never fails the retrieval. `on_retrieval`
+    is called with the state of every source searched, each time one changes. Failures are
     raised as PeerError."""
 
     async def retrieve(
@@ -75,6 +76,7 @@ class Retriever(Protocol):
         team_ids: Sequence[uuid.UUID] = (),
         on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
         on_unavailable: Callable[[Sequence[str]], None] | None = None,
+        on_retrieval: Callable[[list[chat_pb2.RetrievalSource]], None] | None = None,
     ) -> list[chat_pb2.Citation]: ...
 
 
@@ -129,7 +131,16 @@ class ProgressChanged:
         )
 
 
-AnswerEvent = ProgressChanged | SourcesFound | AnswerDelta | AnswerFailed | AnswerSaved
+@dataclass(frozen=True)
+class RetrievalChanged:
+    """The state of every source searched, replacing the one before."""
+
+    sources: list[chat_pb2.RetrievalSource]
+
+
+AnswerEvent = (
+    ProgressChanged | RetrievalChanged | SourcesFound | AnswerDelta | AnswerFailed | AnswerSaved
+)
 
 _PROMPT_ROLES = {
     chat_pb2.MESSAGE_ROLE_USER: PromptRole.USER,
@@ -202,7 +213,7 @@ class Chat:
                 yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
                 # The retriever reports the rating from inside its call, so it
                 # runs as a task and its stages are passed on as they come.
-                stages: asyncio.Queue[ProgressChanged | None] = asyncio.Queue()
+                stages: asyncio.Queue[ProgressChanged | RetrievalChanged | None] = asyncio.Queue()
 
                 async def search() -> list[chat_pb2.Citation]:
                     try:
@@ -215,6 +226,9 @@ class Chat:
                                 ProgressChanged.of(chat_pb2.PROGRESS_STAGE_RATING, found)
                             ),
                             on_unavailable=unavailable.extend,
+                            on_retrieval=lambda sources: stages.put_nowait(
+                                RetrievalChanged([_copy(s) for s in sources])
+                            ),
                         )
                     finally:
                         stages.put_nowait(None)
@@ -301,6 +315,13 @@ class Chat:
             status,
             list(dict.fromkeys(unavailable)),
         )
+
+
+def _copy(source: chat_pb2.RetrievalSource) -> chat_pb2.RetrievalSource:
+    """A snapshot, as the retriever goes on changing its own."""
+    copy = chat_pb2.RetrievalSource()
+    copy.CopyFrom(source)
+    return copy
 
 
 def _prompt(system: str, history: list[MessageRow], content: str) -> list[PromptMessage]:
