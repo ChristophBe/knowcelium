@@ -72,6 +72,7 @@ helm install kb deploy/helm/kb -n kb --create-namespace \
   --set image.tag=dev \
   --set components.llm-service.env.KNOWCEL_LLM_PROVIDER=fake \
   --set components.chat-service.env.KNOWCEL_RAG_MIN_SCORE=-1 \
+  --set components.chat-service.env.KNOWCEL_AGENTIC=false \
   --wait --timeout 10m
 ```
 
