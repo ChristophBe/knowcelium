@@ -1,4 +1,4 @@
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
 from typing import Protocol
@@ -32,6 +32,7 @@ class Role(StrEnum):
     SYSTEM = "system"
     USER = "user"
     ASSISTANT = "assistant"
+    TOOL = "tool"
 
 
 class ModelKind(StrEnum):
@@ -40,9 +41,31 @@ class ModelKind(StrEnum):
 
 
 @dataclass(frozen=True)
+class ToolSpec:
+    """A tool the model may call; `parameters_json_schema` is a JSON Schema string."""
+
+    name: str
+    description: str
+    parameters_json_schema: str
+
+
+@dataclass(frozen=True)
+class ToolCall:
+    """A complete tool call; `arguments_json` is a JSON object string."""
+
+    id: str
+    name: str
+    arguments_json: str
+
+
+@dataclass(frozen=True)
 class Message:
     role: Role
     content: str
+    # On an assistant message: the calls it made. On a tool message: the id of
+    # the call it answers.
+    tool_calls: tuple[ToolCall, ...] = ()
+    tool_call_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -58,6 +81,8 @@ class Chunk:
 
     delta: str = ""
     done: bool = False
+    # Complete calls on the final chunk; a provider joins streamed argument deltas first.
+    tool_calls: tuple[ToolCall, ...] = ()
     input_tokens: int = 0
     output_tokens: int = 0
 
@@ -66,6 +91,7 @@ class Chunk:
 class ModelInfo:
     id: str
     kind: ModelKind
+    supports_tools: bool = False
 
 
 @dataclass(frozen=True)
@@ -96,8 +122,14 @@ class Provider(Protocol):
     default_chat_model: str
     default_embedding_model: str
 
+    # Providers or models without tool calling raise NotSupportedError when
+    # `tools` is not empty.
     def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]: ...
 
     async def embed(self, model: str, inputs: list[str]) -> list[list[float]]: ...

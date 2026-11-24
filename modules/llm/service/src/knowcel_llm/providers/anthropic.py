@@ -1,5 +1,5 @@
 import logging
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from typing import Literal
 
@@ -21,6 +21,7 @@ from .base import (
     PullProgress,
     Role,
     Status,
+    ToolSpec,
 )
 from .rerank import rerank_with_chat
 
@@ -90,8 +91,14 @@ class AnthropicProvider:
         )
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
+        if tools:
+            raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         system, turns = to_anthropic_messages(messages)
         if not turns:
             raise ProviderError("anthropic: the request has no user message")

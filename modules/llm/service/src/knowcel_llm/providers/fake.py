@@ -1,8 +1,9 @@
 import asyncio
 import hashlib
+import json
 import math
 import re
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 
 from .base import (
     Chunk,
@@ -12,8 +13,15 @@ from .base import (
     ModelKind,
     NotSupportedError,
     PullProgress,
+    Role,
     Status,
+    ToolCall,
+    ToolSpec,
 )
+
+# A user message containing `[tool:NAME]` or `[tool:NAME {"arg": 1}]` makes the
+# fake model call the tool NAME (when the request offers it) with those arguments.
+_TOOL_TRIGGER = re.compile(r"\[tool:([\w.-]+)(?: (\{.*?\}))?\]")
 
 
 def _words(text: str) -> set[str]:
@@ -24,6 +32,8 @@ class FakeProvider:
     """Deterministic provider for tests and for running the stack without a
     model server. Generation echoes the last user message, optionally waiting
     `token_delay` seconds before each word (to watch or stop a stream);
+    a user message with a `[tool:NAME]` trigger makes it call that tool when
+    the request offers it, and a tool message is answered with its content;
     embeddings are derived from a hash of the model and the text, so identical
     text gets identical vectors for one model."""
 
@@ -39,10 +49,26 @@ class FakeProvider:
         self.default_embedding_model = embedding_model
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        last = messages[-1].content if messages else ""
-        words = f"(fake answer) You said: {last}".split(" ")
+        last = messages[-1] if messages else None
+        call = self._tool_call(last, tools)
+        if call:
+            yield Chunk(
+                done=True,
+                tool_calls=(call,),
+                input_tokens=sum(len(m.content.split()) for m in messages),
+            )
+            return
+        if last and last.role is Role.TOOL:
+            text = f"(fake answer) The tool returned: {last.content}"
+        else:
+            text = f"(fake answer) You said: {last.content if last else ''}"
+        words = text.split(" ")
         for i, word in enumerate(words):
             if self._token_delay:
                 await asyncio.sleep(self._token_delay)
@@ -52,6 +78,20 @@ class FakeProvider:
             input_tokens=sum(len(m.content.split()) for m in messages),
             output_tokens=len(words),
         )
+
+    @staticmethod
+    def _tool_call(last: Message | None, tools: Sequence[ToolSpec]) -> ToolCall | None:
+        if not tools or last is None or last.role is not Role.USER:
+            return None
+        trigger = _TOOL_TRIGGER.search(last.content)
+        if not trigger or trigger[1] not in {t.name for t in tools}:
+            return None
+        arguments = trigger[2] or "{}"
+        try:
+            json.loads(arguments)
+        except ValueError:
+            arguments = "{}"
+        return ToolCall(id=f"call-{trigger[1]}", name=trigger[1], arguments_json=arguments)
 
     async def embed(self, model: str, inputs: list[str]) -> list[list[float]]:
         return [self._vector(f"{model}:{text}") for text in inputs]
@@ -84,7 +124,7 @@ class FakeProvider:
 
     async def list_models(self) -> list[ModelInfo]:
         return [
-            ModelInfo(id=self.default_chat_model, kind=ModelKind.CHAT),
+            ModelInfo(id=self.default_chat_model, kind=ModelKind.CHAT, supports_tools=True),
             ModelInfo(id=self.default_embedding_model, kind=ModelKind.EMBEDDING),
         ]
 

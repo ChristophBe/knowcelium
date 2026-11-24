@@ -13,6 +13,7 @@ class Role(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     ROLE_SYSTEM: _ClassVar[Role]
     ROLE_USER: _ClassVar[Role]
     ROLE_ASSISTANT: _ClassVar[Role]
+    ROLE_TOOL: _ClassVar[Role]
 
 class ModelKind(int, metaclass=_enum_type_wrapper.EnumTypeWrapper):
     __slots__ = ()
@@ -23,27 +24,54 @@ ROLE_UNSPECIFIED: Role
 ROLE_SYSTEM: Role
 ROLE_USER: Role
 ROLE_ASSISTANT: Role
+ROLE_TOOL: Role
 MODEL_KIND_UNSPECIFIED: ModelKind
 MODEL_KIND_CHAT: ModelKind
 MODEL_KIND_EMBEDDING: ModelKind
 
 class Model(_message.Message):
-    __slots__ = ("id", "provider", "kind")
+    __slots__ = ("id", "provider", "kind", "supports_tools")
     ID_FIELD_NUMBER: _ClassVar[int]
     PROVIDER_FIELD_NUMBER: _ClassVar[int]
     KIND_FIELD_NUMBER: _ClassVar[int]
+    SUPPORTS_TOOLS_FIELD_NUMBER: _ClassVar[int]
     id: str
     provider: str
     kind: ModelKind
-    def __init__(self, id: _Optional[str] = ..., provider: _Optional[str] = ..., kind: _Optional[_Union[ModelKind, str]] = ...) -> None: ...
+    supports_tools: bool
+    def __init__(self, id: _Optional[str] = ..., provider: _Optional[str] = ..., kind: _Optional[_Union[ModelKind, str]] = ..., supports_tools: _Optional[bool] = ...) -> None: ...
 
 class Message(_message.Message):
-    __slots__ = ("role", "content")
+    __slots__ = ("role", "content", "tool_calls", "tool_call_id")
     ROLE_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
+    TOOL_CALLS_FIELD_NUMBER: _ClassVar[int]
+    TOOL_CALL_ID_FIELD_NUMBER: _ClassVar[int]
     role: Role
     content: str
-    def __init__(self, role: _Optional[_Union[Role, str]] = ..., content: _Optional[str] = ...) -> None: ...
+    tool_calls: _containers.RepeatedCompositeFieldContainer[ToolCall]
+    tool_call_id: str
+    def __init__(self, role: _Optional[_Union[Role, str]] = ..., content: _Optional[str] = ..., tool_calls: _Optional[_Iterable[_Union[ToolCall, _Mapping]]] = ..., tool_call_id: _Optional[str] = ...) -> None: ...
+
+class ToolSpec(_message.Message):
+    __slots__ = ("name", "description", "parameters_json_schema")
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    DESCRIPTION_FIELD_NUMBER: _ClassVar[int]
+    PARAMETERS_JSON_SCHEMA_FIELD_NUMBER: _ClassVar[int]
+    name: str
+    description: str
+    parameters_json_schema: str
+    def __init__(self, name: _Optional[str] = ..., description: _Optional[str] = ..., parameters_json_schema: _Optional[str] = ...) -> None: ...
+
+class ToolCall(_message.Message):
+    __slots__ = ("id", "name", "arguments_json")
+    ID_FIELD_NUMBER: _ClassVar[int]
+    NAME_FIELD_NUMBER: _ClassVar[int]
+    ARGUMENTS_JSON_FIELD_NUMBER: _ClassVar[int]
+    id: str
+    name: str
+    arguments_json: str
+    def __init__(self, id: _Optional[str] = ..., name: _Optional[str] = ..., arguments_json: _Optional[str] = ...) -> None: ...
 
 class GenerationOptions(_message.Message):
     __slots__ = ("temperature", "max_tokens")
@@ -106,28 +134,32 @@ class GetProviderStatusResponse(_message.Message):
     def __init__(self, provider: _Optional[str] = ..., healthy: _Optional[bool] = ..., detail: _Optional[str] = ..., default_chat_model: _Optional[str] = ..., default_embedding_model: _Optional[str] = ..., embedding_dimensions: _Optional[int] = ..., chat: _Optional[_Union[ProviderHealth, _Mapping]] = ..., embedding: _Optional[_Union[ProviderHealth, _Mapping]] = ...) -> None: ...
 
 class GenerateRequest(_message.Message):
-    __slots__ = ("model", "messages", "options", "caller_module")
+    __slots__ = ("model", "messages", "options", "caller_module", "tools")
     MODEL_FIELD_NUMBER: _ClassVar[int]
     MESSAGES_FIELD_NUMBER: _ClassVar[int]
     OPTIONS_FIELD_NUMBER: _ClassVar[int]
     CALLER_MODULE_FIELD_NUMBER: _ClassVar[int]
+    TOOLS_FIELD_NUMBER: _ClassVar[int]
     model: str
     messages: _containers.RepeatedCompositeFieldContainer[Message]
     options: GenerationOptions
     caller_module: str
-    def __init__(self, model: _Optional[str] = ..., messages: _Optional[_Iterable[_Union[Message, _Mapping]]] = ..., options: _Optional[_Union[GenerationOptions, _Mapping]] = ..., caller_module: _Optional[str] = ...) -> None: ...
+    tools: _containers.RepeatedCompositeFieldContainer[ToolSpec]
+    def __init__(self, model: _Optional[str] = ..., messages: _Optional[_Iterable[_Union[Message, _Mapping]]] = ..., options: _Optional[_Union[GenerationOptions, _Mapping]] = ..., caller_module: _Optional[str] = ..., tools: _Optional[_Iterable[_Union[ToolSpec, _Mapping]]] = ...) -> None: ...
 
 class GenerateResponse(_message.Message):
-    __slots__ = ("delta", "done", "usage", "model")
+    __slots__ = ("delta", "done", "usage", "model", "tool_calls")
     DELTA_FIELD_NUMBER: _ClassVar[int]
     DONE_FIELD_NUMBER: _ClassVar[int]
     USAGE_FIELD_NUMBER: _ClassVar[int]
     MODEL_FIELD_NUMBER: _ClassVar[int]
+    TOOL_CALLS_FIELD_NUMBER: _ClassVar[int]
     delta: str
     done: bool
     usage: Usage
     model: str
-    def __init__(self, delta: _Optional[str] = ..., done: _Optional[bool] = ..., usage: _Optional[_Union[Usage, _Mapping]] = ..., model: _Optional[str] = ...) -> None: ...
+    tool_calls: _containers.RepeatedCompositeFieldContainer[ToolCall]
+    def __init__(self, delta: _Optional[str] = ..., done: _Optional[bool] = ..., usage: _Optional[_Union[Usage, _Mapping]] = ..., model: _Optional[str] = ..., tool_calls: _Optional[_Iterable[_Union[ToolCall, _Mapping]]] = ...) -> None: ...
 
 class EmbedRequest(_message.Message):
     __slots__ = ("model", "inputs")

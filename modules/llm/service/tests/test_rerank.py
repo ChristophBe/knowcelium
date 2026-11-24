@@ -1,5 +1,5 @@
 import json
-from collections.abc import AsyncGenerator, AsyncIterator
+from collections.abc import AsyncGenerator, AsyncIterator, Sequence
 from pathlib import Path
 
 import grpc
@@ -7,7 +7,14 @@ import pytest
 from knowcel.llm.v1 import llm_pb2, llm_pb2_grpc
 from knowcel_llm.config import Settings
 from knowcel_llm.providers import build_providers
-from knowcel_llm.providers.base import Chunk, GenerationOptions, Message, ProviderError, Role
+from knowcel_llm.providers.base import (
+    Chunk,
+    GenerationOptions,
+    Message,
+    ProviderError,
+    Role,
+    ToolSpec,
+)
 from knowcel_llm.providers.fake import FakeProvider
 from knowcel_llm.providers.rerank import parse_ratings, rerank_with_chat
 from knowcel_llm.server import LlmServicer
@@ -36,7 +43,11 @@ class Replying(FakeProvider):
         self.prompt: list[Message] = []
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
         self.prompt = messages
         yield Chunk(delta=self.reply)

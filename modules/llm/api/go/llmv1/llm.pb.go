@@ -28,6 +28,8 @@ const (
 	Role_ROLE_SYSTEM      Role = 1
 	Role_ROLE_USER        Role = 2
 	Role_ROLE_ASSISTANT   Role = 3
+	// The result of a ToolCall, sent back with the matching tool_call_id.
+	Role_ROLE_TOOL Role = 4
 )
 
 // Enum value maps for Role.
@@ -37,12 +39,14 @@ var (
 		1: "ROLE_SYSTEM",
 		2: "ROLE_USER",
 		3: "ROLE_ASSISTANT",
+		4: "ROLE_TOOL",
 	}
 	Role_value = map[string]int32{
 		"ROLE_UNSPECIFIED": 0,
 		"ROLE_SYSTEM":      1,
 		"ROLE_USER":        2,
 		"ROLE_ASSISTANT":   3,
+		"ROLE_TOOL":        4,
 	}
 )
 
@@ -123,10 +127,12 @@ func (ModelKind) EnumDescriptor() ([]byte, []int) {
 }
 
 type Model struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Id            string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
-	Provider      string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
-	Kind          ModelKind              `protobuf:"varint,3,opt,name=kind,proto3,enum=knowcel.llm.v1.ModelKind" json:"kind,omitempty"`
+	state    protoimpl.MessageState `protogen:"open.v1"`
+	Id       string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Provider string                 `protobuf:"bytes,2,opt,name=provider,proto3" json:"provider,omitempty"`
+	Kind     ModelKind              `protobuf:"varint,3,opt,name=kind,proto3,enum=knowcel.llm.v1.ModelKind" json:"kind,omitempty"`
+	// True when the model can call the tools of a GenerateRequest.
+	SupportsTools bool `protobuf:"varint,4,opt,name=supports_tools,json=supportsTools,proto3" json:"supports_tools,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -182,10 +188,21 @@ func (x *Model) GetKind() ModelKind {
 	return ModelKind_MODEL_KIND_UNSPECIFIED
 }
 
+func (x *Model) GetSupportsTools() bool {
+	if x != nil {
+		return x.SupportsTools
+	}
+	return false
+}
+
 type Message struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Role          Role                   `protobuf:"varint,1,opt,name=role,proto3,enum=knowcel.llm.v1.Role" json:"role,omitempty"`
-	Content       string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	state   protoimpl.MessageState `protogen:"open.v1"`
+	Role    Role                   `protobuf:"varint,1,opt,name=role,proto3,enum=knowcel.llm.v1.Role" json:"role,omitempty"`
+	Content string                 `protobuf:"bytes,2,opt,name=content,proto3" json:"content,omitempty"`
+	// On an assistant message: the tools the model called in that turn.
+	ToolCalls []*ToolCall `protobuf:"bytes,3,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
+	// On a tool message: the id of the ToolCall that content answers.
+	ToolCallId    string `protobuf:"bytes,4,opt,name=tool_call_id,json=toolCallId,proto3" json:"tool_call_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -234,6 +251,145 @@ func (x *Message) GetContent() string {
 	return ""
 }
 
+func (x *Message) GetToolCalls() []*ToolCall {
+	if x != nil {
+		return x.ToolCalls
+	}
+	return nil
+}
+
+func (x *Message) GetToolCallId() string {
+	if x != nil {
+		return x.ToolCallId
+	}
+	return ""
+}
+
+// ToolSpec describes a tool the model may call.
+type ToolSpec struct {
+	state       protoimpl.MessageState `protogen:"open.v1"`
+	Name        string                 `protobuf:"bytes,1,opt,name=name,proto3" json:"name,omitempty"`
+	Description string                 `protobuf:"bytes,2,opt,name=description,proto3" json:"description,omitempty"`
+	// JSON Schema of the arguments object, as a JSON string.
+	ParametersJsonSchema string `protobuf:"bytes,3,opt,name=parameters_json_schema,json=parametersJsonSchema,proto3" json:"parameters_json_schema,omitempty"`
+	unknownFields        protoimpl.UnknownFields
+	sizeCache            protoimpl.SizeCache
+}
+
+func (x *ToolSpec) Reset() {
+	*x = ToolSpec{}
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[2]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolSpec) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolSpec) ProtoMessage() {}
+
+func (x *ToolSpec) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[2]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolSpec.ProtoReflect.Descriptor instead.
+func (*ToolSpec) Descriptor() ([]byte, []int) {
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{2}
+}
+
+func (x *ToolSpec) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ToolSpec) GetDescription() string {
+	if x != nil {
+		return x.Description
+	}
+	return ""
+}
+
+func (x *ToolSpec) GetParametersJsonSchema() string {
+	if x != nil {
+		return x.ParametersJsonSchema
+	}
+	return ""
+}
+
+// ToolCall is the model's request to run a tool; the caller runs it and
+// answers with a tool message carrying the same id.
+type ToolCall struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	Id    string                 `protobuf:"bytes,1,opt,name=id,proto3" json:"id,omitempty"`
+	Name  string                 `protobuf:"bytes,2,opt,name=name,proto3" json:"name,omitempty"`
+	// The arguments as a JSON object string.
+	ArgumentsJson string `protobuf:"bytes,3,opt,name=arguments_json,json=argumentsJson,proto3" json:"arguments_json,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ToolCall) Reset() {
+	*x = ToolCall{}
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[3]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ToolCall) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ToolCall) ProtoMessage() {}
+
+func (x *ToolCall) ProtoReflect() protoreflect.Message {
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[3]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ToolCall.ProtoReflect.Descriptor instead.
+func (*ToolCall) Descriptor() ([]byte, []int) {
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{3}
+}
+
+func (x *ToolCall) GetId() string {
+	if x != nil {
+		return x.Id
+	}
+	return ""
+}
+
+func (x *ToolCall) GetName() string {
+	if x != nil {
+		return x.Name
+	}
+	return ""
+}
+
+func (x *ToolCall) GetArgumentsJson() string {
+	if x != nil {
+		return x.ArgumentsJson
+	}
+	return ""
+}
+
 type GenerationOptions struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Temperature   *float32               `protobuf:"fixed32,1,opt,name=temperature,proto3,oneof" json:"temperature,omitempty"`
@@ -244,7 +400,7 @@ type GenerationOptions struct {
 
 func (x *GenerationOptions) Reset() {
 	*x = GenerationOptions{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[2]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[4]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -256,7 +412,7 @@ func (x *GenerationOptions) String() string {
 func (*GenerationOptions) ProtoMessage() {}
 
 func (x *GenerationOptions) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[2]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[4]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -269,7 +425,7 @@ func (x *GenerationOptions) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerationOptions.ProtoReflect.Descriptor instead.
 func (*GenerationOptions) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{2}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *GenerationOptions) GetTemperature() float32 {
@@ -296,7 +452,7 @@ type Usage struct {
 
 func (x *Usage) Reset() {
 	*x = Usage{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[3]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -308,7 +464,7 @@ func (x *Usage) String() string {
 func (*Usage) ProtoMessage() {}
 
 func (x *Usage) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[3]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -321,7 +477,7 @@ func (x *Usage) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Usage.ProtoReflect.Descriptor instead.
 func (*Usage) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{3}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{5}
 }
 
 func (x *Usage) GetInputTokens() int32 {
@@ -346,7 +502,7 @@ type ListModelsRequest struct {
 
 func (x *ListModelsRequest) Reset() {
 	*x = ListModelsRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[4]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -358,7 +514,7 @@ func (x *ListModelsRequest) String() string {
 func (*ListModelsRequest) ProtoMessage() {}
 
 func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[4]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -371,7 +527,7 @@ func (x *ListModelsRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListModelsRequest.ProtoReflect.Descriptor instead.
 func (*ListModelsRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{4}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{6}
 }
 
 type ListModelsResponse struct {
@@ -385,7 +541,7 @@ type ListModelsResponse struct {
 
 func (x *ListModelsResponse) Reset() {
 	*x = ListModelsResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[5]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -397,7 +553,7 @@ func (x *ListModelsResponse) String() string {
 func (*ListModelsResponse) ProtoMessage() {}
 
 func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[5]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -410,7 +566,7 @@ func (x *ListModelsResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ListModelsResponse.ProtoReflect.Descriptor instead.
 func (*ListModelsResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{5}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *ListModelsResponse) GetModels() []*Model {
@@ -428,7 +584,7 @@ type GetProviderStatusRequest struct {
 
 func (x *GetProviderStatusRequest) Reset() {
 	*x = GetProviderStatusRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[6]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -440,7 +596,7 @@ func (x *GetProviderStatusRequest) String() string {
 func (*GetProviderStatusRequest) ProtoMessage() {}
 
 func (x *GetProviderStatusRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[6]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -453,7 +609,7 @@ func (x *GetProviderStatusRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProviderStatusRequest.ProtoReflect.Descriptor instead.
 func (*GetProviderStatusRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{6}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{8}
 }
 
 // ProviderHealth is the state of the provider serving one task.
@@ -469,7 +625,7 @@ type ProviderHealth struct {
 
 func (x *ProviderHealth) Reset() {
 	*x = ProviderHealth{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[7]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -481,7 +637,7 @@ func (x *ProviderHealth) String() string {
 func (*ProviderHealth) ProtoMessage() {}
 
 func (x *ProviderHealth) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[7]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -494,7 +650,7 @@ func (x *ProviderHealth) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProviderHealth.ProtoReflect.Descriptor instead.
 func (*ProviderHealth) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{7}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *ProviderHealth) GetProvider() string {
@@ -540,7 +696,7 @@ type GetProviderStatusResponse struct {
 
 func (x *GetProviderStatusResponse) Reset() {
 	*x = GetProviderStatusResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[8]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[10]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -552,7 +708,7 @@ func (x *GetProviderStatusResponse) String() string {
 func (*GetProviderStatusResponse) ProtoMessage() {}
 
 func (x *GetProviderStatusResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[8]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[10]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -565,7 +721,7 @@ func (x *GetProviderStatusResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetProviderStatusResponse.ProtoReflect.Descriptor instead.
 func (*GetProviderStatusResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{8}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{10}
 }
 
 func (x *GetProviderStatusResponse) GetProvider() string {
@@ -632,14 +788,17 @@ type GenerateRequest struct {
 	Options  *GenerationOptions `protobuf:"bytes,3,opt,name=options,proto3" json:"options,omitempty"`
 	// Id of the calling module (e.g. "chat"), under which the generation is
 	// recorded in the usage; empty is recorded as "unknown".
-	CallerModule  string `protobuf:"bytes,4,opt,name=caller_module,json=callerModule,proto3" json:"caller_module,omitempty"`
+	CallerModule string `protobuf:"bytes,4,opt,name=caller_module,json=callerModule,proto3" json:"caller_module,omitempty"`
+	// Tools the model may call instead of answering. Only for models with
+	// Model.supports_tools; other models return UNIMPLEMENTED.
+	Tools         []*ToolSpec `protobuf:"bytes,5,rep,name=tools,proto3" json:"tools,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GenerateRequest) Reset() {
 	*x = GenerateRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[9]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[11]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -651,7 +810,7 @@ func (x *GenerateRequest) String() string {
 func (*GenerateRequest) ProtoMessage() {}
 
 func (x *GenerateRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[9]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[11]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -664,7 +823,7 @@ func (x *GenerateRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateRequest.ProtoReflect.Descriptor instead.
 func (*GenerateRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{9}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{11}
 }
 
 func (x *GenerateRequest) GetModel() string {
@@ -695,20 +854,29 @@ func (x *GenerateRequest) GetCallerModule() string {
 	return ""
 }
 
+func (x *GenerateRequest) GetTools() []*ToolSpec {
+	if x != nil {
+		return x.Tools
+	}
+	return nil
+}
+
 type GenerateResponse struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	Delta string                 `protobuf:"bytes,1,opt,name=delta,proto3" json:"delta,omitempty"`
 	// Set on the final message of the stream only.
-	Done          bool   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
-	Usage         *Usage `protobuf:"bytes,3,opt,name=usage,proto3" json:"usage,omitempty"`
-	Model         string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	Done  bool   `protobuf:"varint,2,opt,name=done,proto3" json:"done,omitempty"`
+	Usage *Usage `protobuf:"bytes,3,opt,name=usage,proto3" json:"usage,omitempty"`
+	Model string `protobuf:"bytes,4,opt,name=model,proto3" json:"model,omitempty"`
+	// Complete tool calls the model made, on the last message before done.
+	ToolCalls     []*ToolCall `protobuf:"bytes,5,rep,name=tool_calls,json=toolCalls,proto3" json:"tool_calls,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GenerateResponse) Reset() {
 	*x = GenerateResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[10]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[12]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -720,7 +888,7 @@ func (x *GenerateResponse) String() string {
 func (*GenerateResponse) ProtoMessage() {}
 
 func (x *GenerateResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[10]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[12]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -733,7 +901,7 @@ func (x *GenerateResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GenerateResponse.ProtoReflect.Descriptor instead.
 func (*GenerateResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{10}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{12}
 }
 
 func (x *GenerateResponse) GetDelta() string {
@@ -764,6 +932,13 @@ func (x *GenerateResponse) GetModel() string {
 	return ""
 }
 
+func (x *GenerateResponse) GetToolCalls() []*ToolCall {
+	if x != nil {
+		return x.ToolCalls
+	}
+	return nil
+}
+
 type EmbedRequest struct {
 	state protoimpl.MessageState `protogen:"open.v1"`
 	// Model id; empty selects the embedding provider's default embedding model.
@@ -775,7 +950,7 @@ type EmbedRequest struct {
 
 func (x *EmbedRequest) Reset() {
 	*x = EmbedRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[11]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[13]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -787,7 +962,7 @@ func (x *EmbedRequest) String() string {
 func (*EmbedRequest) ProtoMessage() {}
 
 func (x *EmbedRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[11]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[13]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -800,7 +975,7 @@ func (x *EmbedRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmbedRequest.ProtoReflect.Descriptor instead.
 func (*EmbedRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{11}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{13}
 }
 
 func (x *EmbedRequest) GetModel() string {
@@ -826,7 +1001,7 @@ type Embedding struct {
 
 func (x *Embedding) Reset() {
 	*x = Embedding{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[12]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[14]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -838,7 +1013,7 @@ func (x *Embedding) String() string {
 func (*Embedding) ProtoMessage() {}
 
 func (x *Embedding) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[12]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[14]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -851,7 +1026,7 @@ func (x *Embedding) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Embedding.ProtoReflect.Descriptor instead.
 func (*Embedding) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{12}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{14}
 }
 
 func (x *Embedding) GetValues() []float32 {
@@ -872,7 +1047,7 @@ type EmbedResponse struct {
 
 func (x *EmbedResponse) Reset() {
 	*x = EmbedResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[13]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[15]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -884,7 +1059,7 @@ func (x *EmbedResponse) String() string {
 func (*EmbedResponse) ProtoMessage() {}
 
 func (x *EmbedResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[13]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[15]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -897,7 +1072,7 @@ func (x *EmbedResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use EmbedResponse.ProtoReflect.Descriptor instead.
 func (*EmbedResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{13}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{15}
 }
 
 func (x *EmbedResponse) GetEmbeddings() []*Embedding {
@@ -934,7 +1109,7 @@ type RerankRequest struct {
 
 func (x *RerankRequest) Reset() {
 	*x = RerankRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[14]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[16]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -946,7 +1121,7 @@ func (x *RerankRequest) String() string {
 func (*RerankRequest) ProtoMessage() {}
 
 func (x *RerankRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[14]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[16]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -959,7 +1134,7 @@ func (x *RerankRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RerankRequest.ProtoReflect.Descriptor instead.
 func (*RerankRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{14}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{16}
 }
 
 func (x *RerankRequest) GetModel() string {
@@ -995,7 +1170,7 @@ type RerankResponse struct {
 
 func (x *RerankResponse) Reset() {
 	*x = RerankResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[15]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[17]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1007,7 +1182,7 @@ func (x *RerankResponse) String() string {
 func (*RerankResponse) ProtoMessage() {}
 
 func (x *RerankResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[15]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[17]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1020,7 +1195,7 @@ func (x *RerankResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use RerankResponse.ProtoReflect.Descriptor instead.
 func (*RerankResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{15}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{17}
 }
 
 func (x *RerankResponse) GetScores() []float32 {
@@ -1049,7 +1224,7 @@ type PullModelRequest struct {
 
 func (x *PullModelRequest) Reset() {
 	*x = PullModelRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[16]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[18]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1061,7 +1236,7 @@ func (x *PullModelRequest) String() string {
 func (*PullModelRequest) ProtoMessage() {}
 
 func (x *PullModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[16]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[18]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1074,7 +1249,7 @@ func (x *PullModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullModelRequest.ProtoReflect.Descriptor instead.
 func (*PullModelRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{16}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{18}
 }
 
 func (x *PullModelRequest) GetProvider() string {
@@ -1106,7 +1281,7 @@ type PullModelResponse struct {
 
 func (x *PullModelResponse) Reset() {
 	*x = PullModelResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[17]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[19]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1118,7 +1293,7 @@ func (x *PullModelResponse) String() string {
 func (*PullModelResponse) ProtoMessage() {}
 
 func (x *PullModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[17]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[19]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1131,7 +1306,7 @@ func (x *PullModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use PullModelResponse.ProtoReflect.Descriptor instead.
 func (*PullModelResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{17}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{19}
 }
 
 func (x *PullModelResponse) GetStatus() string {
@@ -1173,7 +1348,7 @@ type DeleteModelRequest struct {
 
 func (x *DeleteModelRequest) Reset() {
 	*x = DeleteModelRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[18]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[20]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1185,7 +1360,7 @@ func (x *DeleteModelRequest) String() string {
 func (*DeleteModelRequest) ProtoMessage() {}
 
 func (x *DeleteModelRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[18]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[20]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1198,7 +1373,7 @@ func (x *DeleteModelRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteModelRequest.ProtoReflect.Descriptor instead.
 func (*DeleteModelRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{18}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{20}
 }
 
 func (x *DeleteModelRequest) GetProvider() string {
@@ -1223,7 +1398,7 @@ type DeleteModelResponse struct {
 
 func (x *DeleteModelResponse) Reset() {
 	*x = DeleteModelResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[19]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[21]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1235,7 +1410,7 @@ func (x *DeleteModelResponse) String() string {
 func (*DeleteModelResponse) ProtoMessage() {}
 
 func (x *DeleteModelResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[19]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[21]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1248,7 +1423,7 @@ func (x *DeleteModelResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use DeleteModelResponse.ProtoReflect.Descriptor instead.
 func (*DeleteModelResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{19}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{21}
 }
 
 type GetUsageRequest struct {
@@ -1261,7 +1436,7 @@ type GetUsageRequest struct {
 
 func (x *GetUsageRequest) Reset() {
 	*x = GetUsageRequest{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[20]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[22]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1273,7 +1448,7 @@ func (x *GetUsageRequest) String() string {
 func (*GetUsageRequest) ProtoMessage() {}
 
 func (x *GetUsageRequest) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[20]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[22]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1286,7 +1461,7 @@ func (x *GetUsageRequest) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsageRequest.ProtoReflect.Descriptor instead.
 func (*GetUsageRequest) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{20}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{22}
 }
 
 func (x *GetUsageRequest) GetDays() int32 {
@@ -1313,7 +1488,7 @@ type UsageEntry struct {
 
 func (x *UsageEntry) Reset() {
 	*x = UsageEntry{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[21]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[23]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1325,7 +1500,7 @@ func (x *UsageEntry) String() string {
 func (*UsageEntry) ProtoMessage() {}
 
 func (x *UsageEntry) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[21]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[23]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1338,7 +1513,7 @@ func (x *UsageEntry) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use UsageEntry.ProtoReflect.Descriptor instead.
 func (*UsageEntry) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{21}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{23}
 }
 
 func (x *UsageEntry) GetDate() string {
@@ -1400,7 +1575,7 @@ type GetUsageResponse struct {
 
 func (x *GetUsageResponse) Reset() {
 	*x = GetUsageResponse{}
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[22]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[24]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -1412,7 +1587,7 @@ func (x *GetUsageResponse) String() string {
 func (*GetUsageResponse) ProtoMessage() {}
 
 func (x *GetUsageResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[22]
+	mi := &file_knowcel_llm_v1_llm_proto_msgTypes[24]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -1425,7 +1600,7 @@ func (x *GetUsageResponse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetUsageResponse.ProtoReflect.Descriptor instead.
 func (*GetUsageResponse) Descriptor() ([]byte, []int) {
-	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{22}
+	return file_knowcel_llm_v1_llm_proto_rawDescGZIP(), []int{24}
 }
 
 func (x *GetUsageResponse) GetEntries() []*UsageEntry {
@@ -1439,14 +1614,27 @@ var File_knowcel_llm_v1_llm_proto protoreflect.FileDescriptor
 
 const file_knowcel_llm_v1_llm_proto_rawDesc = "" +
 	"\n" +
-	"\x18knowcel/llm/v1/llm.proto\x12\x0eknowcel.llm.v1\"b\n" +
+	"\x18knowcel/llm/v1/llm.proto\x12\x0eknowcel.llm.v1\"\x89\x01\n" +
 	"\x05Model\x12\x0e\n" +
 	"\x02id\x18\x01 \x01(\tR\x02id\x12\x1a\n" +
 	"\bprovider\x18\x02 \x01(\tR\bprovider\x12-\n" +
-	"\x04kind\x18\x03 \x01(\x0e2\x19.knowcel.llm.v1.ModelKindR\x04kind\"M\n" +
+	"\x04kind\x18\x03 \x01(\x0e2\x19.knowcel.llm.v1.ModelKindR\x04kind\x12%\n" +
+	"\x0esupports_tools\x18\x04 \x01(\bR\rsupportsTools\"\xa8\x01\n" +
 	"\aMessage\x12(\n" +
 	"\x04role\x18\x01 \x01(\x0e2\x14.knowcel.llm.v1.RoleR\x04role\x12\x18\n" +
-	"\acontent\x18\x02 \x01(\tR\acontent\"}\n" +
+	"\acontent\x18\x02 \x01(\tR\acontent\x127\n" +
+	"\n" +
+	"tool_calls\x18\x03 \x03(\v2\x18.knowcel.llm.v1.ToolCallR\ttoolCalls\x12 \n" +
+	"\ftool_call_id\x18\x04 \x01(\tR\n" +
+	"toolCallId\"v\n" +
+	"\bToolSpec\x12\x12\n" +
+	"\x04name\x18\x01 \x01(\tR\x04name\x12 \n" +
+	"\vdescription\x18\x02 \x01(\tR\vdescription\x124\n" +
+	"\x16parameters_json_schema\x18\x03 \x01(\tR\x14parametersJsonSchema\"U\n" +
+	"\bToolCall\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\x12\x12\n" +
+	"\x04name\x18\x02 \x01(\tR\x04name\x12%\n" +
+	"\x0earguments_json\x18\x03 \x01(\tR\rargumentsJson\"}\n" +
 	"\x11GenerationOptions\x12%\n" +
 	"\vtemperature\x18\x01 \x01(\x02H\x00R\vtemperature\x88\x01\x01\x12\"\n" +
 	"\n" +
@@ -1472,17 +1660,20 @@ const file_knowcel_llm_v1_llm_proto_rawDesc = "" +
 	"\x17default_embedding_model\x18\x05 \x01(\tR\x15defaultEmbeddingModel\x121\n" +
 	"\x14embedding_dimensions\x18\x06 \x01(\x05R\x13embeddingDimensions\x122\n" +
 	"\x04chat\x18\a \x01(\v2\x1e.knowcel.llm.v1.ProviderHealthR\x04chat\x12<\n" +
-	"\tembedding\x18\b \x01(\v2\x1e.knowcel.llm.v1.ProviderHealthR\tembedding\"\xbe\x01\n" +
+	"\tembedding\x18\b \x01(\v2\x1e.knowcel.llm.v1.ProviderHealthR\tembedding\"\xee\x01\n" +
 	"\x0fGenerateRequest\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x123\n" +
 	"\bmessages\x18\x02 \x03(\v2\x17.knowcel.llm.v1.MessageR\bmessages\x12;\n" +
 	"\aoptions\x18\x03 \x01(\v2!.knowcel.llm.v1.GenerationOptionsR\aoptions\x12#\n" +
-	"\rcaller_module\x18\x04 \x01(\tR\fcallerModule\"\x7f\n" +
+	"\rcaller_module\x18\x04 \x01(\tR\fcallerModule\x12.\n" +
+	"\x05tools\x18\x05 \x03(\v2\x18.knowcel.llm.v1.ToolSpecR\x05tools\"\xb8\x01\n" +
 	"\x10GenerateResponse\x12\x14\n" +
 	"\x05delta\x18\x01 \x01(\tR\x05delta\x12\x12\n" +
 	"\x04done\x18\x02 \x01(\bR\x04done\x12+\n" +
 	"\x05usage\x18\x03 \x01(\v2\x15.knowcel.llm.v1.UsageR\x05usage\x12\x14\n" +
-	"\x05model\x18\x04 \x01(\tR\x05model\"<\n" +
+	"\x05model\x18\x04 \x01(\tR\x05model\x127\n" +
+	"\n" +
+	"tool_calls\x18\x05 \x03(\v2\x18.knowcel.llm.v1.ToolCallR\ttoolCalls\"<\n" +
 	"\fEmbedRequest\x12\x14\n" +
 	"\x05model\x18\x01 \x01(\tR\x05model\x12\x16\n" +
 	"\x06inputs\x18\x02 \x03(\tR\x06inputs\"#\n" +
@@ -1527,12 +1718,13 @@ const file_knowcel_llm_v1_llm_proto_rawDesc = "" +
 	"\finput_tokens\x18\x06 \x01(\x03R\vinputTokens\x12#\n" +
 	"\routput_tokens\x18\a \x01(\x03R\foutputTokens\"H\n" +
 	"\x10GetUsageResponse\x124\n" +
-	"\aentries\x18\x01 \x03(\v2\x1a.knowcel.llm.v1.UsageEntryR\aentries*P\n" +
+	"\aentries\x18\x01 \x03(\v2\x1a.knowcel.llm.v1.UsageEntryR\aentries*_\n" +
 	"\x04Role\x12\x14\n" +
 	"\x10ROLE_UNSPECIFIED\x10\x00\x12\x0f\n" +
 	"\vROLE_SYSTEM\x10\x01\x12\r\n" +
 	"\tROLE_USER\x10\x02\x12\x12\n" +
-	"\x0eROLE_ASSISTANT\x10\x03*V\n" +
+	"\x0eROLE_ASSISTANT\x10\x03\x12\r\n" +
+	"\tROLE_TOOL\x10\x04*V\n" +
 	"\tModelKind\x12\x1a\n" +
 	"\x16MODEL_KIND_UNSPECIFIED\x10\x00\x12\x13\n" +
 	"\x0fMODEL_KIND_CHAT\x10\x01\x12\x18\n" +
@@ -1562,66 +1754,71 @@ func file_knowcel_llm_v1_llm_proto_rawDescGZIP() []byte {
 }
 
 var file_knowcel_llm_v1_llm_proto_enumTypes = make([]protoimpl.EnumInfo, 2)
-var file_knowcel_llm_v1_llm_proto_msgTypes = make([]protoimpl.MessageInfo, 23)
+var file_knowcel_llm_v1_llm_proto_msgTypes = make([]protoimpl.MessageInfo, 25)
 var file_knowcel_llm_v1_llm_proto_goTypes = []any{
 	(Role)(0),                         // 0: knowcel.llm.v1.Role
 	(ModelKind)(0),                    // 1: knowcel.llm.v1.ModelKind
 	(*Model)(nil),                     // 2: knowcel.llm.v1.Model
 	(*Message)(nil),                   // 3: knowcel.llm.v1.Message
-	(*GenerationOptions)(nil),         // 4: knowcel.llm.v1.GenerationOptions
-	(*Usage)(nil),                     // 5: knowcel.llm.v1.Usage
-	(*ListModelsRequest)(nil),         // 6: knowcel.llm.v1.ListModelsRequest
-	(*ListModelsResponse)(nil),        // 7: knowcel.llm.v1.ListModelsResponse
-	(*GetProviderStatusRequest)(nil),  // 8: knowcel.llm.v1.GetProviderStatusRequest
-	(*ProviderHealth)(nil),            // 9: knowcel.llm.v1.ProviderHealth
-	(*GetProviderStatusResponse)(nil), // 10: knowcel.llm.v1.GetProviderStatusResponse
-	(*GenerateRequest)(nil),           // 11: knowcel.llm.v1.GenerateRequest
-	(*GenerateResponse)(nil),          // 12: knowcel.llm.v1.GenerateResponse
-	(*EmbedRequest)(nil),              // 13: knowcel.llm.v1.EmbedRequest
-	(*Embedding)(nil),                 // 14: knowcel.llm.v1.Embedding
-	(*EmbedResponse)(nil),             // 15: knowcel.llm.v1.EmbedResponse
-	(*RerankRequest)(nil),             // 16: knowcel.llm.v1.RerankRequest
-	(*RerankResponse)(nil),            // 17: knowcel.llm.v1.RerankResponse
-	(*PullModelRequest)(nil),          // 18: knowcel.llm.v1.PullModelRequest
-	(*PullModelResponse)(nil),         // 19: knowcel.llm.v1.PullModelResponse
-	(*DeleteModelRequest)(nil),        // 20: knowcel.llm.v1.DeleteModelRequest
-	(*DeleteModelResponse)(nil),       // 21: knowcel.llm.v1.DeleteModelResponse
-	(*GetUsageRequest)(nil),           // 22: knowcel.llm.v1.GetUsageRequest
-	(*UsageEntry)(nil),                // 23: knowcel.llm.v1.UsageEntry
-	(*GetUsageResponse)(nil),          // 24: knowcel.llm.v1.GetUsageResponse
+	(*ToolSpec)(nil),                  // 4: knowcel.llm.v1.ToolSpec
+	(*ToolCall)(nil),                  // 5: knowcel.llm.v1.ToolCall
+	(*GenerationOptions)(nil),         // 6: knowcel.llm.v1.GenerationOptions
+	(*Usage)(nil),                     // 7: knowcel.llm.v1.Usage
+	(*ListModelsRequest)(nil),         // 8: knowcel.llm.v1.ListModelsRequest
+	(*ListModelsResponse)(nil),        // 9: knowcel.llm.v1.ListModelsResponse
+	(*GetProviderStatusRequest)(nil),  // 10: knowcel.llm.v1.GetProviderStatusRequest
+	(*ProviderHealth)(nil),            // 11: knowcel.llm.v1.ProviderHealth
+	(*GetProviderStatusResponse)(nil), // 12: knowcel.llm.v1.GetProviderStatusResponse
+	(*GenerateRequest)(nil),           // 13: knowcel.llm.v1.GenerateRequest
+	(*GenerateResponse)(nil),          // 14: knowcel.llm.v1.GenerateResponse
+	(*EmbedRequest)(nil),              // 15: knowcel.llm.v1.EmbedRequest
+	(*Embedding)(nil),                 // 16: knowcel.llm.v1.Embedding
+	(*EmbedResponse)(nil),             // 17: knowcel.llm.v1.EmbedResponse
+	(*RerankRequest)(nil),             // 18: knowcel.llm.v1.RerankRequest
+	(*RerankResponse)(nil),            // 19: knowcel.llm.v1.RerankResponse
+	(*PullModelRequest)(nil),          // 20: knowcel.llm.v1.PullModelRequest
+	(*PullModelResponse)(nil),         // 21: knowcel.llm.v1.PullModelResponse
+	(*DeleteModelRequest)(nil),        // 22: knowcel.llm.v1.DeleteModelRequest
+	(*DeleteModelResponse)(nil),       // 23: knowcel.llm.v1.DeleteModelResponse
+	(*GetUsageRequest)(nil),           // 24: knowcel.llm.v1.GetUsageRequest
+	(*UsageEntry)(nil),                // 25: knowcel.llm.v1.UsageEntry
+	(*GetUsageResponse)(nil),          // 26: knowcel.llm.v1.GetUsageResponse
 }
 var file_knowcel_llm_v1_llm_proto_depIdxs = []int32{
 	1,  // 0: knowcel.llm.v1.Model.kind:type_name -> knowcel.llm.v1.ModelKind
 	0,  // 1: knowcel.llm.v1.Message.role:type_name -> knowcel.llm.v1.Role
-	2,  // 2: knowcel.llm.v1.ListModelsResponse.models:type_name -> knowcel.llm.v1.Model
-	9,  // 3: knowcel.llm.v1.GetProviderStatusResponse.chat:type_name -> knowcel.llm.v1.ProviderHealth
-	9,  // 4: knowcel.llm.v1.GetProviderStatusResponse.embedding:type_name -> knowcel.llm.v1.ProviderHealth
-	3,  // 5: knowcel.llm.v1.GenerateRequest.messages:type_name -> knowcel.llm.v1.Message
-	4,  // 6: knowcel.llm.v1.GenerateRequest.options:type_name -> knowcel.llm.v1.GenerationOptions
-	5,  // 7: knowcel.llm.v1.GenerateResponse.usage:type_name -> knowcel.llm.v1.Usage
-	14, // 8: knowcel.llm.v1.EmbedResponse.embeddings:type_name -> knowcel.llm.v1.Embedding
-	23, // 9: knowcel.llm.v1.GetUsageResponse.entries:type_name -> knowcel.llm.v1.UsageEntry
-	6,  // 10: knowcel.llm.v1.LlmService.ListModels:input_type -> knowcel.llm.v1.ListModelsRequest
-	8,  // 11: knowcel.llm.v1.LlmService.GetProviderStatus:input_type -> knowcel.llm.v1.GetProviderStatusRequest
-	11, // 12: knowcel.llm.v1.LlmService.Generate:input_type -> knowcel.llm.v1.GenerateRequest
-	13, // 13: knowcel.llm.v1.LlmService.Embed:input_type -> knowcel.llm.v1.EmbedRequest
-	16, // 14: knowcel.llm.v1.LlmService.Rerank:input_type -> knowcel.llm.v1.RerankRequest
-	18, // 15: knowcel.llm.v1.LlmService.PullModel:input_type -> knowcel.llm.v1.PullModelRequest
-	20, // 16: knowcel.llm.v1.LlmService.DeleteModel:input_type -> knowcel.llm.v1.DeleteModelRequest
-	22, // 17: knowcel.llm.v1.LlmService.GetUsage:input_type -> knowcel.llm.v1.GetUsageRequest
-	7,  // 18: knowcel.llm.v1.LlmService.ListModels:output_type -> knowcel.llm.v1.ListModelsResponse
-	10, // 19: knowcel.llm.v1.LlmService.GetProviderStatus:output_type -> knowcel.llm.v1.GetProviderStatusResponse
-	12, // 20: knowcel.llm.v1.LlmService.Generate:output_type -> knowcel.llm.v1.GenerateResponse
-	15, // 21: knowcel.llm.v1.LlmService.Embed:output_type -> knowcel.llm.v1.EmbedResponse
-	17, // 22: knowcel.llm.v1.LlmService.Rerank:output_type -> knowcel.llm.v1.RerankResponse
-	19, // 23: knowcel.llm.v1.LlmService.PullModel:output_type -> knowcel.llm.v1.PullModelResponse
-	21, // 24: knowcel.llm.v1.LlmService.DeleteModel:output_type -> knowcel.llm.v1.DeleteModelResponse
-	24, // 25: knowcel.llm.v1.LlmService.GetUsage:output_type -> knowcel.llm.v1.GetUsageResponse
-	18, // [18:26] is the sub-list for method output_type
-	10, // [10:18] is the sub-list for method input_type
-	10, // [10:10] is the sub-list for extension type_name
-	10, // [10:10] is the sub-list for extension extendee
-	0,  // [0:10] is the sub-list for field type_name
+	5,  // 2: knowcel.llm.v1.Message.tool_calls:type_name -> knowcel.llm.v1.ToolCall
+	2,  // 3: knowcel.llm.v1.ListModelsResponse.models:type_name -> knowcel.llm.v1.Model
+	11, // 4: knowcel.llm.v1.GetProviderStatusResponse.chat:type_name -> knowcel.llm.v1.ProviderHealth
+	11, // 5: knowcel.llm.v1.GetProviderStatusResponse.embedding:type_name -> knowcel.llm.v1.ProviderHealth
+	3,  // 6: knowcel.llm.v1.GenerateRequest.messages:type_name -> knowcel.llm.v1.Message
+	6,  // 7: knowcel.llm.v1.GenerateRequest.options:type_name -> knowcel.llm.v1.GenerationOptions
+	4,  // 8: knowcel.llm.v1.GenerateRequest.tools:type_name -> knowcel.llm.v1.ToolSpec
+	7,  // 9: knowcel.llm.v1.GenerateResponse.usage:type_name -> knowcel.llm.v1.Usage
+	5,  // 10: knowcel.llm.v1.GenerateResponse.tool_calls:type_name -> knowcel.llm.v1.ToolCall
+	16, // 11: knowcel.llm.v1.EmbedResponse.embeddings:type_name -> knowcel.llm.v1.Embedding
+	25, // 12: knowcel.llm.v1.GetUsageResponse.entries:type_name -> knowcel.llm.v1.UsageEntry
+	8,  // 13: knowcel.llm.v1.LlmService.ListModels:input_type -> knowcel.llm.v1.ListModelsRequest
+	10, // 14: knowcel.llm.v1.LlmService.GetProviderStatus:input_type -> knowcel.llm.v1.GetProviderStatusRequest
+	13, // 15: knowcel.llm.v1.LlmService.Generate:input_type -> knowcel.llm.v1.GenerateRequest
+	15, // 16: knowcel.llm.v1.LlmService.Embed:input_type -> knowcel.llm.v1.EmbedRequest
+	18, // 17: knowcel.llm.v1.LlmService.Rerank:input_type -> knowcel.llm.v1.RerankRequest
+	20, // 18: knowcel.llm.v1.LlmService.PullModel:input_type -> knowcel.llm.v1.PullModelRequest
+	22, // 19: knowcel.llm.v1.LlmService.DeleteModel:input_type -> knowcel.llm.v1.DeleteModelRequest
+	24, // 20: knowcel.llm.v1.LlmService.GetUsage:input_type -> knowcel.llm.v1.GetUsageRequest
+	9,  // 21: knowcel.llm.v1.LlmService.ListModels:output_type -> knowcel.llm.v1.ListModelsResponse
+	12, // 22: knowcel.llm.v1.LlmService.GetProviderStatus:output_type -> knowcel.llm.v1.GetProviderStatusResponse
+	14, // 23: knowcel.llm.v1.LlmService.Generate:output_type -> knowcel.llm.v1.GenerateResponse
+	17, // 24: knowcel.llm.v1.LlmService.Embed:output_type -> knowcel.llm.v1.EmbedResponse
+	19, // 25: knowcel.llm.v1.LlmService.Rerank:output_type -> knowcel.llm.v1.RerankResponse
+	21, // 26: knowcel.llm.v1.LlmService.PullModel:output_type -> knowcel.llm.v1.PullModelResponse
+	23, // 27: knowcel.llm.v1.LlmService.DeleteModel:output_type -> knowcel.llm.v1.DeleteModelResponse
+	26, // 28: knowcel.llm.v1.LlmService.GetUsage:output_type -> knowcel.llm.v1.GetUsageResponse
+	21, // [21:29] is the sub-list for method output_type
+	13, // [13:21] is the sub-list for method input_type
+	13, // [13:13] is the sub-list for extension type_name
+	13, // [13:13] is the sub-list for extension extendee
+	0,  // [0:13] is the sub-list for field type_name
 }
 
 func init() { file_knowcel_llm_v1_llm_proto_init() }
@@ -1629,14 +1826,14 @@ func file_knowcel_llm_v1_llm_proto_init() {
 	if File_knowcel_llm_v1_llm_proto != nil {
 		return
 	}
-	file_knowcel_llm_v1_llm_proto_msgTypes[2].OneofWrappers = []any{}
+	file_knowcel_llm_v1_llm_proto_msgTypes[4].OneofWrappers = []any{}
 	type x struct{}
 	out := protoimpl.TypeBuilder{
 		File: protoimpl.DescBuilder{
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_knowcel_llm_v1_llm_proto_rawDesc), len(file_knowcel_llm_v1_llm_proto_rawDesc)),
 			NumEnums:      2,
-			NumMessages:   23,
+			NumMessages:   25,
 			NumExtensions: 0,
 			NumServices:   1,
 		},
