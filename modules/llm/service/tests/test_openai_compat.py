@@ -18,6 +18,8 @@ from knowcel_llm.providers.base import (
     ProviderRateLimitedError,
     ProviderUnavailableError,
     Role,
+    ToolCall,
+    ToolSpec,
 )
 from knowcel_llm.providers.openai_compat import OpenAICompatLimits, OpenAICompatProvider
 
@@ -238,3 +240,92 @@ async def test_status() -> None:
 
     down = await provider(refuse).status()
     assert not down.healthy
+
+
+WEATHER = ToolSpec("weather", "Current weather", '{"type": "object", "properties": {}}')
+
+
+def tool_delta(index: int, **fields: object) -> dict[str, object]:
+    return {"choices": [{"index": 0, "delta": {"tool_calls": [{"index": index, **fields}]}}]}
+
+
+async def test_tool_call_split_over_deltas_arrives_as_one_call() -> None:
+    requests: list[httpx.Request] = []
+    p = provider(
+        lambda _: sse(
+            tool_delta(
+                0, id="call_1", type="function", function={"name": "weather", "arguments": ""}
+            ),
+            tool_delta(0, function={"arguments": '{"ci'}),
+            tool_delta(1, id="call_2", function={"name": "time", "arguments": "{}"}),
+            tool_delta(0, function={"arguments": 'ty": "Oslo"}'}),
+            {"choices": [], "usage": {"prompt_tokens": 20, "completion_tokens": 8}},
+            "[DONE]",
+        ),
+        requests,
+    )
+    chunks = [c async for c in p.generate("gpt-x", HELLO, GenerationOptions(), tools=[WEATHER])]
+    assert chunks[-1].tool_calls == (
+        ToolCall("call_1", "weather", '{"city": "Oslo"}'),
+        ToolCall("call_2", "time", "{}"),
+    )
+    assert (chunks[-1].input_tokens, chunks[-1].output_tokens) == (20, 8)
+    assert json.loads(requests[0].content)["tools"] == [
+        {
+            "type": "function",
+            "function": {
+                "name": "weather",
+                "description": "Current weather",
+                "parameters": {"type": "object", "properties": {}},
+            },
+        }
+    ]
+
+
+async def test_tool_calls_and_results_map_to_messages() -> None:
+    requests: list[httpx.Request] = []
+    p = provider(lambda _: sse(delta("Sunny."), "[DONE]"), requests)
+    call = ToolCall("call_1", "weather", '{"city": "Oslo"}')
+    history = [
+        *HELLO,
+        Message(Role.ASSISTANT, "", tool_calls=(call,)),
+        Message(Role.TOOL, "sunny", tool_call_id="call_1"),
+    ]
+    chunks = [c async for c in p.generate("m", history, GenerationOptions(), tools=[WEATHER])]
+    assert "".join(c.delta for c in chunks) == "Sunny."
+    assert json.loads(requests[0].content)["messages"] == [
+        {"role": "user", "content": "hello"},
+        {
+            "role": "assistant",
+            "content": None,
+            "tool_calls": [
+                {
+                    "id": "call_1",
+                    "type": "function",
+                    "function": {"name": "weather", "arguments": '{"city": "Oslo"}'},
+                }
+            ],
+        },
+        {"role": "tool", "tool_call_id": "call_1", "content": "sunny"},
+    ]
+
+
+async def test_error_during_a_tool_turn_surfaces_instead_of_hanging() -> None:
+    p = provider(lambda _: sse(tool_delta(0, id="c"), {"error": {"message": "boom"}}))
+    with pytest.raises(ProviderError, match="boom"):
+        _ = [c async for c in p.generate("m", HELLO, GenerationOptions(), tools=[WEATHER])]
+    refused = provider(lambda _: httpx.Response(400))
+    with pytest.raises(ProviderError):
+        _ = [c async for c in refused.generate("m", HELLO, GenerationOptions(), tools=[WEATHER])]
+
+
+async def test_embedding_models_do_not_support_tools() -> None:
+    p = provider(
+        lambda _: httpx.Response(
+            200, json={"data": [{"id": "gpt-4o"}, {"id": "text-embedding-3-small"}]}
+        )
+    )
+    assert [(m.id, m.supports_tools) for m in await p.list_models()] == [
+        ("gpt-4o", True),
+        ("text-embedding-3-small", False),
+    ]

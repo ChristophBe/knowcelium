@@ -1,5 +1,6 @@
 import asyncio
 import json
+import uuid
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -13,12 +14,12 @@ from .base import (
     ModelInfo,
     ModelKind,
     ModelNotFoundError,
-    NotSupportedError,
     ProviderError,
     ProviderUnavailableError,
     PullProgress,
     Role,
     Status,
+    ToolCall,
     ToolSpec,
 )
 from .rerank import rerank_with_chat
@@ -69,13 +70,13 @@ class OllamaProvider:
         options: GenerationOptions,
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
-            raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         body: dict[str, Any] = {
             "model": model,
-            "messages": [{"role": m.role.value, "content": m.content} for m in messages],
+            "messages": _message_params(messages),
             "stream": True,
         }
+        if tools:
+            body["tools"] = [_tool_param(t) for t in tools]
         opts = {}
         if options.temperature is not None:
             opts["temperature"] = options.temperature
@@ -88,6 +89,7 @@ class OllamaProvider:
         # the wait for it, and any later stall; the deadline bounds the whole answer.
         deadline = asyncio.get_running_loop().time() + self._limits.generate_timeout
         timeout = self._timeout(self._limits.first_token_timeout)
+        calls: list[ToolCall] = []
         try:
             async with self._http.stream("POST", "/api/chat", json=body, timeout=timeout) as resp:
                 resp.raise_for_status()
@@ -100,13 +102,25 @@ class OllamaProvider:
                     if event.get("done"):
                         yield Chunk(
                             done=True,
+                            tool_calls=tuple(calls),
                             input_tokens=event.get("prompt_eval_count", 0),
                             output_tokens=event.get("eval_count", 0),
                         )
                         return
                     if asyncio.get_running_loop().time() > deadline:
                         raise ProviderUnavailableError("ollama generation exceeded its time limit")
-                    yield Chunk(delta=event.get("message", {}).get("content", ""))
+                    message = event.get("message", {})
+                    for call in message.get("tool_calls") or []:
+                        function = call.get("function", {})
+                        calls.append(
+                            ToolCall(
+                                f"call_{uuid.uuid4().hex[:12]}",
+                                function.get("name", ""),
+                                json.dumps(function.get("arguments") or {}),
+                            )
+                        )
+                    if content := message.get("content", ""):
+                        yield Chunk(delta=content)
         except httpx.HTTPError as exc:
             raise _translate(exc) from exc
 
@@ -121,15 +135,33 @@ class OllamaProvider:
 
     async def list_models(self) -> list[ModelInfo]:
         resp = await self._idempotent("GET", "/api/tags", self._limits.list_timeout)
-        models = []
+        found: list[tuple[str, bool]] = []
         for m in resp.json().get("models", []):
             name: str = m["name"]
             families = m.get("details", {}).get("families") or []
-            is_embedding = "embed" in name or any("bert" in f for f in families)
-            models.append(
-                ModelInfo(id=name, kind=ModelKind.EMBEDDING if is_embedding else ModelKind.CHAT)
+            found.append((name, "embed" in name or any("bert" in f for f in families)))
+        tools = await asyncio.gather(
+            *(self._supports_tools(name) for name, is_embedding in found if not is_embedding)
+        )
+        with_tools = iter(tools)
+        return [
+            ModelInfo(
+                id=name,
+                kind=ModelKind.EMBEDDING if is_embedding else ModelKind.CHAT,
+                supports_tools=False if is_embedding else next(with_tools),
             )
-        return models
+            for name, is_embedding in found
+        ]
+
+    async def _supports_tools(self, model: str) -> bool:
+        """Whether the model's capabilities list tools; unknown counts as no."""
+        try:
+            resp = await self._idempotent(
+                "POST", "/api/show", self._limits.list_timeout, json={"model": model}
+            )
+        except ProviderError:
+            return False
+        return "tools" in (resp.json().get("capabilities") or [])
 
     async def rerank(self, model: str, query: str, documents: list[str]) -> list[float]:
         return await rerank_with_chat(self, model, query, documents)
@@ -199,6 +231,37 @@ class OllamaProvider:
                     raise _translate(exc) from exc
             await asyncio.sleep(self._limits.retry_delay * 2**attempt)
         raise ProviderError("ollama: no attempts configured")
+
+
+def _tool_param(tool: ToolSpec) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": json.loads(tool.parameters_json_schema or "{}")
+            or {"type": "object", "properties": {}},
+        },
+    }
+
+
+def _message_params(messages: list[Message]) -> list[dict[str, Any]]:
+    """Ollama has no call ids: a tool message names the tool it answers, which
+    is looked up from the assistant message that made the call."""
+    names: dict[str, str] = {}
+    params: list[dict[str, Any]] = []
+    for m in messages:
+        param: dict[str, Any] = {"role": m.role.value, "content": m.content}
+        if m.role is Role.TOOL:
+            param["tool_name"] = names.get(m.tool_call_id, "")
+        if m.tool_calls:
+            names.update({c.id: c.name for c in m.tool_calls})
+            param["tool_calls"] = [
+                {"function": {"name": c.name, "arguments": json.loads(c.arguments_json or "{}")}}
+                for c in m.tool_calls
+            ]
+        params.append(param)
+    return params
 
 
 def _retryable(exc: httpx.HTTPError) -> bool:

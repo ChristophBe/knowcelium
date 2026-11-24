@@ -28,6 +28,8 @@ from knowcel_llm.providers.base import (
     ProviderRateLimitedError,
     ProviderUnavailableError,
     Role,
+    ToolCall,
+    ToolSpec,
 )
 from knowcel_llm.providers.fake import FakeProvider
 from knowcel_llm.server import LlmServicer
@@ -390,3 +392,109 @@ def test_embeddings_from_anthropic_fail_at_startup() -> None:
         Settings(llm_provider="anthropic", embedding_provider="ollama", anthropic_api_key=key)
     )
     assert (providers.chat.name, providers.embedding.name) == ("anthropic", "ollama")
+
+
+def tool_use_stream(*json_parts: str, output_tokens: int = 7) -> bytes:
+    start = json.loads(answer_stream().decode().split("data: ")[1].split("\n")[0])
+    return sse(
+        ("message_start", start),
+        (
+            "content_block_start",
+            {
+                "type": "content_block_start",
+                "index": 0,
+                "content_block": {
+                    "type": "tool_use",
+                    "id": "toolu_1",
+                    "name": "weather",
+                    "input": {},
+                },
+            },
+        ),
+        *(
+            (
+                "content_block_delta",
+                {
+                    "type": "content_block_delta",
+                    "index": 0,
+                    "delta": {"type": "input_json_delta", "partial_json": part},
+                },
+            )
+            for part in json_parts
+        ),
+        ("content_block_stop", {"type": "content_block_stop", "index": 0}),
+        (
+            "message_delta",
+            {
+                "type": "message_delta",
+                "delta": {"stop_reason": "tool_use", "stop_sequence": None},
+                "usage": {"output_tokens": output_tokens},
+            },
+        ),
+        ("message_stop", {"type": "message_stop"}),
+    )
+
+
+WEATHER = ToolSpec("weather", "Current weather", '{"type": "object", "properties": {}}')
+
+
+async def test_tool_call_streamed_in_parts_arrives_as_one_call_with_usage() -> None:
+    requests: list[httpx2.Request] = []
+    p = provider(
+        lambda _: streaming(tool_use_stream('{"ci', 'ty": "Os', 'lo"}', output_tokens=9)), requests
+    )
+    chunks = [
+        c
+        async for c in p.generate("claude-sonnet-5-5", HELLO, GenerationOptions(), tools=[WEATHER])
+    ]
+    assert chunks[-1].done
+    assert chunks[-1].tool_calls == (ToolCall("toolu_1", "weather", '{"city": "Oslo"}'),)
+    assert (chunks[-1].input_tokens, chunks[-1].output_tokens) == (15, 9)
+    assert json.loads(requests[0].content)["tools"] == [
+        {
+            "name": "weather",
+            "description": "Current weather",
+            "input_schema": {"type": "object", "properties": {}},
+        }
+    ]
+
+
+async def test_tool_results_go_back_as_tool_result_blocks() -> None:
+    requests: list[httpx2.Request] = []
+    p = provider(lambda _: streaming(answer_stream("Sunny.")), requests)
+    call = ToolCall("toolu_1", "weather", '{"city": "Oslo"}')
+    history = [
+        *HELLO,
+        Message(Role.ASSISTANT, "", tool_calls=(call,)),
+        Message(Role.TOOL, "sunny", tool_call_id="toolu_1"),
+        Message(Role.TOOL, "windy", tool_call_id="toolu_2"),
+    ]
+    chunks = [c async for c in p.generate("m", history, GenerationOptions(), tools=[WEATHER])]
+    assert "".join(c.delta for c in chunks) == "Sunny."
+    assert json.loads(requests[0].content)["messages"] == [
+        {"role": "user", "content": "hello"},
+        {
+            "role": "assistant",
+            "content": [
+                {"type": "tool_use", "id": "toolu_1", "name": "weather", "input": {"city": "Oslo"}}
+            ],
+        },
+        {
+            "role": "user",
+            "content": [
+                {"type": "tool_result", "tool_use_id": "toolu_1", "content": "sunny"},
+                {"type": "tool_result", "tool_use_id": "toolu_2", "content": "windy"},
+            ],
+        },
+    ]
+
+
+async def test_error_during_a_tool_turn_is_translated() -> None:
+    p = provider(lambda _: error(529, "overloaded_error"))
+    with pytest.raises(ProviderUnavailableError):
+        _ = [c async for c in p.generate("m", HELLO, GenerationOptions(), tools=[WEATHER])]
+
+
+async def test_all_claude_models_support_tools() -> None:
+    models = await provider(lambda _: error(500, "api_error")).list_models()
+    assert all(m.supports_tools for m in models)

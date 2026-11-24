@@ -1,10 +1,11 @@
+import json
 import logging
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
-from typing import Literal
+from typing import Any, Literal, cast
 
 import anthropic
-from anthropic.types.beta import BetaMessageParam
+from anthropic.types.beta import BetaMessageParam, BetaToolParam
 
 from .base import (
     Chunk,
@@ -21,6 +22,7 @@ from .base import (
     PullProgress,
     Role,
     Status,
+    ToolCall,
     ToolSpec,
 )
 from .rerank import rerank_with_chat
@@ -97,8 +99,6 @@ class AnthropicProvider:
         options: GenerationOptions,
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
-            raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         system, turns = to_anthropic_messages(messages)
         if not turns:
             raise ProviderError("anthropic: the request has no user message")
@@ -108,6 +108,7 @@ class AnthropicProvider:
                 max_tokens=options.max_tokens or self._max_tokens,
                 system=system or anthropic.omit,
                 messages=turns,
+                tools=[_tool_param(t) for t in tools] if tools else anthropic.omit,
                 betas=[_FALLBACK_BETA],
                 fallbacks="default",
             ) as stream:
@@ -122,6 +123,11 @@ class AnthropicProvider:
         usage = final.usage
         yield Chunk(
             done=True,
+            tool_calls=tuple(
+                ToolCall(block.id, block.name, json.dumps(block.input))
+                for block in final.content
+                if block.type == "tool_use"
+            ),
             input_tokens=usage.input_tokens
             + (usage.cache_creation_input_tokens or 0)
             + (usage.cache_read_input_tokens or 0),
@@ -144,7 +150,7 @@ class AnthropicProvider:
         raise NotSupportedError("anthropic models are hosted by Anthropic and can't be deleted")
 
     async def list_models(self) -> list[ModelInfo]:
-        return [ModelInfo(id=m, kind=ModelKind.CHAT) for m in MODELS]
+        return [ModelInfo(id=m, kind=ModelKind.CHAT, supports_tools=True) for m in MODELS]
 
     async def status(self) -> Status:
         # Listing one model checks reachability and the key without using tokens.
@@ -160,32 +166,59 @@ class AnthropicProvider:
         await self._client.close()
 
 
+def _tool_param(tool: ToolSpec) -> BetaToolParam:
+    return {
+        "name": tool.name,
+        "description": tool.description,
+        "input_schema": json.loads(tool.parameters_json_schema or "{}") or {"type": "object"},
+    }
+
+
 def to_anthropic_messages(messages: list[Message]) -> tuple[str, list[BetaMessageParam]]:
     """Splits kb messages into the Messages API's top-level system prompt and a
     history that starts with a user turn and alternates roles. System messages
     anywhere are joined into the system prompt; consecutive messages of one role
-    are merged; empty messages and assistant turns before the first user turn
-    (which the API rejects) are dropped."""
+    are merged (so the results of parallel tool calls share one user turn);
+    empty messages and assistant turns before the first user turn (which the API
+    rejects) are dropped. Tool calls become `tool_use` blocks and tool messages
+    `tool_result` blocks."""
     system: list[str] = []
-    turns: list[tuple[Literal["user", "assistant"], list[str]]] = []
+    turns: list[tuple[Literal["user", "assistant"], list[dict[str, Any]]]] = []
     for m in messages:
-        if not m.content.strip():
-            continue
-        if m.role == Role.SYSTEM:
-            system.append(m.content)
+        blocks: list[dict[str, Any]] = []
+        if m.role == Role.TOOL:
+            blocks.append(
+                {"type": "tool_result", "tool_use_id": m.tool_call_id, "content": m.content}
+            )
+        else:
+            if m.content.strip():
+                if m.role == Role.SYSTEM:
+                    system.append(m.content)
+                    continue
+                blocks.append({"type": "text", "text": m.content})
+            blocks.extend(
+                {
+                    "type": "tool_use",
+                    "id": c.id,
+                    "name": c.name,
+                    "input": json.loads(c.arguments_json or "{}"),
+                }
+                for c in m.tool_calls
+            )
+        if not blocks or m.role == Role.SYSTEM:
             continue
         role: Literal["user", "assistant"] = "assistant" if m.role == Role.ASSISTANT else "user"
         if turns and turns[-1][0] == role:
-            turns[-1][1].append(m.content)
+            turns[-1][1].extend(blocks)
         elif turns or role == "user":
-            turns.append((role, [m.content]))
+            turns.append((role, blocks))
     params: list[BetaMessageParam] = []
-    for role, parts in turns:
-        text = "\n\n".join(parts)
-        if role == "user":
-            params.append({"role": "user", "content": text})
+    for role, blocks in turns:
+        if all(b["type"] == "text" for b in blocks):
+            content: Any = "\n\n".join(b["text"] for b in blocks)
         else:
-            params.append({"role": "assistant", "content": text})
+            content = blocks
+        params.append(cast(BetaMessageParam, {"role": role, "content": content}))
     return "\n\n".join(system), params
 
 
