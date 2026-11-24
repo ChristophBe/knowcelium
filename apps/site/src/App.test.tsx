@@ -38,18 +38,14 @@ describe("marketing site", () => {
     expect(html).toContain("task up:release");
   });
 
-  it("claims only the connectors that exist and links to the guide and the showcase", () => {
+  it("says Absorb takes in uploads and connectors, and links to the connector guide", () => {
     const { container } = render(<App />);
     const absorb = screen.getByRole("heading", { name: "Absorb" }).closest("li") as HTMLElement;
-    for (const name of ["Watched folder", "Showcase engineering", "Showcase logistics"])
-      expect(within(absorb).getByText(name)).not.toBeNull();
-    expect(absorb.textContent).toMatch(/sync/);
-    expect(absorb.textContent).toMatch(/live/);
-    expect(absorb.textContent).toMatch(/build\s+your own/);
+    expect(absorb.textContent).toMatch(/Upload/);
+    expect(absorb.textContent).toMatch(/connect/);
     const hrefs = [...container.querySelectorAll("a")].map((a) => a.getAttribute("href"));
     expect(hrefs).toContain(`${REPO}/blob/main/docs/connectors.md`);
-    expect(hrefs).toContain(`${REPO}/blob/main/examples/showcase/README.md`);
-    expect(screen.getByRole("heading", { name: "Connect your systems" })).not.toBeNull();
+    expect(screen.getByRole("heading", { name: "Bring in your knowledge" })).not.toBeNull();
   });
 
   it("answers the demo question from two connected systems", () => {
