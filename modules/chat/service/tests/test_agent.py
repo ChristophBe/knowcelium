@@ -97,7 +97,9 @@ class FakeReader:
     def __init__(self) -> None:
         self.reads: list[tuple[uuid.UUID, int]] = []
 
-    async def read(self, document_id: uuid.UUID, section: int) -> Any:
+    async def read(
+        self, document_id: uuid.UUID, section: int, team_ids: Sequence[uuid.UUID] = ()
+    ) -> Any:
         self.reads.append((document_id, section))
         if section > 1:
             return None
@@ -350,7 +352,7 @@ async def test_read_document_adds_the_section_as_a_source() -> None:
     assert reader.reads == [(doc, 1), (doc, 2)]
     results = [m.content for m in model.prompts[-1] if m.role is PromptRole.TOOL]
     assert results[0] == "[1] whole.md:\nall of it"
-    assert "does not exist" in results[1]
+    assert "not available" in results[1]
     assert results[2] == "document_id must be the id of a document a search found."
     assert [c.document_title for c in last_sources(events)] == ["whole.md"]
 
@@ -379,3 +381,38 @@ async def test_stopping_during_a_tool_cancels_it() -> None:
     task.cancel()
     with pytest.raises(asyncio.CancelledError):
         await task
+
+
+async def test_text_before_the_tools_is_separated_from_the_text_after_them() -> None:
+    documents = FakeDocuments()
+    model = ScriptedModel(
+        [call("search_knowledge_base", query="a")],  # no narration: nothing to separate
+        "Based on it.",
+    )
+    assert text(await run(agent(model, documents))) == "Based on it. "
+
+    class Narrating(ScriptedModel):
+        async def turn(
+            self, model: str, prompt: list[PromptMessage], tools: Sequence[ToolSpec]
+        ) -> AsyncGenerator[str | ToolCall]:
+            if not self.prompts:
+                yield "Let me search."
+                self.prompts.append(prompt)
+                yield call("search_knowledge_base", query="a")
+                return
+            async for item in super().turn(model, prompt, tools):
+                yield item
+
+    events = await run(agent(Narrating("Found it."), documents))
+    assert text(events) == "Let me search.\n\nFound it. "
+
+
+async def test_only_max_tool_steps_calls_are_run_but_each_gets_an_answer() -> None:
+    documents = FakeDocuments()
+    model = ScriptedModel([call("search_knowledge_base", query=str(i)) for i in range(5)], "ok")
+    await run(agent(model, documents, max_tool_steps=2))
+
+    assert [q for q, _ in documents.queries] == ["0", "1"]
+    results = [m for m in model.prompts[-1] if m.role is PromptRole.TOOL]
+    assert len(results) == 5
+    assert all("No more searches" in m.content for m in results[2:])

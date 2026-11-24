@@ -32,6 +32,7 @@ from .context import MESSAGE_OVERHEAD_TOKENS, ApproximateTokenCounter, TokenCoun
 
 log = logging.getLogger("knowcel_chat")
 
+_NO_MORE_STEPS = "No more searches are possible. Answer now with what you have."
 NO_ROOM = "There is no room left for more results; answer with what you have."
 
 SEARCH_KNOWLEDGE_BASE = "search_knowledge_base"
@@ -87,8 +88,11 @@ class LiveResult(Protocol):
 
 
 class DocumentReader(Protocol):
-    async def read(self, document_id: uuid.UUID, section: int) -> chat_pb2.Citation | None:
-        """The `section` (from 1) of a document as one source, None past its end.
+    async def read(
+        self, document_id: uuid.UUID, section: int, team_ids: Sequence[uuid.UUID] = ()
+    ) -> chat_pb2.Citation | None:
+        """The `section` (from 1) of a document as one source; None past its end
+        or when the document is attached to none of `team_ids` (unless empty).
         Failures are raised as PeerError."""
         ...
 
@@ -110,9 +114,11 @@ class _Sources:
         self.citations: list[chat_pb2.Citation] = []
         self._numbers: dict[tuple[Any, ...], int] = {}
 
-    def number(self, c: chat_pb2.Citation) -> int:
+    def number(self, c: chat_pb2.Citation, read: bool = False) -> int:
+        """The number of `c`. A section read with read_document is a source of
+        its own, even when its first chunk was found by a search before."""
         key = (
-            (c.document_id, c.chunk_index, c.manual_page, c.manual_section)
+            (read, c.document_id, c.chunk_index, c.manual_page, c.manual_section)
             if c.document_id or c.manual_page
             else (c.connector, c.source_url, c.document_title, c.snippet)
         )
@@ -122,7 +128,7 @@ class _Sources:
         return self._numbers[key]
 
 
-def _specs(documents: bool, connectors: bool) -> list[ToolSpec]:
+def _specs(connectors: bool) -> list[ToolSpec]:
     specs = [
         ToolSpec(
             SEARCH_KNOWLEDGE_BASE,
@@ -175,7 +181,7 @@ def _specs(documents: bool, connectors: bool) -> list[ToolSpec]:
                 },
             )
         )
-    return specs if documents else []
+    return specs
 
 
 class ChatAgent:
@@ -205,7 +211,7 @@ class ChatAgent:
         `max_tool_steps` calls no tools are offered, so the model must answer."""
         # Connected systems are not asked when the question is about chosen documents.
         use_connectors = self._connectors is not None and not scope.document_ids
-        tools = _specs(True, use_connectors)
+        tools = _specs(use_connectors)
         sources = _Sources()
         unavailable: list[str] = []
         messages = list(prompt)
@@ -213,10 +219,12 @@ class ChatAgent:
         budget = self._settings.context_tokens - self._settings.answer_reserve_tokens
         steps = 0
         searching = False
+        wrote = False
         while True:
             last = steps >= self._settings.max_tool_steps
             said: list[str] = []
             calls: list[ToolCall] = []
+            separate = wrote
             async with contextlib.aclosing(
                 self._model.turn(model, messages, [] if last else tools)
             ) as turn:
@@ -224,12 +232,24 @@ class ChatAgent:
                     if isinstance(item, ToolCall):
                         calls.append(item)
                     else:
+                        if separate:
+                            # Text of an earlier turn, written before its tool calls.
+                            separate = False
+                            yield AnswerDelta("\n\n")
                         said.append(item)
+                        wrote = True
                         yield AnswerDelta(item)
             if not calls or last:
                 return
             messages.append(PromptMessage(PromptRole.ASSISTANT, "".join(said), tuple(calls)))
+            spent += self._tokens("".join(said)) + sum(self._tokens(c.arguments) for c in calls)
             for call in calls:
+                if steps >= self._settings.max_tool_steps:
+                    # Every call gets an answer, but only so many are run.
+                    messages.append(
+                        PromptMessage(PromptRole.TOOL, _NO_MORE_STEPS, tool_call_id=call.id)
+                    )
+                    continue
                 steps += 1
                 if not searching:
                     searching = True
@@ -239,9 +259,7 @@ class ChatAgent:
                     call, scope, use_connectors, sources, unavailable, budget - spent
                 )
                 if steps >= self._settings.max_tool_steps:
-                    result.text += (
-                        "\n\nNo more searches are possible. Answer now with what you have."
-                    )
+                    result.text += "\n\n" + _NO_MORE_STEPS
                 spent += self._tokens(result.text)
                 messages.append(PromptMessage(PromptRole.TOOL, result.text, tool_call_id=call.id))
                 yield RetrievalChanged(result.retrieval)
@@ -272,28 +290,25 @@ class ChatAgent:
                 [_state(call.name, chat_pb2.RETRIEVAL_STATE_UNAVAILABLE)],
             )
         try:
-            match call.name:
-                case "search_knowledge_base":
-                    found = await self._documents.search_documents(
-                        _text(args, "query"),
-                        self._settings.rag_top_k,
-                        _in_scope(args.get("document_ids"), scope.document_ids),
-                        scope.team_ids,
-                    )
-                    return self._found(
-                        found, sources, room, chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS
-                    )
-                case "read_document":
-                    return await self._read(args, scope, sources, room)
-                case "search_connectors" if use_connectors and self._connectors:
-                    live = await self._connectors.search(
-                        _text(args, "query"),
-                        self._settings.connectors_top_k,
-                        scope.team_ids,
-                        _strings(args.get("connector_ids")),
-                    )
-                    unavailable.extend(n for n in live.unavailable if n not in unavailable)
-                    return self._live(live, sources, room)
+            if call.name == SEARCH_KNOWLEDGE_BASE:
+                found = await self._documents.search_documents(
+                    _text(args, "query"),
+                    self._settings.rag_top_k,
+                    _in_scope(args.get("document_ids"), scope.document_ids),
+                    scope.team_ids,
+                )
+                return self._found(found, sources, room, chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS)
+            if call.name == READ_DOCUMENT:
+                return await self._read(args, scope, sources, room)
+            if call.name == SEARCH_CONNECTORS and use_connectors and self._connectors:
+                live = await self._connectors.search(
+                    _text(args, "query"),
+                    self._settings.connectors_top_k,
+                    scope.team_ids,
+                    _strings(args.get("connector_ids")),
+                )
+                unavailable.extend(n for n in live.unavailable if n not in unavailable)
+                return self._live(live, sources, room)
         except PeerError as err:
             if err.peer is Peer.LLM:
                 raise
@@ -318,13 +333,15 @@ class ChatAgent:
             raise ValueError("That document is not part of this conversation.")
         section = args.get("section", 1)
         section = section if isinstance(section, int) and section >= 1 else 1
-        found = await self._reader.read(document_id, section)
+        found = await self._reader.read(document_id, section, scope.team_ids)
         if found is None:
             return _Result(
-                f"Section {section} does not exist or is empty.",
+                f"Section {section} of that document is not available.",
                 [_state(READ_DOCUMENT, chat_pb2.RETRIEVAL_STATE_DONE)],
             )
-        return self._found([found], sources, room, chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS)
+        return self._found(
+            [found], sources, room, chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS, read=True
+        )
 
     def _found(
         self,
@@ -333,6 +350,7 @@ class ChatAgent:
         room: int,
         kind: chat_pb2.RetrievalSourceKind,
         note: str = "",
+        read: bool = False,
     ) -> _Result:
         """The text of what a tool found, numbered, bounded by the room left in the prompt."""
         state = chat_pb2.RetrievalSource(
@@ -341,15 +359,13 @@ class ChatAgent:
         if not found:
             return _Result("Nothing related was found." + note, [state])
         if room <= 0:
-            return _Result(
-                "There is no room left for more results; answer with what you have.", [state]
-            )
+            return _Result(NO_ROOM, [state])
         fitted = fit(room, self._counter, lambda kept, _: _render(kept), found, [], "")
         # `fit` keeps the best passage even when it alone is too big; that is
         # only for the first results, so the model has something to answer from.
         if sources.citations and self._tokens(_render(fitted.sources)) > room:
             return _Result(NO_ROOM, [state])
-        text = _render(fitted.sources, sources)
+        text = _render(fitted.sources, sources, read)
         return _Result(text + note, [state])
 
     def _live(self, live: LiveResult, sources: _Sources, room: int) -> _Result:
@@ -364,11 +380,14 @@ class ChatAgent:
         return result
 
 
-def _render(found: Sequence[chat_pb2.Citation], sources: _Sources | None = None) -> str:
+def _render(
+    found: Sequence[chat_pb2.Citation], sources: _Sources | None = None, read: bool = False
+) -> str:
     """The passages for the model. With `sources` they are numbered, as they are
     first seen; without, only their size is of interest."""
     return "\n\n".join(
-        f"[{sources.number(c) if sources else 0}] {source_name(c)}:\n{c.snippet}" for c in found
+        f"[{sources.number(c, read) if sources else 0}] {source_name(c)}:\n{c.snippet}"
+        for c in found
     )
 
 

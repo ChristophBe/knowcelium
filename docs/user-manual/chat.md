@@ -149,7 +149,7 @@ Write `{{` and `}}` where you want a literal brace. When the prompt doesn't use 
 
 ### Change the defaults for everyone
 
-Platform admins also see **Defaults for all conversations** in the same window. They can change the **Default system prompt**, the **Sources template** (added when sources were found; it must contain `{sources}`) the **No-sources template** (added when nothing in the documents relates to the question) and the **Search instructions** (added instead of the two before when the language model decides itself what to search: when to search and how to cite the results). These apply to every conversation without its own prompt. Other people don't see these fields and can't change them. **Reset to default** next to each field returns it to the text Knowcelium comes with.
+Platform admins also see **Defaults for all conversations** in the same window. They can change the **Default system prompt**, the **Sources template** (added when sources were found; it must contain `{sources}`), the **No-sources template** (added when nothing in the documents relates to the question) and the **Search instructions** (added instead of the two before when the language model decides itself what to search: when to search and how to cite the results). These apply to every conversation without its own prompt. Other people don't see these fields and can't change them. **Reset to default** next to each field returns it to the text Knowcelium comes with.
 
 ## Rename a conversation
 

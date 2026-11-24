@@ -494,15 +494,20 @@ class PeerDocuments:
     def __init__(self, documents: document_pb2_grpc.DocumentServiceStub) -> None:
         self._documents = documents
 
-    async def read(self, document_id: uuid.UUID, section: int) -> chat_pb2.Citation | None:
+    async def read(
+        self, document_id: uuid.UUID, section: int, team_ids: Sequence[uuid.UUID] = ()
+    ) -> chat_pb2.Citation | None:
         """The `section` (from 1) of a document, `READ_CHUNKS` chunks of it, as
-        one source; None past its end."""
+        one source; None past its end, and when `team_ids` are given and the
+        document is attached to none of them, as a search is limited to them."""
         with _peer_errors(Peer.DOCUMENT):
             document = (
                 await self._documents.GetDocument(
                     document_pb2.GetDocumentRequest(id=str(document_id))
                 )
             ).document
+            if team_ids and not {str(t) for t in team_ids} & set(document.team_ids):
+                return None
             token = ""
             chunks: list[Any] = []
             for _ in range(section):

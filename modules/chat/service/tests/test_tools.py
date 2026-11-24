@@ -117,16 +117,19 @@ async def test_unknown_tool_support_means_no_tools() -> None:
 
 
 class FakeDocumentStub:
-    def __init__(self, chunks: int, missing: bool = False) -> None:
+    def __init__(self, chunks: int, missing: bool = False, teams: list[str] | None = None) -> None:
         self.chunks = chunks
         self.missing = missing
+        self.teams = teams or []
 
     async def GetDocument(self, request: Any) -> document_pb2.GetDocumentResponse:
         if self.missing:
             raise grpc.aio.AioRpcError(
                 grpc.StatusCode.NOT_FOUND, grpc.aio.Metadata(), grpc.aio.Metadata(), "gone"
             )
-        return document_pb2.GetDocumentResponse(document=document_pb2.Document(title="doc.md"))
+        return document_pb2.GetDocumentResponse(
+            document=document_pb2.Document(title="doc.md", team_ids=self.teams)
+        )
 
     async def ListChunks(self, request: Any) -> document_pb2.ListChunksResponse:
         start = int(request.page.page_token or 0)
@@ -181,3 +184,13 @@ async def test_connectors_can_be_limited_to_chosen_ones() -> None:
 
     assert ingestion.request is not None
     assert list(ingestion.request.connector_ids) == ["Orders"]
+
+
+async def test_a_document_outside_the_teams_of_the_conversation_is_not_read() -> None:
+    team, other = uuid.uuid4(), uuid.uuid4()
+    documents = PeerDocuments(FakeDocumentStub(2, teams=[str(team)]))  # type: ignore[arg-type]
+    doc = uuid.uuid4()
+
+    assert await documents.read(doc, 1, [team]) is not None
+    assert await documents.read(doc, 1, [other]) is None
+    assert await documents.read(doc, 1) is not None  # no teams: all the caller may read
