@@ -29,10 +29,8 @@ export function RetrievalSteps({ sources }: { sources: RetrievalSource[] }) {
       aria-label="Sources searched"
       className="flex flex-col gap-1 border-t border-border pt-2 text-sm text-fg-muted"
     >
-      {sources.map((s, i) => (
-        // The list is replaced as a whole, and an entry's place is its identity.
-        // biome-ignore lint/suspicious/noArrayIndexKey: see above
-        <li key={i} className="flex items-center gap-2">
+      {sources.map((s) => (
+        <li key={sourceName(s)} className="flex items-center gap-2">
           {s.state === RetrievalState.SEARCHING && <Spinner />}
           {s.state === RetrievalState.DONE && (
             <Check className="size-4 shrink-0 text-success" aria-hidden="true" />
