@@ -10,7 +10,15 @@ from knowcel_llm.callers import resolver
 from knowcel_llm.config import Settings
 from knowcel_llm.providers import Providers
 from knowcel_llm.providers.anthropic import AnthropicProvider
-from knowcel_llm.providers.base import ModelNotFoundError, NotSupportedError, PullProgress
+from knowcel_llm.providers.base import (
+    GenerationOptions,
+    Message,
+    ModelNotFoundError,
+    NotSupportedError,
+    PullProgress,
+    Role,
+    ToolSpec,
+)
 from knowcel_llm.providers.fake import FakeProvider
 from knowcel_llm.providers.ollama import OllamaLimits, OllamaProvider
 from knowcel_llm.server import LlmServicer
@@ -269,4 +277,100 @@ async def test_ollama_deletes_a_model() -> None:
     assert calls == [("DELETE", "/api/delete", b'{"model":"llama3.2"}')]
     with pytest.raises(ModelNotFoundError):
         await provider.delete_model("missing")
+    await provider.aclose()
+
+
+async def test_ollama_tool_calls_round_trip_and_usage() -> None:
+    bodies: list[dict[str, object]] = []
+
+    def handle(request: httpx.Request) -> httpx.Response:
+        bodies.append(json.loads(request.content))
+        return httpx.Response(
+            200,
+            content=_ndjson(
+                {
+                    "message": {
+                        "role": "assistant",
+                        "content": "",
+                        "tool_calls": [
+                            {"function": {"name": "weather", "arguments": {"city": "Oslo"}}}
+                        ],
+                    },
+                    "done": False,
+                },
+                {"message": {"content": ""}, "done": True, "prompt_eval_count": 4, "eval_count": 6},
+            ),
+        )
+
+    provider = _ollama(httpx.MockTransport(handle))
+    spec = ToolSpec("weather", "Current weather", '{"type": "object"}')
+    chunks = [
+        c
+        async for c in provider.generate(
+            "m", [Message(Role.USER, "hi")], GenerationOptions(), [spec]
+        )
+    ]
+    [call] = chunks[-1].tool_calls
+    assert (call.name, call.arguments_json) == ("weather", '{"city": "Oslo"}')
+    assert call.id
+    assert (chunks[-1].input_tokens, chunks[-1].output_tokens) == (4, 6)
+    assert bodies[0]["tools"] == [
+        {
+            "type": "function",
+            "function": {
+                "name": "weather",
+                "description": "Current weather",
+                "parameters": {"type": "object"},
+            },
+        }
+    ]
+
+    history = [
+        Message(Role.USER, "hi"),
+        Message(Role.ASSISTANT, "", tool_calls=(call,)),
+        Message(Role.TOOL, "sunny", tool_call_id=call.id),
+    ]
+    _ = [c async for c in provider.generate("m", history, GenerationOptions(), [spec])]
+    assert bodies[1]["messages"] == [
+        {"role": "user", "content": "hi"},
+        {
+            "role": "assistant",
+            "content": "",
+            "tool_calls": [{"function": {"name": "weather", "arguments": {"city": "Oslo"}}}],
+        },
+        {"role": "tool", "content": "sunny", "tool_name": "weather"},
+    ]
+    await provider.aclose()
+
+
+async def test_ollama_reports_tool_support_per_model() -> None:
+    def handle(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/api/tags":
+            return httpx.Response(
+                200,
+                json={
+                    "models": [
+                        {"name": "llama3.2"},
+                        {"name": "gemma"},
+                        {"name": "nomic-embed-text"},
+                        {"name": "broken"},
+                    ]
+                },
+            )
+        assert request.url.path == "/api/show"
+        match json.loads(request.content)["model"]:
+            case "llama3.2":
+                return httpx.Response(200, json={"capabilities": ["completion", "tools"]})
+            case "gemma":
+                return httpx.Response(200, json={"capabilities": ["completion"]})
+        return httpx.Response(500)
+
+    provider = _ollama(httpx.MockTransport(handle))
+    models = await provider.list_models()
+    assert [(m.id, m.supports_tools) for m in models] == [
+        ("llama3.2", True),
+        ("gemma", False),
+        ("nomic-embed-text", False),
+        ("broken", False),
+    ]
     await provider.aclose()

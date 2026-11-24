@@ -1,7 +1,8 @@
+import json
 from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from enum import StrEnum
-from typing import Protocol
+from typing import Any, Protocol
 
 
 class ProviderError(Exception):
@@ -47,6 +48,11 @@ class ToolSpec:
     name: str
     description: str
     parameters_json_schema: str
+
+
+def tool_schema(tool: "ToolSpec") -> dict[str, Any]:
+    """The tool's parameters as a JSON Schema object (an empty one when none are given)."""
+    return json.loads(tool.parameters_json_schema or "{}") or {"type": "object", "properties": {}}
 
 
 @dataclass(frozen=True)

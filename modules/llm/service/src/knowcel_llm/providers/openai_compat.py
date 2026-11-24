@@ -21,7 +21,9 @@ from .base import (
     PullProgress,
     Role,
     Status,
+    ToolCall,
     ToolSpec,
+    tool_schema,
 )
 from .rerank import rerank_with_chat
 
@@ -80,14 +82,14 @@ class OpenAICompatProvider:
         options: GenerationOptions,
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
-            raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         body: dict[str, Any] = {
             "model": model,
-            "messages": [{"role": m.role.value, "content": m.content} for m in messages],
+            "messages": [_message_param(m) for m in messages],
             "stream": True,
             "stream_options": {"include_usage": True},
         }
+        if tools:
+            body["tools"] = [_tool_param(t) for t in tools]
         if options.temperature is not None:
             body["temperature"] = options.temperature
         if options.max_tokens is not None:
@@ -96,6 +98,7 @@ class OpenAICompatProvider:
         deadline = asyncio.get_running_loop().time() + self._limits.generate_timeout
         timeout = self._timeout(self._limits.first_token_timeout)
         input_tokens = output_tokens = 0
+        calls: dict[int, dict[str, str]] = {}  # streamed tool calls by index
         try:
             async with self._http.stream(
                 "POST", "chat/completions", json=body, timeout=timeout
@@ -116,11 +119,34 @@ class OpenAICompatProvider:
                     if asyncio.get_running_loop().time() > deadline:
                         raise ProviderUnavailableError("openai generation exceeded its time limit")
                     for choice in event.get("choices", []):
-                        if delta := (choice.get("delta") or {}).get("content"):
-                            yield Chunk(delta=delta)
+                        delta = choice.get("delta") or {}
+                        if text := delta.get("content"):
+                            yield Chunk(delta=text)
+                        for part in delta.get("tool_calls") or []:
+                            index = part.get("index", 0)
+                            # Some servers send every call at index 0: a new id starts a new call.
+                            while (
+                                index in calls
+                                and part.get("id")
+                                and calls[index]["id"] not in ("", part["id"])
+                            ):
+                                index += 1
+                            call = calls.setdefault(index, {"id": "", "name": "", "arguments": ""})
+                            call["id"] = part.get("id") or call["id"]
+                            function = part.get("function") or {}
+                            call["name"] = call["name"] or function.get("name") or ""
+                            call["arguments"] += function.get("arguments") or ""
         except httpx.HTTPError as exc:
             raise _translate(exc) from exc
-        yield Chunk(done=True, input_tokens=input_tokens, output_tokens=output_tokens)
+        yield Chunk(
+            done=True,
+            tool_calls=tuple(
+                ToolCall(c["id"] or f"call_{i}", c["name"], c["arguments"] or "{}")
+                for i, c in sorted(calls.items())
+            ),
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+        )
 
     async def embed(self, model: str, inputs: list[str]) -> list[list[float]]:
         body: dict[str, Any] = {"model": model, "input": inputs}
@@ -137,6 +163,9 @@ class OpenAICompatProvider:
             ModelInfo(
                 id=m["id"],
                 kind=ModelKind.EMBEDDING if "embed" in m["id"].lower() else ModelKind.CHAT,
+                # The API does not describe a model's abilities; a model that
+                # can't call tools is rejected by the server on the first request.
+                supports_tools="embed" not in m["id"].lower(),
             )
             for m in resp.json().get("data", [])
         ]
@@ -180,6 +209,34 @@ class OpenAICompatProvider:
                     raise _translate(exc) from exc
             await asyncio.sleep(self._limits.retry_delay * 2**attempt)
         raise ProviderError("openai: no attempts configured")
+
+
+def _tool_param(tool: ToolSpec) -> dict[str, Any]:
+    return {
+        "type": "function",
+        "function": {
+            "name": tool.name,
+            "description": tool.description,
+            "parameters": tool_schema(tool),
+        },
+    }
+
+
+def _message_param(m: Message) -> dict[str, Any]:
+    if m.role is Role.TOOL:
+        return {"role": "tool", "tool_call_id": m.tool_call_id, "content": m.content}
+    param: dict[str, Any] = {"role": m.role.value, "content": m.content}
+    if m.tool_calls:
+        param["content"] = m.content or None
+        param["tool_calls"] = [
+            {
+                "id": c.id,
+                "type": "function",
+                "function": {"name": c.name, "arguments": c.arguments_json or "{}"},
+            }
+            for c in m.tool_calls
+        ]
+    return param
 
 
 def _message(error: Any) -> str:

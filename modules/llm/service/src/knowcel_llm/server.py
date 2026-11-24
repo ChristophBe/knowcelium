@@ -1,5 +1,6 @@
 import asyncio
 import contextlib
+import json
 import logging
 import time
 from collections.abc import AsyncIterator
@@ -179,6 +180,21 @@ class LlmServicer(llm_pb2_grpc.LlmServiceServicer):
             )
             for m in request.messages
         ]
+        for i, t in enumerate(request.tools):
+            if not t.name or not _is_json_object(t.parameters_json_schema or "{}"):
+                await abort_invalid_argument(
+                    context,
+                    violation(f"tools[{i}]", "A tool needs a name and a JSON object as schema"),
+                )
+        for i, m in enumerate(request.messages):
+            for j, c in enumerate(m.tool_calls):
+                if not _is_json_object(c.arguments_json or "{}"):
+                    await abort_invalid_argument(
+                        context,
+                        violation(
+                            f"messages[{i}].tool_calls[{j}]", "Arguments must be a JSON object"
+                        ),
+                    )
         tools = [ToolSpec(t.name, t.description, t.parameters_json_schema) for t in request.tools]
         opts = request.options
         options = GenerationOptions(
@@ -390,6 +406,13 @@ async def _logged_cancel(model: str) -> AsyncIterator[None]:
     except (asyncio.CancelledError, GeneratorExit):
         log.info("Generate cancelled by the client (model %s)", model)
         raise
+
+
+def _is_json_object(text: str) -> bool:
+    try:
+        return isinstance(json.loads(text), dict)
+    except ValueError:
+        return False
 
 
 def _tool_call(call: llm_pb2.ToolCall) -> ToolCall:

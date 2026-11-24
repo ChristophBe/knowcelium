@@ -5,7 +5,9 @@ import prometheus_client
 import pytest
 from knowcel.llm.v1 import llm_pb2, llm_pb2_grpc
 from knowcel_llm.config import Settings
-from knowcel_llm.providers import REGISTRY, build_provider, build_providers
+from knowcel_llm.providers import REGISTRY, Providers, build_provider, build_providers
+from knowcel_llm.providers.base import NotSupportedError
+from knowcel_llm.providers.fake import FakeProvider
 from knowcel_llm.server import LlmServicer
 from knowcel_platform.config import Problems
 from knowcel_platform.grpc import field_violations
@@ -248,26 +250,34 @@ async def test_tool_trigger_needs_the_tool_in_the_request(
         assert not responses[-1].tool_calls
 
 
+class _NoTools(FakeProvider):
+    """A provider whose models cannot call tools."""
+
+    async def generate(self, model, messages, options, tools=()):  # type: ignore[no-untyped-def]
+        if tools:
+            raise NotSupportedError("no tool calling")
+        async for chunk in super().generate(model, messages, options):
+            yield chunk
+
+
 async def test_tools_are_rejected_by_providers_without_tool_calling() -> None:
-    settings = Settings(llm_provider="ollama")
-    providers = build_providers(settings)
+    settings = Settings(llm_provider="fake")
+    provider = _NoTools(16)
     request = llm_pb2.GenerateRequest(
         messages=[llm_pb2.Message(role=llm_pb2.ROLE_USER, content="hi")], tools=[_WEATHER]
     )
-    history = llm_pb2.GenerateRequest(
-        messages=[llm_pb2.Message(role=llm_pb2.ROLE_TOOL, content="x", tool_call_id="c1")]
-    )
     server = grpc.aio.server()
-    llm_pb2_grpc.add_LlmServiceServicer_to_server(LlmServicer(providers, settings), server)
+    llm_pb2_grpc.add_LlmServiceServicer_to_server(
+        LlmServicer(Providers(provider, provider), settings), server
+    )
     port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
     try:
         async with grpc.aio.insecure_channel(f"127.0.0.1:{port}") as channel:
-            for req in (request, history):
-                with pytest.raises(grpc.aio.AioRpcError) as err:
-                    async for _ in llm_pb2_grpc.LlmServiceStub(channel).Generate(req):
-                        pass
-                assert err.value.code() == grpc.StatusCode.UNIMPLEMENTED
+            with pytest.raises(grpc.aio.AioRpcError) as err:
+                async for _ in llm_pb2_grpc.LlmServiceStub(channel).Generate(request):
+                    pass
+        assert err.value.code() == grpc.StatusCode.UNIMPLEMENTED
     finally:
         await server.stop(None)
 
@@ -278,3 +288,24 @@ async def test_list_models_reports_tool_support(stub: llm_pb2_grpc.LlmServiceStu
     embedding = next(m for m in models if m.kind == llm_pb2.MODEL_KIND_EMBEDDING)
     assert chat.supports_tools
     assert not embedding.supports_tools
+
+
+async def test_malformed_tool_json_is_an_invalid_argument(
+    stub: llm_pb2_grpc.LlmServiceStub,
+) -> None:
+    ask = llm_pb2.Message(role=llm_pb2.ROLE_USER, content="hi")
+    bad_call = llm_pb2.Message(
+        role=llm_pb2.ROLE_ASSISTANT,
+        tool_calls=[llm_pb2.ToolCall(id="c", name="weather", arguments_json="[1]")],
+    )
+    for request in (
+        llm_pb2.GenerateRequest(
+            messages=[ask], tools=[llm_pb2.ToolSpec(name="t", parameters_json_schema="{oops")]
+        ),
+        llm_pb2.GenerateRequest(messages=[ask], tools=[llm_pb2.ToolSpec(name="")]),
+        llm_pb2.GenerateRequest(messages=[ask, bad_call]),
+    ):
+        with pytest.raises(grpc.aio.AioRpcError) as err:
+            async for _ in stub.Generate(request):
+                pass
+        assert err.value.code() == grpc.StatusCode.INVALID_ARGUMENT
