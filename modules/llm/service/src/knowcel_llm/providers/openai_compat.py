@@ -1,6 +1,6 @@
 import asyncio
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -19,7 +19,9 @@ from .base import (
     ProviderRateLimitedError,
     ProviderUnavailableError,
     PullProgress,
+    Role,
     Status,
+    ToolSpec,
 )
 from .rerank import rerank_with_chat
 
@@ -72,8 +74,14 @@ class OpenAICompatProvider:
         )
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
+        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
+            raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         body: dict[str, Any] = {
             "model": model,
             "messages": [{"role": m.role.value, "content": m.content} for m in messages],

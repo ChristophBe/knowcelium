@@ -10,7 +10,7 @@ import type { Message as Message$1 } from "@bufbuild/protobuf";
  * Describes the file knowcel/llm/v1/llm.proto.
  */
 export const file_knowcel_llm_v1_llm: GenFile = /*@__PURE__*/
-  fileDesc("Chhrbm93Y2VsL2xsbS92MS9sbG0ucHJvdG8SDmtub3djZWwubGxtLnYxIk4KBU1vZGVsEgoKAmlkGAEgASgJEhAKCHByb3ZpZGVyGAIgASgJEicKBGtpbmQYAyABKA4yGS5rbm93Y2VsLmxsbS52MS5Nb2RlbEtpbmQiPgoHTWVzc2FnZRIiCgRyb2xlGAEgASgOMhQua25vd2NlbC5sbG0udjEuUm9sZRIPCgdjb250ZW50GAIgASgJImUKEUdlbmVyYXRpb25PcHRpb25zEhgKC3RlbXBlcmF0dXJlGAEgASgCSACIAQESFwoKbWF4X3Rva2VucxgCIAEoBUgBiAEBQg4KDF90ZW1wZXJhdHVyZUINCgtfbWF4X3Rva2VucyI0CgVVc2FnZRIUCgxpbnB1dF90b2tlbnMYASABKAUSFQoNb3V0cHV0X3Rva2VucxgCIAEoBSITChFMaXN0TW9kZWxzUmVxdWVzdCI7ChJMaXN0TW9kZWxzUmVzcG9uc2USJQoGbW9kZWxzGAEgAygLMhUua25vd2NlbC5sbG0udjEuTW9kZWwiGgoYR2V0UHJvdmlkZXJTdGF0dXNSZXF1ZXN0IkMKDlByb3ZpZGVySGVhbHRoEhAKCHByb3ZpZGVyGAEgASgJEg8KB2hlYWx0aHkYAiABKAgSDgoGZGV0YWlsGAMgASgJIooCChlHZXRQcm92aWRlclN0YXR1c1Jlc3BvbnNlEhAKCHByb3ZpZGVyGAEgASgJEg8KB2hlYWx0aHkYAiABKAgSDgoGZGV0YWlsGAMgASgJEhoKEmRlZmF1bHRfY2hhdF9tb2RlbBgEIAEoCRIfChdkZWZhdWx0X2VtYmVkZGluZ19tb2RlbBgFIAEoCRIcChRlbWJlZGRpbmdfZGltZW5zaW9ucxgGIAEoBRIsCgRjaGF0GAcgASgLMh4ua25vd2NlbC5sbG0udjEuUHJvdmlkZXJIZWFsdGgSMQoJZW1iZWRkaW5nGAggASgLMh4ua25vd2NlbC5sbG0udjEuUHJvdmlkZXJIZWFsdGgilgEKD0dlbmVyYXRlUmVxdWVzdBINCgVtb2RlbBgBIAEoCRIpCghtZXNzYWdlcxgCIAMoCzIXLmtub3djZWwubGxtLnYxLk1lc3NhZ2USMgoHb3B0aW9ucxgDIAEoCzIhLmtub3djZWwubGxtLnYxLkdlbmVyYXRpb25PcHRpb25zEhUKDWNhbGxlcl9tb2R1bGUYBCABKAkiZAoQR2VuZXJhdGVSZXNwb25zZRINCgVkZWx0YRgBIAEoCRIMCgRkb25lGAIgASgIEiQKBXVzYWdlGAMgASgLMhUua25vd2NlbC5sbG0udjEuVXNhZ2USDQoFbW9kZWwYBCABKAkiLQoMRW1iZWRSZXF1ZXN0Eg0KBW1vZGVsGAEgASgJEg4KBmlucHV0cxgCIAMoCSIbCglFbWJlZGRpbmcSDgoGdmFsdWVzGAEgAygCImEKDUVtYmVkUmVzcG9uc2USLQoKZW1iZWRkaW5ncxgBIAMoCzIZLmtub3djZWwubGxtLnYxLkVtYmVkZGluZxINCgVtb2RlbBgCIAEoCRISCgpkaW1lbnNpb25zGAMgASgFIkAKDVJlcmFua1JlcXVlc3QSDQoFbW9kZWwYASABKAkSDQoFcXVlcnkYAiABKAkSEQoJZG9jdW1lbnRzGAMgAygJIi8KDlJlcmFua1Jlc3BvbnNlEg4KBnNjb3JlcxgBIAMoAhINCgVtb2RlbBgCIAEoCSIzChBQdWxsTW9kZWxSZXF1ZXN0EhAKCHByb3ZpZGVyGAEgASgJEg0KBW1vZGVsGAIgASgJIlMKEVB1bGxNb2RlbFJlc3BvbnNlEg4KBnN0YXR1cxgBIAEoCRIRCgljb21wbGV0ZWQYAiABKAMSDQoFdG90YWwYAyABKAMSDAoEZG9uZRgEIAEoCCI1ChJEZWxldGVNb2RlbFJlcXVlc3QSEAoIcHJvdmlkZXIYASABKAkSDQoFbW9kZWwYAiABKAkiFQoTRGVsZXRlTW9kZWxSZXNwb25zZSIfCg9HZXRVc2FnZVJlcXVlc3QSDAoEZGF5cxgBIAEoBSKRAQoKVXNhZ2VFbnRyeRIMCgRkYXRlGAEgASgJEhAKCHByb3ZpZGVyGAIgASgJEg0KBW1vZGVsGAMgASgJEhUKDWNhbGxlcl9tb2R1bGUYBCABKAkSEAoIcmVxdWVzdHMYBSABKAMSFAoMaW5wdXRfdG9rZW5zGAYgASgDEhUKDW91dHB1dF90b2tlbnMYByABKAMiPwoQR2V0VXNhZ2VSZXNwb25zZRIrCgdlbnRyaWVzGAEgAygLMhoua25vd2NlbC5sbG0udjEuVXNhZ2VFbnRyeSpQCgRSb2xlEhQKEFJPTEVfVU5TUEVDSUZJRUQQABIPCgtST0xFX1NZU1RFTRABEg0KCVJPTEVfVVNFUhACEhIKDlJPTEVfQVNTSVNUQU5UEAMqVgoJTW9kZWxLaW5kEhoKFk1PREVMX0tJTkRfVU5TUEVDSUZJRUQQABITCg9NT0RFTF9LSU5EX0NIQVQQARIYChRNT0RFTF9LSU5EX0VNQkVERElORxACMqYFCgpMbG1TZXJ2aWNlElMKCkxpc3RNb2RlbHMSIS5rbm93Y2VsLmxsbS52MS5MaXN0TW9kZWxzUmVxdWVzdBoiLmtub3djZWwubGxtLnYxLkxpc3RNb2RlbHNSZXNwb25zZRJoChFHZXRQcm92aWRlclN0YXR1cxIoLmtub3djZWwubGxtLnYxLkdldFByb3ZpZGVyU3RhdHVzUmVxdWVzdBopLmtub3djZWwubGxtLnYxLkdldFByb3ZpZGVyU3RhdHVzUmVzcG9uc2USTwoIR2VuZXJhdGUSHy5rbm93Y2VsLmxsbS52MS5HZW5lcmF0ZVJlcXVlc3QaIC5rbm93Y2VsLmxsbS52MS5HZW5lcmF0ZVJlc3BvbnNlMAESRAoFRW1iZWQSHC5rbm93Y2VsLmxsbS52MS5FbWJlZFJlcXVlc3QaHS5rbm93Y2VsLmxsbS52MS5FbWJlZFJlc3BvbnNlEkcKBlJlcmFuaxIdLmtub3djZWwubGxtLnYxLlJlcmFua1JlcXVlc3QaHi5rbm93Y2VsLmxsbS52MS5SZXJhbmtSZXNwb25zZRJSCglQdWxsTW9kZWwSIC5rbm93Y2VsLmxsbS52MS5QdWxsTW9kZWxSZXF1ZXN0GiEua25vd2NlbC5sbG0udjEuUHVsbE1vZGVsUmVzcG9uc2UwARJWCgtEZWxldGVNb2RlbBIiLmtub3djZWwubGxtLnYxLkRlbGV0ZU1vZGVsUmVxdWVzdBojLmtub3djZWwubGxtLnYxLkRlbGV0ZU1vZGVsUmVzcG9uc2USTQoIR2V0VXNhZ2USHy5rbm93Y2VsLmxsbS52MS5HZXRVc2FnZVJlcXVlc3QaIC5rbm93Y2VsLmxsbS52MS5HZXRVc2FnZVJlc3BvbnNlQkJaQGdpdGh1Yi5jb20vQ2hyaXN0b3BoQmUva25vd2NlbGl1bS9tb2R1bGVzL2xsbS9hcGkvZ28vbGxtdjE7bGxtdjFiBnByb3RvMw");
+  fileDesc("Chhrbm93Y2VsL2xsbS92MS9sbG0ucHJvdG8SDmtub3djZWwubGxtLnYxImYKBU1vZGVsEgoKAmlkGAEgASgJEhAKCHByb3ZpZGVyGAIgASgJEicKBGtpbmQYAyABKA4yGS5rbm93Y2VsLmxsbS52MS5Nb2RlbEtpbmQSFgoOc3VwcG9ydHNfdG9vbHMYBCABKAgiggEKB01lc3NhZ2USIgoEcm9sZRgBIAEoDjIULmtub3djZWwubGxtLnYxLlJvbGUSDwoHY29udGVudBgCIAEoCRIsCgp0b29sX2NhbGxzGAMgAygLMhgua25vd2NlbC5sbG0udjEuVG9vbENhbGwSFAoMdG9vbF9jYWxsX2lkGAQgASgJIk0KCFRvb2xTcGVjEgwKBG5hbWUYASABKAkSEwoLZGVzY3JpcHRpb24YAiABKAkSHgoWcGFyYW1ldGVyc19qc29uX3NjaGVtYRgDIAEoCSI8CghUb29sQ2FsbBIKCgJpZBgBIAEoCRIMCgRuYW1lGAIgASgJEhYKDmFyZ3VtZW50c19qc29uGAMgASgJImUKEUdlbmVyYXRpb25PcHRpb25zEhgKC3RlbXBlcmF0dXJlGAEgASgCSACIAQESFwoKbWF4X3Rva2VucxgCIAEoBUgBiAEBQg4KDF90ZW1wZXJhdHVyZUINCgtfbWF4X3Rva2VucyI0CgVVc2FnZRIUCgxpbnB1dF90b2tlbnMYASABKAUSFQoNb3V0cHV0X3Rva2VucxgCIAEoBSITChFMaXN0TW9kZWxzUmVxdWVzdCI7ChJMaXN0TW9kZWxzUmVzcG9uc2USJQoGbW9kZWxzGAEgAygLMhUua25vd2NlbC5sbG0udjEuTW9kZWwiGgoYR2V0UHJvdmlkZXJTdGF0dXNSZXF1ZXN0IkMKDlByb3ZpZGVySGVhbHRoEhAKCHByb3ZpZGVyGAEgASgJEg8KB2hlYWx0aHkYAiABKAgSDgoGZGV0YWlsGAMgASgJIooCChlHZXRQcm92aWRlclN0YXR1c1Jlc3BvbnNlEhAKCHByb3ZpZGVyGAEgASgJEg8KB2hlYWx0aHkYAiABKAgSDgoGZGV0YWlsGAMgASgJEhoKEmRlZmF1bHRfY2hhdF9tb2RlbBgEIAEoCRIfChdkZWZhdWx0X2VtYmVkZGluZ19tb2RlbBgFIAEoCRIcChRlbWJlZGRpbmdfZGltZW5zaW9ucxgGIAEoBRIsCgRjaGF0GAcgASgLMh4ua25vd2NlbC5sbG0udjEuUHJvdmlkZXJIZWFsdGgSMQoJZW1iZWRkaW5nGAggASgLMh4ua25vd2NlbC5sbG0udjEuUHJvdmlkZXJIZWFsdGgivwEKD0dlbmVyYXRlUmVxdWVzdBINCgVtb2RlbBgBIAEoCRIpCghtZXNzYWdlcxgCIAMoCzIXLmtub3djZWwubGxtLnYxLk1lc3NhZ2USMgoHb3B0aW9ucxgDIAEoCzIhLmtub3djZWwubGxtLnYxLkdlbmVyYXRpb25PcHRpb25zEhUKDWNhbGxlcl9tb2R1bGUYBCABKAkSJwoFdG9vbHMYBSADKAsyGC5rbm93Y2VsLmxsbS52MS5Ub29sU3BlYyKSAQoQR2VuZXJhdGVSZXNwb25zZRINCgVkZWx0YRgBIAEoCRIMCgRkb25lGAIgASgIEiQKBXVzYWdlGAMgASgLMhUua25vd2NlbC5sbG0udjEuVXNhZ2USDQoFbW9kZWwYBCABKAkSLAoKdG9vbF9jYWxscxgFIAMoCzIYLmtub3djZWwubGxtLnYxLlRvb2xDYWxsIi0KDEVtYmVkUmVxdWVzdBINCgVtb2RlbBgBIAEoCRIOCgZpbnB1dHMYAiADKAkiGwoJRW1iZWRkaW5nEg4KBnZhbHVlcxgBIAMoAiJhCg1FbWJlZFJlc3BvbnNlEi0KCmVtYmVkZGluZ3MYASADKAsyGS5rbm93Y2VsLmxsbS52MS5FbWJlZGRpbmcSDQoFbW9kZWwYAiABKAkSEgoKZGltZW5zaW9ucxgDIAEoBSJACg1SZXJhbmtSZXF1ZXN0Eg0KBW1vZGVsGAEgASgJEg0KBXF1ZXJ5GAIgASgJEhEKCWRvY3VtZW50cxgDIAMoCSIvCg5SZXJhbmtSZXNwb25zZRIOCgZzY29yZXMYASADKAISDQoFbW9kZWwYAiABKAkiMwoQUHVsbE1vZGVsUmVxdWVzdBIQCghwcm92aWRlchgBIAEoCRINCgVtb2RlbBgCIAEoCSJTChFQdWxsTW9kZWxSZXNwb25zZRIOCgZzdGF0dXMYASABKAkSEQoJY29tcGxldGVkGAIgASgDEg0KBXRvdGFsGAMgASgDEgwKBGRvbmUYBCABKAgiNQoSRGVsZXRlTW9kZWxSZXF1ZXN0EhAKCHByb3ZpZGVyGAEgASgJEg0KBW1vZGVsGAIgASgJIhUKE0RlbGV0ZU1vZGVsUmVzcG9uc2UiHwoPR2V0VXNhZ2VSZXF1ZXN0EgwKBGRheXMYASABKAUikQEKClVzYWdlRW50cnkSDAoEZGF0ZRgBIAEoCRIQCghwcm92aWRlchgCIAEoCRINCgVtb2RlbBgDIAEoCRIVCg1jYWxsZXJfbW9kdWxlGAQgASgJEhAKCHJlcXVlc3RzGAUgASgDEhQKDGlucHV0X3Rva2VucxgGIAEoAxIVCg1vdXRwdXRfdG9rZW5zGAcgASgDIj8KEEdldFVzYWdlUmVzcG9uc2USKwoHZW50cmllcxgBIAMoCzIaLmtub3djZWwubGxtLnYxLlVzYWdlRW50cnkqXwoEUm9sZRIUChBST0xFX1VOU1BFQ0lGSUVEEAASDwoLUk9MRV9TWVNURU0QARINCglST0xFX1VTRVIQAhISCg5ST0xFX0FTU0lTVEFOVBADEg0KCVJPTEVfVE9PTBAEKlYKCU1vZGVsS2luZBIaChZNT0RFTF9LSU5EX1VOU1BFQ0lGSUVEEAASEwoPTU9ERUxfS0lORF9DSEFUEAESGAoUTU9ERUxfS0lORF9FTUJFRERJTkcQAjKmBQoKTGxtU2VydmljZRJTCgpMaXN0TW9kZWxzEiEua25vd2NlbC5sbG0udjEuTGlzdE1vZGVsc1JlcXVlc3QaIi5rbm93Y2VsLmxsbS52MS5MaXN0TW9kZWxzUmVzcG9uc2USaAoRR2V0UHJvdmlkZXJTdGF0dXMSKC5rbm93Y2VsLmxsbS52MS5HZXRQcm92aWRlclN0YXR1c1JlcXVlc3QaKS5rbm93Y2VsLmxsbS52MS5HZXRQcm92aWRlclN0YXR1c1Jlc3BvbnNlEk8KCEdlbmVyYXRlEh8ua25vd2NlbC5sbG0udjEuR2VuZXJhdGVSZXF1ZXN0GiAua25vd2NlbC5sbG0udjEuR2VuZXJhdGVSZXNwb25zZTABEkQKBUVtYmVkEhwua25vd2NlbC5sbG0udjEuRW1iZWRSZXF1ZXN0Gh0ua25vd2NlbC5sbG0udjEuRW1iZWRSZXNwb25zZRJHCgZSZXJhbmsSHS5rbm93Y2VsLmxsbS52MS5SZXJhbmtSZXF1ZXN0Gh4ua25vd2NlbC5sbG0udjEuUmVyYW5rUmVzcG9uc2USUgoJUHVsbE1vZGVsEiAua25vd2NlbC5sbG0udjEuUHVsbE1vZGVsUmVxdWVzdBohLmtub3djZWwubGxtLnYxLlB1bGxNb2RlbFJlc3BvbnNlMAESVgoLRGVsZXRlTW9kZWwSIi5rbm93Y2VsLmxsbS52MS5EZWxldGVNb2RlbFJlcXVlc3QaIy5rbm93Y2VsLmxsbS52MS5EZWxldGVNb2RlbFJlc3BvbnNlEk0KCEdldFVzYWdlEh8ua25vd2NlbC5sbG0udjEuR2V0VXNhZ2VSZXF1ZXN0GiAua25vd2NlbC5sbG0udjEuR2V0VXNhZ2VSZXNwb25zZUJCWkBnaXRodWIuY29tL0NocmlzdG9waEJlL2tub3djZWxpdW0vbW9kdWxlcy9sbG0vYXBpL2dvL2xsbXYxO2xsbXYxYgZwcm90bzM");
 
 /**
  * @generated from message knowcel.llm.v1.Model
@@ -30,6 +30,13 @@ export type Model = Message$1<"knowcel.llm.v1.Model"> & {
    * @generated from field: knowcel.llm.v1.ModelKind kind = 3;
    */
   kind: ModelKind;
+
+  /**
+   * True when the model can call the tools of a GenerateRequest.
+   *
+   * @generated from field: bool supports_tools = 4;
+   */
+  supportsTools: boolean;
 };
 
 /**
@@ -52,6 +59,20 @@ export type Message = Message$1<"knowcel.llm.v1.Message"> & {
    * @generated from field: string content = 2;
    */
   content: string;
+
+  /**
+   * On an assistant message: the tools the model called in that turn.
+   *
+   * @generated from field: repeated knowcel.llm.v1.ToolCall tool_calls = 3;
+   */
+  toolCalls: ToolCall[];
+
+  /**
+   * On a tool message: the id of the ToolCall that content answers.
+   *
+   * @generated from field: string tool_call_id = 4;
+   */
+  toolCallId: string;
 };
 
 /**
@@ -60,6 +81,69 @@ export type Message = Message$1<"knowcel.llm.v1.Message"> & {
  */
 export const MessageSchema: GenMessage<Message> = /*@__PURE__*/
   messageDesc(file_knowcel_llm_v1_llm, 1);
+
+/**
+ * ToolSpec describes a tool the model may call.
+ *
+ * @generated from message knowcel.llm.v1.ToolSpec
+ */
+export type ToolSpec = Message$1<"knowcel.llm.v1.ToolSpec"> & {
+  /**
+   * @generated from field: string name = 1;
+   */
+  name: string;
+
+  /**
+   * @generated from field: string description = 2;
+   */
+  description: string;
+
+  /**
+   * JSON Schema of the arguments object, as a JSON string.
+   *
+   * @generated from field: string parameters_json_schema = 3;
+   */
+  parametersJsonSchema: string;
+};
+
+/**
+ * Describes the message knowcel.llm.v1.ToolSpec.
+ * Use `create(ToolSpecSchema)` to create a new message.
+ */
+export const ToolSpecSchema: GenMessage<ToolSpec> = /*@__PURE__*/
+  messageDesc(file_knowcel_llm_v1_llm, 2);
+
+/**
+ * ToolCall is the model's request to run a tool; the caller runs it and
+ * answers with a tool message carrying the same id.
+ *
+ * @generated from message knowcel.llm.v1.ToolCall
+ */
+export type ToolCall = Message$1<"knowcel.llm.v1.ToolCall"> & {
+  /**
+   * @generated from field: string id = 1;
+   */
+  id: string;
+
+  /**
+   * @generated from field: string name = 2;
+   */
+  name: string;
+
+  /**
+   * The arguments as a JSON object string.
+   *
+   * @generated from field: string arguments_json = 3;
+   */
+  argumentsJson: string;
+};
+
+/**
+ * Describes the message knowcel.llm.v1.ToolCall.
+ * Use `create(ToolCallSchema)` to create a new message.
+ */
+export const ToolCallSchema: GenMessage<ToolCall> = /*@__PURE__*/
+  messageDesc(file_knowcel_llm_v1_llm, 3);
 
 /**
  * @generated from message knowcel.llm.v1.GenerationOptions
@@ -81,7 +165,7 @@ export type GenerationOptions = Message$1<"knowcel.llm.v1.GenerationOptions"> & 
  * Use `create(GenerationOptionsSchema)` to create a new message.
  */
 export const GenerationOptionsSchema: GenMessage<GenerationOptions> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 2);
+  messageDesc(file_knowcel_llm_v1_llm, 4);
 
 /**
  * @generated from message knowcel.llm.v1.Usage
@@ -103,7 +187,7 @@ export type Usage = Message$1<"knowcel.llm.v1.Usage"> & {
  * Use `create(UsageSchema)` to create a new message.
  */
 export const UsageSchema: GenMessage<Usage> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 3);
+  messageDesc(file_knowcel_llm_v1_llm, 5);
 
 /**
  * @generated from message knowcel.llm.v1.ListModelsRequest
@@ -116,7 +200,7 @@ export type ListModelsRequest = Message$1<"knowcel.llm.v1.ListModelsRequest"> & 
  * Use `create(ListModelsRequestSchema)` to create a new message.
  */
 export const ListModelsRequestSchema: GenMessage<ListModelsRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 4);
+  messageDesc(file_knowcel_llm_v1_llm, 6);
 
 /**
  * @generated from message knowcel.llm.v1.ListModelsResponse
@@ -136,7 +220,7 @@ export type ListModelsResponse = Message$1<"knowcel.llm.v1.ListModelsResponse"> 
  * Use `create(ListModelsResponseSchema)` to create a new message.
  */
 export const ListModelsResponseSchema: GenMessage<ListModelsResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 5);
+  messageDesc(file_knowcel_llm_v1_llm, 7);
 
 /**
  * @generated from message knowcel.llm.v1.GetProviderStatusRequest
@@ -149,7 +233,7 @@ export type GetProviderStatusRequest = Message$1<"knowcel.llm.v1.GetProviderStat
  * Use `create(GetProviderStatusRequestSchema)` to create a new message.
  */
 export const GetProviderStatusRequestSchema: GenMessage<GetProviderStatusRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 6);
+  messageDesc(file_knowcel_llm_v1_llm, 8);
 
 /**
  * ProviderHealth is the state of the provider serving one task.
@@ -180,7 +264,7 @@ export type ProviderHealth = Message$1<"knowcel.llm.v1.ProviderHealth"> & {
  * Use `create(ProviderHealthSchema)` to create a new message.
  */
 export const ProviderHealthSchema: GenMessage<ProviderHealth> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 7);
+  messageDesc(file_knowcel_llm_v1_llm, 9);
 
 /**
  * @generated from message knowcel.llm.v1.GetProviderStatusResponse
@@ -243,7 +327,7 @@ export type GetProviderStatusResponse = Message$1<"knowcel.llm.v1.GetProviderSta
  * Use `create(GetProviderStatusResponseSchema)` to create a new message.
  */
 export const GetProviderStatusResponseSchema: GenMessage<GetProviderStatusResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 8);
+  messageDesc(file_knowcel_llm_v1_llm, 10);
 
 /**
  * @generated from message knowcel.llm.v1.GenerateRequest
@@ -273,6 +357,14 @@ export type GenerateRequest = Message$1<"knowcel.llm.v1.GenerateRequest"> & {
    * @generated from field: string caller_module = 4;
    */
   callerModule: string;
+
+  /**
+   * Tools the model may call instead of answering. Only for models with
+   * Model.supports_tools; other models return UNIMPLEMENTED.
+   *
+   * @generated from field: repeated knowcel.llm.v1.ToolSpec tools = 5;
+   */
+  tools: ToolSpec[];
 };
 
 /**
@@ -280,7 +372,7 @@ export type GenerateRequest = Message$1<"knowcel.llm.v1.GenerateRequest"> & {
  * Use `create(GenerateRequestSchema)` to create a new message.
  */
 export const GenerateRequestSchema: GenMessage<GenerateRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 9);
+  messageDesc(file_knowcel_llm_v1_llm, 11);
 
 /**
  * @generated from message knowcel.llm.v1.GenerateResponse
@@ -307,6 +399,13 @@ export type GenerateResponse = Message$1<"knowcel.llm.v1.GenerateResponse"> & {
    * @generated from field: string model = 4;
    */
   model: string;
+
+  /**
+   * Complete tool calls the model made, on the last message before done.
+   *
+   * @generated from field: repeated knowcel.llm.v1.ToolCall tool_calls = 5;
+   */
+  toolCalls: ToolCall[];
 };
 
 /**
@@ -314,7 +413,7 @@ export type GenerateResponse = Message$1<"knowcel.llm.v1.GenerateResponse"> & {
  * Use `create(GenerateResponseSchema)` to create a new message.
  */
 export const GenerateResponseSchema: GenMessage<GenerateResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 10);
+  messageDesc(file_knowcel_llm_v1_llm, 12);
 
 /**
  * @generated from message knowcel.llm.v1.EmbedRequest
@@ -338,7 +437,7 @@ export type EmbedRequest = Message$1<"knowcel.llm.v1.EmbedRequest"> & {
  * Use `create(EmbedRequestSchema)` to create a new message.
  */
 export const EmbedRequestSchema: GenMessage<EmbedRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 11);
+  messageDesc(file_knowcel_llm_v1_llm, 13);
 
 /**
  * @generated from message knowcel.llm.v1.Embedding
@@ -355,7 +454,7 @@ export type Embedding = Message$1<"knowcel.llm.v1.Embedding"> & {
  * Use `create(EmbeddingSchema)` to create a new message.
  */
 export const EmbeddingSchema: GenMessage<Embedding> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 12);
+  messageDesc(file_knowcel_llm_v1_llm, 14);
 
 /**
  * @generated from message knowcel.llm.v1.EmbedResponse
@@ -382,7 +481,7 @@ export type EmbedResponse = Message$1<"knowcel.llm.v1.EmbedResponse"> & {
  * Use `create(EmbedResponseSchema)` to create a new message.
  */
 export const EmbedResponseSchema: GenMessage<EmbedResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 13);
+  messageDesc(file_knowcel_llm_v1_llm, 15);
 
 /**
  * @generated from message knowcel.llm.v1.RerankRequest
@@ -413,7 +512,7 @@ export type RerankRequest = Message$1<"knowcel.llm.v1.RerankRequest"> & {
  * Use `create(RerankRequestSchema)` to create a new message.
  */
 export const RerankRequestSchema: GenMessage<RerankRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 14);
+  messageDesc(file_knowcel_llm_v1_llm, 16);
 
 /**
  * @generated from message knowcel.llm.v1.RerankResponse
@@ -438,7 +537,7 @@ export type RerankResponse = Message$1<"knowcel.llm.v1.RerankResponse"> & {
  * Use `create(RerankResponseSchema)` to create a new message.
  */
 export const RerankResponseSchema: GenMessage<RerankResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 15);
+  messageDesc(file_knowcel_llm_v1_llm, 17);
 
 /**
  * @generated from message knowcel.llm.v1.PullModelRequest
@@ -463,7 +562,7 @@ export type PullModelRequest = Message$1<"knowcel.llm.v1.PullModelRequest"> & {
  * Use `create(PullModelRequestSchema)` to create a new message.
  */
 export const PullModelRequestSchema: GenMessage<PullModelRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 16);
+  messageDesc(file_knowcel_llm_v1_llm, 18);
 
 /**
  * @generated from message knowcel.llm.v1.PullModelResponse
@@ -501,7 +600,7 @@ export type PullModelResponse = Message$1<"knowcel.llm.v1.PullModelResponse"> & 
  * Use `create(PullModelResponseSchema)` to create a new message.
  */
 export const PullModelResponseSchema: GenMessage<PullModelResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 17);
+  messageDesc(file_knowcel_llm_v1_llm, 19);
 
 /**
  * @generated from message knowcel.llm.v1.DeleteModelRequest
@@ -525,7 +624,7 @@ export type DeleteModelRequest = Message$1<"knowcel.llm.v1.DeleteModelRequest"> 
  * Use `create(DeleteModelRequestSchema)` to create a new message.
  */
 export const DeleteModelRequestSchema: GenMessage<DeleteModelRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 18);
+  messageDesc(file_knowcel_llm_v1_llm, 20);
 
 /**
  * @generated from message knowcel.llm.v1.DeleteModelResponse
@@ -538,7 +637,7 @@ export type DeleteModelResponse = Message$1<"knowcel.llm.v1.DeleteModelResponse"
  * Use `create(DeleteModelResponseSchema)` to create a new message.
  */
 export const DeleteModelResponseSchema: GenMessage<DeleteModelResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 19);
+  messageDesc(file_knowcel_llm_v1_llm, 21);
 
 /**
  * @generated from message knowcel.llm.v1.GetUsageRequest
@@ -557,7 +656,7 @@ export type GetUsageRequest = Message$1<"knowcel.llm.v1.GetUsageRequest"> & {
  * Use `create(GetUsageRequestSchema)` to create a new message.
  */
 export const GetUsageRequestSchema: GenMessage<GetUsageRequest> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 20);
+  messageDesc(file_knowcel_llm_v1_llm, 22);
 
 /**
  * UsageEntry sums the generations of one day, model and calling module.
@@ -608,7 +707,7 @@ export type UsageEntry = Message$1<"knowcel.llm.v1.UsageEntry"> & {
  * Use `create(UsageEntrySchema)` to create a new message.
  */
 export const UsageEntrySchema: GenMessage<UsageEntry> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 21);
+  messageDesc(file_knowcel_llm_v1_llm, 23);
 
 /**
  * @generated from message knowcel.llm.v1.GetUsageResponse
@@ -627,7 +726,7 @@ export type GetUsageResponse = Message$1<"knowcel.llm.v1.GetUsageResponse"> & {
  * Use `create(GetUsageResponseSchema)` to create a new message.
  */
 export const GetUsageResponseSchema: GenMessage<GetUsageResponse> = /*@__PURE__*/
-  messageDesc(file_knowcel_llm_v1_llm, 22);
+  messageDesc(file_knowcel_llm_v1_llm, 24);
 
 /**
  * @generated from enum knowcel.llm.v1.Role
@@ -652,6 +751,13 @@ export enum Role {
    * @generated from enum value: ROLE_ASSISTANT = 3;
    */
   ASSISTANT = 3,
+
+  /**
+   * The result of a ToolCall, sent back with the matching tool_call_id.
+   *
+   * @generated from enum value: ROLE_TOOL = 4;
+   */
+  TOOL = 4,
 }
 
 /**

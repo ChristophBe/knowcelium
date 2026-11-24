@@ -1,7 +1,7 @@
 import asyncio
 import json
 import time
-from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable
+from collections.abc import AsyncGenerator, AsyncIterator, Awaitable, Callable, Sequence
 
 import grpc
 import httpx
@@ -20,6 +20,7 @@ from knowcel_llm.providers.base import (
     ProviderUnavailableError,
     Role,
     Status,
+    ToolSpec,
 )
 from knowcel_llm.providers.fake import FakeProvider
 from knowcel_llm.providers.ollama import OllamaLimits, OllamaProvider
@@ -37,7 +38,11 @@ class FailingProvider(FakeProvider):
         self._error = error
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
         raise self._error
         yield Chunk()
@@ -58,7 +63,11 @@ class SlowProvider(FakeProvider):
         self.release = asyncio.Event()
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
         self.started.set()
         await self.release.wait()
@@ -319,7 +328,11 @@ class EndlessProvider(FakeProvider):
         self.closed = asyncio.Event()
 
     async def generate(
-        self, model: str, messages: list[Message], options: GenerationOptions
+        self,
+        model: str,
+        messages: list[Message],
+        options: GenerationOptions,
+        tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
         try:
             while True:

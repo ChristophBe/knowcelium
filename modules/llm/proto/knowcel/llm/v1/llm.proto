@@ -35,6 +35,8 @@ enum Role {
   ROLE_SYSTEM = 1;
   ROLE_USER = 2;
   ROLE_ASSISTANT = 3;
+  // The result of a ToolCall, sent back with the matching tool_call_id.
+  ROLE_TOOL = 4;
 }
 
 enum ModelKind {
@@ -47,11 +49,34 @@ message Model {
   string id = 1;
   string provider = 2;
   ModelKind kind = 3;
+  // True when the model can call the tools of a GenerateRequest.
+  bool supports_tools = 4;
 }
 
 message Message {
   Role role = 1;
   string content = 2;
+  // On an assistant message: the tools the model called in that turn.
+  repeated ToolCall tool_calls = 3;
+  // On a tool message: the id of the ToolCall that content answers.
+  string tool_call_id = 4;
+}
+
+// ToolSpec describes a tool the model may call.
+message ToolSpec {
+  string name = 1;
+  string description = 2;
+  // JSON Schema of the arguments object, as a JSON string.
+  string parameters_json_schema = 3;
+}
+
+// ToolCall is the model's request to run a tool; the caller runs it and
+// answers with a tool message carrying the same id.
+message ToolCall {
+  string id = 1;
+  string name = 2;
+  // The arguments as a JSON object string.
+  string arguments_json = 3;
 }
 
 message GenerationOptions {
@@ -107,6 +132,9 @@ message GenerateRequest {
   // Id of the calling module (e.g. "chat"), under which the generation is
   // recorded in the usage; empty is recorded as "unknown".
   string caller_module = 4;
+  // Tools the model may call instead of answering. Only for models with
+  // Model.supports_tools; other models return UNIMPLEMENTED.
+  repeated ToolSpec tools = 5;
 }
 
 message GenerateResponse {
@@ -115,6 +143,8 @@ message GenerateResponse {
   bool done = 2;
   Usage usage = 3;
   string model = 4;
+  // Complete tool calls the model made, on the last message before done.
+  repeated ToolCall tool_calls = 5;
 }
 
 message EmbedRequest {

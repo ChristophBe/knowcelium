@@ -31,6 +31,8 @@ from .providers.base import (
     ProviderUnavailableError,
     Role,
     Status,
+    ToolCall,
+    ToolSpec,
 )
 from .usage import UsageRecord, UsageStore
 
@@ -83,6 +85,7 @@ _ROLES = {
     llm_pb2.ROLE_SYSTEM: Role.SYSTEM,
     llm_pb2.ROLE_USER: Role.USER,
     llm_pb2.ROLE_ASSISTANT: Role.ASSISTANT,
+    llm_pb2.ROLE_TOOL: Role.TOOL,
 }
 _KINDS = {
     ModelKind.CHAT: llm_pb2.MODEL_KIND_CHAT,
@@ -122,7 +125,12 @@ class LlmServicer(llm_pb2_grpc.LlmServiceServicer):
                 )
         return llm_pb2.ListModelsResponse(
             models=[
-                llm_pb2.Model(id=m.id, provider=provider.name, kind=_KINDS[m.kind])
+                llm_pb2.Model(
+                    id=m.id,
+                    provider=provider.name,
+                    kind=_KINDS[m.kind],
+                    supports_tools=m.supports_tools,
+                )
                 for provider, models, kind in (
                     (self._chat, chat_models, ModelKind.CHAT),
                     (self._embedding, embedding_models, ModelKind.EMBEDDING),
@@ -163,8 +171,15 @@ class LlmServicer(llm_pb2_grpc.LlmServiceServicer):
         model = request.model or self._chat.default_chat_model
         log.info("Generate with model %s", model)
         messages = [
-            Message(role=_ROLES.get(m.role, Role.USER), content=m.content) for m in request.messages
+            Message(
+                role=_ROLES.get(m.role, Role.USER),
+                content=m.content,
+                tool_calls=tuple(_tool_call(c) for c in m.tool_calls),
+                tool_call_id=m.tool_call_id,
+            )
+            for m in request.messages
         ]
+        tools = [ToolSpec(t.name, t.description, t.parameters_json_schema) for t in request.tools]
         opts = request.options
         options = GenerationOptions(
             temperature=opts.temperature if opts.HasField("temperature") else None,
@@ -173,7 +188,7 @@ class LlmServicer(llm_pb2_grpc.LlmServiceServicer):
         async with (
             _slot(self._chat_slots, context),
             _provider_errors(context),
-            contextlib.aclosing(self._chat.generate(model, messages, options)) as chunks,
+            contextlib.aclosing(self._chat.generate(model, messages, options, tools)) as chunks,
             _logged_cancel(model),
         ):
             provider = self._chat.name
@@ -201,6 +216,10 @@ class LlmServicer(llm_pb2_grpc.LlmServiceServicer):
                     yield llm_pb2.GenerateResponse(
                         done=True,
                         model=model,
+                        tool_calls=[
+                            llm_pb2.ToolCall(id=c.id, name=c.name, arguments_json=c.arguments_json)
+                            for c in chunk.tool_calls
+                        ],
                         usage=llm_pb2.Usage(
                             input_tokens=chunk.input_tokens, output_tokens=chunk.output_tokens
                         ),
@@ -371,6 +390,10 @@ async def _logged_cancel(model: str) -> AsyncIterator[None]:
     except (asyncio.CancelledError, GeneratorExit):
         log.info("Generate cancelled by the client (model %s)", model)
         raise
+
+
+def _tool_call(call: llm_pb2.ToolCall) -> ToolCall:
+    return ToolCall(call.id, call.name, call.arguments_json)
 
 
 @contextlib.asynccontextmanager
