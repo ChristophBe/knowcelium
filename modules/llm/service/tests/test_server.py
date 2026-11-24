@@ -214,6 +214,28 @@ async def test_tool_round_trip(stub: llm_pb2_grpc.LlmServiceStub) -> None:
     assert not second[-1].tool_calls
 
 
+async def test_tool_call_keeps_nested_arguments_and_gets_a_fresh_id_per_call(
+    stub: llm_pb2_grpc.LlmServiceStub,
+) -> None:
+    ask = llm_pb2.Message(role=llm_pb2.ROLE_USER, content='[tool:weather {"filter": {"a": 1}}]')
+
+    async def call(messages: list[llm_pb2.Message]) -> llm_pb2.ToolCall:
+        responses = [
+            r
+            async for r in stub.Generate(
+                llm_pb2.GenerateRequest(messages=messages, tools=[_WEATHER])
+            )
+        ]
+        return responses[-1].tool_calls[0]
+
+    first = await call([ask])
+    assert first.arguments_json == '{"filter": {"a": 1}}'
+    again = await call(
+        [ask, llm_pb2.Message(role=llm_pb2.ROLE_TOOL, content="x", tool_call_id=first.id), ask]
+    )
+    assert again.id != first.id
+
+
 async def test_tool_trigger_needs_the_tool_in_the_request(
     stub: llm_pb2_grpc.LlmServiceStub,
 ) -> None:
@@ -232,16 +254,20 @@ async def test_tools_are_rejected_by_providers_without_tool_calling() -> None:
     request = llm_pb2.GenerateRequest(
         messages=[llm_pb2.Message(role=llm_pb2.ROLE_USER, content="hi")], tools=[_WEATHER]
     )
+    history = llm_pb2.GenerateRequest(
+        messages=[llm_pb2.Message(role=llm_pb2.ROLE_TOOL, content="x", tool_call_id="c1")]
+    )
     server = grpc.aio.server()
     llm_pb2_grpc.add_LlmServiceServicer_to_server(LlmServicer(providers, settings), server)
     port = server.add_insecure_port("127.0.0.1:0")
     await server.start()
     try:
         async with grpc.aio.insecure_channel(f"127.0.0.1:{port}") as channel:
-            with pytest.raises(grpc.aio.AioRpcError) as err:
-                async for _ in llm_pb2_grpc.LlmServiceStub(channel).Generate(request):
-                    pass
-        assert err.value.code() == grpc.StatusCode.UNIMPLEMENTED
+            for req in (request, history):
+                with pytest.raises(grpc.aio.AioRpcError) as err:
+                    async for _ in llm_pb2_grpc.LlmServiceStub(channel).Generate(req):
+                        pass
+                assert err.value.code() == grpc.StatusCode.UNIMPLEMENTED
     finally:
         await server.stop(None)
 

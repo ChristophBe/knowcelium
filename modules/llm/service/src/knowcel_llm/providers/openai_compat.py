@@ -19,6 +19,7 @@ from .base import (
     ProviderRateLimitedError,
     ProviderUnavailableError,
     PullProgress,
+    Role,
     Status,
     ToolSpec,
 )
@@ -79,7 +80,7 @@ class OpenAICompatProvider:
         options: GenerationOptions,
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        if tools:
+        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
             raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         body: dict[str, Any] = {
             "model": model,

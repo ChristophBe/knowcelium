@@ -21,7 +21,7 @@ from .base import (
 
 # A user message containing `[tool:NAME]` or `[tool:NAME {"arg": 1}]` makes the
 # fake model call the tool NAME (when the request offers it) with those arguments.
-_TOOL_TRIGGER = re.compile(r"\[tool:([\w.-]+)(?: (\{.*?\}))?\]")
+_TOOL_TRIGGER = re.compile(r"\[tool:([\w.-]+)(?: (\{.*\}))?\]")
 
 
 def _words(text: str) -> set[str]:
@@ -56,12 +56,13 @@ class FakeProvider:
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
         last = messages[-1] if messages else None
-        call = self._tool_call(last, tools)
+        call = self._tool_call(messages, tools)
         if call:
             yield Chunk(
                 done=True,
                 tool_calls=(call,),
                 input_tokens=sum(len(m.content.split()) for m in messages),
+                output_tokens=len(call.arguments_json.split()) or 1,
             )
             return
         if last and last.role is Role.TOOL:
@@ -80,7 +81,8 @@ class FakeProvider:
         )
 
     @staticmethod
-    def _tool_call(last: Message | None, tools: Sequence[ToolSpec]) -> ToolCall | None:
+    def _tool_call(history: list[Message], tools: Sequence[ToolSpec]) -> ToolCall | None:
+        last = history[-1] if history else None
         if not tools or last is None or last.role is not Role.USER:
             return None
         trigger = _TOOL_TRIGGER.search(last.content)
@@ -91,7 +93,11 @@ class FakeProvider:
             json.loads(arguments)
         except ValueError:
             arguments = "{}"
-        return ToolCall(id=f"call-{trigger[1]}", name=trigger[1], arguments_json=arguments)
+        return ToolCall(
+            id=f"call-{trigger[1]}-{sum(m.role is Role.TOOL for m in history)}",
+            name=trigger[1],
+            arguments_json=arguments,
+        )
 
     async def embed(self, model: str, inputs: list[str]) -> list[list[float]]:
         return [self._vector(f"{model}:{text}") for text in inputs]

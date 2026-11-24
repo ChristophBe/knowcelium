@@ -97,7 +97,7 @@ class AnthropicProvider:
         options: GenerationOptions,
         tools: Sequence[ToolSpec] = (),
     ) -> AsyncGenerator[Chunk]:
-        if tools:
+        if tools or any(m.role is Role.TOOL or m.tool_calls for m in messages):
             raise NotSupportedError(f"{self.name}: tool calling is not supported yet")
         system, turns = to_anthropic_messages(messages)
         if not turns:
