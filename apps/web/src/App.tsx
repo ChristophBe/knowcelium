@@ -51,6 +51,8 @@ import { CurrentUserLoader } from "./CurrentUserLoader.tsx";
 import { ModuleBoundary } from "./ModuleBoundary.tsx";
 import { ModuleRoutes } from "./ModuleRoutes.tsx";
 import { NavBadge } from "./NavBadge.tsx";
+import { NotificationCenter } from "./NotificationCenter.tsx";
+import { useNotificationStorage } from "./notification-storage.ts";
 import { activeModules, navEntries } from "./registry.ts";
 import { HeaderSearch } from "./search/HeaderSearch.tsx";
 import { searchProviders } from "./search/pages.ts";
@@ -127,6 +129,7 @@ function Shell({ modules, providers }: { modules: ModuleManifest[]; providers: S
   useFocusOnNavigation(main);
   const narrow = useMediaQuery(NARROW_QUERY);
   const drawer = useDrawer(narrow);
+  useNotificationStorage();
   // While the drawer is open, the rest of the page is out of reach.
   const behind = drawer.open ? { inert: true } : {};
   return (
@@ -155,6 +158,12 @@ function Shell({ modules, providers }: { modules: ModuleManifest[]; providers: S
           <Menu className="size-5" />
         </IconButton>
         <Logo size={22} nameUnderImage={false} className="font-serif" />
+        {/* One bell at a time: here on a narrow screen, else at the top of the sidebar. */}
+        {narrow && (
+          <div className="ml-auto">
+            <NotificationCenter />
+          </div>
+        )}
       </header>
       {drawer.open && (
         <button
@@ -176,10 +185,12 @@ function Shell({ modules, providers }: { modules: ModuleManifest[]; providers: S
       >
         <div className="flex items-center justify-between px-5 py-5">
           <Logo size={24} className="font-serif" />
-          {narrow && (
+          {narrow ? (
             <IconButton label="Close menu" onClick={drawer.hide}>
               <X className="size-5" />
             </IconButton>
+          ) : (
+            <NotificationCenter />
           )}
         </div>
         <div className="px-3 pb-4">

@@ -88,6 +88,40 @@ export function defineNotifications<const Id extends string>(
   };
 }
 
+/** Marks one entry as read. */
+export function markNotificationRead(id: number) {
+  if (entries.some((e) => e.id === id && !e.read)) {
+    publish(entries.map((e) => (e.id === id ? { ...e, read: true } : e)));
+  }
+}
+
+/** Marks every entry as read. */
+export function markAllNotificationsRead() {
+  if (entries.some((e) => !e.read)) publish(entries.map((e) => ({ ...e, read: true })));
+}
+
+/**
+ * Loads saved entries (oldest first), for the shell once it knows whose they
+ * are. With `keepCurrent`, entries recorded in the meantime follow the saved
+ * ones; otherwise they are dropped. Ids are assigned anew.
+ */
+export function restoreNotifications(
+  saved: readonly NotificationEntry[],
+  { keepCurrent = false }: { keepCurrent?: boolean } = {},
+) {
+  const all = keepCurrent ? [...saved, ...entries] : saved;
+  publish(all.slice(-MAX_ENTRIES).map((e) => ({ ...e, id: nextId++ })));
+}
+
+/** Calls `listener` with the entries after every change, e.g. to save them; returns how to stop. */
+export function onNotificationsChange(listener: (entries: readonly NotificationEntry[]) => void) {
+  const run = () => listener(entries);
+  listeners.add(run);
+  return () => {
+    listeners.delete(run);
+  };
+}
+
 /** Empties the list. */
 export function clearNotifications() {
   publish([]);

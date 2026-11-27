@@ -21,6 +21,8 @@ The sidebar on the left leads to every area:
 
 The search box at the top of the sidebar searches from anywhere; press ⌘K or Ctrl+K to jump into it. See [Search from any page](search.md#search-from-any-page).
 
+The bell at the top of the sidebar lists what finished while you were away. See [Notifications](notifications.md).
+
 Knowcelium opens on **Chat**.
 
 ## Use Knowcelium on a phone
