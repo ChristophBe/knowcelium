@@ -23,7 +23,7 @@ const file = (name: string, type = "text/plain") => new File(["content"], name, 
 function fakeClient(outcome = JobStatus.DONE) {
   let n = 0;
   const job = (id: string, status: JobStatus, error = "") =>
-    create(JobSchema, { id, filename: id, status, error });
+    create(JobSchema, { id, filename: id, status, error, documentId: `doc-${id}` });
   const client = {
     createUpload: vi.fn(async () => {
       n++;
@@ -261,14 +261,40 @@ describe("useUploads", () => {
     );
   });
 
-  it("uses toasts instead once the page is gone", async () => {
+  it("notifies with the document while the page is open, besides announcing", async () => {
+    const { hook, events } = setup();
+    act(() => hook.result.current.add([file("a.md")]));
+    await waitFor(() =>
+      expect(events.notify).toHaveBeenCalledWith("a.md added", false, {
+        id: "job1",
+        documentId: "doc-job1",
+      }),
+    );
+    expect(events.announce).toHaveBeenCalledWith("a.md is ready", false);
+  });
+
+  it("notifies about failed processing", async () => {
+    const { hook, events } = setup(fakeClient(JobStatus.FAILED));
+    act(() => hook.result.current.add([file("scan.md")]));
+    await waitFor(() =>
+      expect(events.notify).toHaveBeenCalledWith("Couldn't process scan.md", true, {
+        id: "job1",
+        documentId: "doc-job1",
+      }),
+    );
+  });
+
+  it("still notifies once the page is gone, without announcing", async () => {
     const { put, calls } = controlledPut();
     const { hook, events } = setup(fakeClient(), put);
     act(() => hook.result.current.add([file("a.md")]));
     await waitFor(() => expect(calls).toHaveLength(1));
     hook.unmount();
     await act(async () => calls[0]?.settle());
-    await waitFor(() => expect(events.notify).toHaveBeenCalledWith("a.md added", false));
+    await waitFor(() =>
+      expect(events.notify).toHaveBeenCalledWith("a.md added", false, expect.anything()),
+    );
+    expect(events.announce).not.toHaveBeenCalledWith("a.md is ready", false);
   });
 });
 
