@@ -238,6 +238,40 @@ async def test_tool_call_keeps_nested_arguments_and_gets_a_fresh_id_per_call(
     assert again.id != first.id
 
 
+async def test_several_triggers_are_called_one_after_the_other(
+    stub: llm_pb2_grpc.LlmServiceStub,
+) -> None:
+    other = llm_pb2.ToolSpec(name="other", parameters_json_schema='{"type": "object"}')
+    ask = llm_pb2.Message(
+        role=llm_pb2.ROLE_USER, content='[tool:weather {"q": "a"}] then [tool:other {"q": "b"}]'
+    )
+    messages = [ask]
+    names = []
+    for result in ("sunny", "windy"):
+        responses = [
+            r
+            async for r in stub.Generate(
+                llm_pb2.GenerateRequest(messages=messages, tools=[_WEATHER, other])
+            )
+        ]
+        [call] = responses[-1].tool_calls
+        names.append((call.name, call.arguments_json))
+        messages += [
+            llm_pb2.Message(role=llm_pb2.ROLE_ASSISTANT, tool_calls=[call]),
+            llm_pb2.Message(role=llm_pb2.ROLE_TOOL, content=result, tool_call_id=call.id),
+        ]
+    assert names == [("weather", '{"q": "a"}'), ("other", '{"q": "b"}')]
+
+    last = [
+        r
+        async for r in stub.Generate(
+            llm_pb2.GenerateRequest(messages=messages, tools=[_WEATHER, other])
+        )
+    ]
+    assert not last[-1].tool_calls
+    assert "".join(r.delta for r in last) == "(fake answer) The tool returned: sunny windy"
+
+
 async def test_tool_trigger_needs_the_tool_in_the_request(
     stub: llm_pb2_grpc.LlmServiceStub,
 ) -> None:

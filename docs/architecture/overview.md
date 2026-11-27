@@ -154,11 +154,27 @@ sequenceDiagram
 
     U->>C: ChatService.StreamChat (via envoy)
     Note over C: answer runs in a detached task;<br/>StreamChat follows it, StopChat stops it
-    C->>L: Embed(question)
-    C->>D: SearchChunks(embedding, question text)
-    C->>L: Rerank(question, candidate chunks)
-    C->>L: Generate(system prompt + chunks) (stream)
+    alt platform knowledge on, KNOWCEL_AGENTIC on and the model supports tools (ListModels)
+        loop at most KNOWCEL_MAX_TOOL_STEPS tool calls
+            C->>L: Generate(system prompt, tools) (stream)
+            L-->>C: tool call: search_knowledge_base, search_connectors or read_document
+            C->>L: Embed(query)
+            C->>D: SearchChunks(embedding, query)
+            C->>I: SearchConnectors(query) (live connectors)
+            C-->>U: retrieval step: query, state, result count
+            Note over C: results get [n] numbers, kept across calls
+        end
+        C->>L: Generate(history + tool results, no tools) (stream)
+    else fixed pipeline: agentic off or a model without tool support
+        C->>L: Embed(question)
+        C->>D: SearchChunks(embedding, question text)
+        C->>I: SearchConnectors(question)
+        C->>L: Rerank(question, candidate chunks)
+        C->>L: Generate(system prompt + chunks) (stream)
+    end
     C-->>U: answer tokens + citations (stream)
 ```
+
+With tools the model decides when to search and what for: a greeting triggers no search, a follow-up is searched with the words the model picks, not verbatim. Every call is saved as a step (query, state, result count) on the assistant message, so the user sees the same steps after a reload; the live stream carries them as `retrieval` events. Stopping the answer cancels a tool call in flight and keeps the partial answer. A connector that is slow or down is reported to the model as unavailable and the answer still arrives. [ADR 0016](../adr/0016-chat-tool-calling.md) records why this is native tool calling in `llm` and not LangChain.
 
 On a processing error the worker sets the document to `FAILED` and publishes `knowcel.ingestion.failed` instead; the ingestion service marks the job failed. JetStream redelivers an unacknowledged `uploaded` event up to three times.

@@ -54,11 +54,30 @@ answer lists it under **Connector sources** with a **Live** label next to the en
 Stop the logistics mock (`docker compose stop showcase-logistics`) and ask again to see it reported
 as unavailable while the answer still arrives from documents.
 
+### Let the model pick the searches
+
+With a chat model that supports tool calling (the model list shows which), chat does not search the question as typed: the model first searches the documents and then, for what only the live system knows, asks the logistics connector. Ask the second question again and watch the step list:
+
+> Which open change requests affect parts whose supplier has a delayed shipment?
+
+1. **Searched Your documents for “…”: found N passages**, a query the model wrote, for example the change requests and the delayed supplier.
+2. **Searched showcase-logistics for “delayed”: found N results**, the live shipment search.
+
+The answer cites CR-3001 and CR-3004 under **Sources** and the shipments under **Connector sources** with the **Live** label. The steps collapse into **Searched for …** and are the same after a reload. A model without tool support gets the fixed search of the question instead, without queries in the steps.
+
+The fake LLM provider (`KNOWCEL_LLM_PROVIDER=fake`, as in the e2e stacks) never searches on its own. Script it with triggers in the question; it calls them one after the other and its answer echoes what they found:
+
+```text
+Which open change requests affect parts whose supplier has a delayed shipment? [tool:search_knowledge_base {"query": "change requests delayed shipment supplier"}] [tool:search_connectors {"query": "delayed"}]
+```
+
+`KNOWCEL_AGENTIC=false` turns the model's own searches off (the shared e2e stacks do, so that their questions are searched as typed).
+
 For the user's view see the [user manual](../../docs/user-manual/connectors.md).
 
 ```sh
 uv run pytest -q --rootdir examples/showcase examples/showcase   # unit tests
 ```
 
-A browser check of the three questions is in `tests/browser/showcase.spec.ts`
+A browser check of the three questions and of the model-chosen searches, also after a reload, is in `tests/browser/showcase.spec.ts`
 (`KNOWCEL_E2E_SHOWCASE=1`, with `KNOWCEL_E2E_WEB` set to the running web shell, as for the connectors page check).

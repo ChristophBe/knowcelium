@@ -48,7 +48,7 @@ You only get what your administrator allows you to see in a connected system, as
 
 While the answer is prepared and a connected system is searched, a list under the status line shows each source with its state in words: **Your documents: found 2 passages**, **orders: searching…**, **orders: found 3 results**. The list disappears when the first words of the answer appear. A system that did not answer shows as **unavailable**, and the answer still arrives. While the connected systems are asked, their names are not yet known and one entry reads **Connectors: searching…**.
 
-When the language model chooses what to search for itself, each step names the question it searched for: **Searching orders for “delayed shipments”…**, then **Searched orders for “delayed shipments”: found 3 results** (for your documents, **found 3 passages**). The steps stay above the answer while it is written. Once it is finished they collapse into one line, **Searched for “delayed shipments”**, naming up to three of the questions; select the line, or press Enter on it, to list every step. The steps are saved with the answer and are the same when you reopen the conversation. A search that was still running when you stopped the answer is not listed. An answer without any search, such as a reply to "thanks", has no such line.
+How the steps appear is described in [Searches the model chooses](#searches-the-model-chooses).
 
 **Sources in this chat** in the conversation's header lists every connected system the conversation has used so far, with the number of snippets taken from it. Select a name to jump to the first answer that used it. Without any, it says **No connectors used yet**. The list is built from the saved answers, so it is the same when you reopen the conversation.
 
@@ -57,6 +57,22 @@ If a connected system did not answer in time or failed, the answer says **Some s
 Answers prefer current knowledge. Passages of a document that has been replaced by a newer version you can see, or that is marked deprecated or archived, are left out of the sources, and passages of documents that rate lower, for example because they are old, come after those of better ones. If that check isn't available, the passages are ranked by how well they match your question alone. An administrator can turn it off.
 
 Knowcelium first finds more passages than it needs, has the language model rate how well each answers your question and keeps the best rated ones, so the passages the answer is based on are the most helpful, not just the most similar. If the rating fails, the most similar passages are used instead. An administrator can turn the rating off. Passages that aren't related to your question are left out unless they contain words of it, so an answer can have fewer sources, or none. An answer that doesn't refer to any passage has no sources, even when passages were found. An answer that rests only on a section of this manual lists that section as its source. An answer without sources comes from the language model's general knowledge, and is meant to say first that nothing in your documents relates to the question. When the sources don't contain the answer, the answer is meant to say so, but check the sources before relying on it.
+
+## Searches the model chooses
+
+Most language models can decide for themselves when to search and what for. Then your question is not searched as you typed it: the model reads it, and with a follow-up such as "and the second one?" it searches for the full question, using the conversation so far. It may search your documents, ask a connected system, or read a document, once or several times, and write the answer from what it found. A reply that needs no search, such as "thanks", is answered without one.
+
+Each step names the question it searched for: **Searching orders for “delayed shipments”…**, then **Searched orders for “delayed shipments”: found 3 results** (for your documents, **found 3 passages**). The steps stay above the answer while it is written. Once it is finished they collapse into one line, **Searched for “delayed shipments”**, naming up to three of the questions; select the line, or press Enter on it, to list every step. The steps are saved with the answer and are the same when you reopen the conversation. A search that was still running when you stopped the answer is not listed. An answer without any search, such as a reply to "thanks", has no such line.
+
+Passage numbers like [1] stay the same across the searches of one answer: a passage found by two searches has one number.
+
+When the language model can't choose, your question is searched once, as you typed it, and the answer is written from what it found; the steps then name the sources but not a question, and there is no **Searched for** line. This is the case when:
+
+- the model you picked can't do it. Some local models can't; pick another one under [Choose the model that answers](#choose-the-model-that-answers) to get searches the model chooses.
+- **Use platform knowledge** is cleared, as nothing is searched then.
+- an administrator turned searches the model chooses off.
+
+An answer makes only a few searches. After that, the model has to write the answer from what it found.
 
 ## Answer without platform knowledge
 
