@@ -4,6 +4,7 @@ import {
   ArrowRight as LucideArrowRight,
   ArrowUp as LucideArrowUp,
   BarChart3 as LucideBarChart3,
+  Bell as LucideBell,
   Check as LucideCheck,
   CheckCircle2 as LucideCheckCircle2,
   ChevronLeft as LucideChevronLeft,
@@ -121,6 +122,7 @@ export const ArrowLeft = icon("arrow-left", LucideArrowLeft);
 export const ArrowRight = icon("arrow-right", LucideArrowRight);
 export const ArrowUp = icon("arrow-up", LucideArrowUp);
 export const BarChart3 = icon("bar-chart-3", LucideBarChart3);
+export const Bell = icon("bell", LucideBell);
 export const Check = icon("check", LucideCheck);
 export const CheckCircle2 = icon("check-circle-2", LucideCheckCircle2);
 export const ChevronLeft = icon("chevron-left", LucideChevronLeft);

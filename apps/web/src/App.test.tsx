@@ -1,6 +1,6 @@
 import { applyBranding } from "@knowcel/ui";
 import { expectNoAxeViolations } from "@knowcel/ui/testing";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { App } from "./App.tsx";
 
@@ -20,6 +20,13 @@ describe("App shell", () => {
     expect(screen.getByRole("navigation", { name: "Main" })).toBeTruthy();
     expect(screen.getByRole("navigation", { name: "Help" })).toBeTruthy();
     await expectNoAxeViolations(container);
+  });
+
+  it("has a notification bell in the sidebar that opens the panel", () => {
+    renderAt("/nope");
+    const sidebar = screen.getByRole("complementary");
+    fireEvent.click(within(sidebar).getByRole("button", { name: "Notifications" }));
+    expect(screen.getByRole("dialog", { name: "Notifications" })).toBeTruthy();
   });
 
   it("points the skip link at the focusable main region", () => {

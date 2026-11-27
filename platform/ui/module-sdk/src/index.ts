@@ -9,10 +9,14 @@ export {
 export {
   clearNotifications,
   defineNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
   type NotificationCategory,
   type NotificationEntry,
   type NotificationInput,
   notify,
+  onNotificationsChange,
+  restoreNotifications,
   useNotifications,
 } from "./notifications.ts";
 export { useModuleRoutes } from "./routes.tsx";

@@ -38,3 +38,4 @@ The design drafts in [`docs/ux/`](../ux/) are for contributors; this manual is f
 - [Document checks](document-checks.md) — findings about documents that repeat, replace or contradict each other or are due for review, and closing them with keep, replace or ignore
 - [Teams](teams.md) — creating teams, adding and removing members by email, admin and member roles, leaving, renaming and deleting a team
 - [Users](users.md) — the user list for platform admins, making someone a platform admin and taking the role away
+- [Notifications](notifications.md) — the bell with unread notifications, opening what one is about, marking them as read, clearing them, and how long they are kept
