@@ -1,7 +1,7 @@
 import { ChatService } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import { useClient, useQuery } from "@knowcel/module-sdk";
 import { useEffect, useRef } from "react";
-import { useLocation, useNavigate } from "react-router";
+import { useLocation } from "react-router";
 import { notifyAnswerReady } from "./notify.ts";
 
 /** The query key of the conversations' activity; invalidate it when an answer starts or ends. */
@@ -13,12 +13,11 @@ const POLL_MS = 5000;
 /**
  * The number of conversations whose answer finished while the user was away,
  * for the badge on the Chat entry (see `NavItem.useBadge`). It looks again
- * only while some answer is being written, and notifies (when allowed) about
+ * only while some answer is being written, and notifies about
  * answers that finish while the tab is hidden or another page is open.
  */
 export function useUnseenAnswers(): number {
   const client = useClient(ChatService);
-  const navigate = useNavigate();
   const { pathname } = useLocation();
   const activity = useQuery({
     queryKey: ACTIVITY_KEY,
@@ -42,7 +41,7 @@ export function useUnseenAnswers(): number {
     for (const c of unseen) {
       if (before.has(c.id)) continue;
       const open = !document.hidden && viewing.current === `/m/chat/${c.id}`;
-      if (!open) notifyAnswerReady(c.title, () => navigate(`/m/chat/${c.id}`));
+      if (!open) notifyAnswerReady(c.id, c.title);
     }
   }, [conversations]);
 

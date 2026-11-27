@@ -121,7 +121,7 @@ An answer keeps being written when you open another page, another conversation o
 
 When an answer finishes while you are elsewhere, **Chat** in the sidebar shows a number: the conversations with an answer you haven't seen yet. The number goes away when you open the conversation.
 
-The first time you ask a question, Knowcelium offers to notify you when answers are ready; select **Enable notifications** and allow them in your browser. From then on, an answer that finishes while the tab is in the background or you are on another page shows a notification; select it to open the conversation. If you don't allow notifications, or your browser doesn't support them, the number in the sidebar still shows. Knowcelium offers notifications only once; you can change the permission in your browser's site settings.
+A finished answer is also a notification of the kind **Answers**: "Answer ready" with the conversation's title. While you are on another page it appears as a short message and in the [notifications panel](notifications.md); select it there to open the conversation. While the tab is in the background, your browser shows it too when you allowed browser notifications, and selecting it opens the conversation. The first time you ask a question, Knowcelium offers to turn browser notifications on; you can also change that, or turn **Answers** off or to the panel only, under **Settings** in the notifications panel. If you don't allow browser notifications, or your browser doesn't support them, the panel and the number in the sidebar still show.
 
 If the service restarts while an answer is being written, the answer so far is kept and marked **Stopped**.
 

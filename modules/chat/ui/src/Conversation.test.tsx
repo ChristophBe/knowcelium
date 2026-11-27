@@ -21,12 +21,20 @@ import {
   StreamChatResponseSchema,
 } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import { ModelKind } from "@knowcel/llm-api/knowcel/llm/v1/llm_pb";
-import { dismissToast, KbRuntimeProvider, useToasts } from "@knowcel/module-sdk";
+import {
+  clearNotifications,
+  dismissToast,
+  KbRuntimeProvider,
+  type NotificationEntry,
+  onNotificationsChange,
+  useToasts,
+} from "@knowcel/module-sdk";
 import { polyfillDialog } from "@knowcel/ui/testing/dialog";
 import { act, cleanup, fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter, Route, Routes } from "react-router";
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi } from "vitest";
 import { Conversation } from "./Conversation.tsx";
+import "./notify.ts";
 
 const getConversation = vi.fn();
 const streamChat = vi.fn();
@@ -611,60 +619,67 @@ describe("Conversation", () => {
   });
 
   describe("notifications", () => {
-    afterEach(() => vi.unstubAllGlobals());
+    let entries: readonly NotificationEntry[] = [];
+    beforeEach(() => {
+      entries = [];
+      onNotificationsChange((e) => {
+        entries = e;
+      });
+    });
+    afterEach(() => {
+      vi.unstubAllGlobals();
+      vi.restoreAllMocks();
+      clearNotifications();
+      localStorage.clear();
+    });
 
     function stubNotification(permission: NotificationPermission) {
-      const shown: string[] = [];
       const request = vi.fn(async () => "granted");
-      class Fake {
-        static permission = permission;
-        static requestPermission = request;
-        onclick: (() => void) | null = null;
-        constructor(title: string) {
-          shown.push(title);
-        }
-        close() {}
-      }
-      vi.stubGlobal("Notification", Fake);
-      return { shown, request };
+      vi.stubGlobal(
+        "Notification",
+        Object.assign(vi.fn(), { permission, requestPermission: request }),
+      );
+      return { request };
     }
 
-    it("offers browser notifications once, on the first question", async () => {
+    it("offers browser notifications through the shared offer, on a question", async () => {
       const { request } = stubNotification("default");
       streamChat.mockImplementation(completeStream("Fine."));
       await renderConversation();
       await ask("First?");
 
       const enable = await screen.findByRole("button", { name: "Enable notifications" });
-      // Permission is asked for from the button, not on its own.
       expect(request).not.toHaveBeenCalled();
       fireEvent.click(enable);
       expect(request).toHaveBeenCalledOnce();
     });
 
-    it("does not offer them again, or when they are decided or unsupported", async () => {
-      stubNotification("denied");
+    it("does not notify about an answer finishing in the visible tab", async () => {
+      stubNotification("granted");
       streamChat.mockImplementation(completeStream("Fine."));
       await renderConversation();
-      await ask("First?");
-      expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+      await ask("Question?");
 
-      vi.unstubAllGlobals();
-      vi.stubGlobal("Notification", undefined);
-      await ask("Second?");
-      expect(screen.queryByRole("button", { name: "Enable notifications" })).toBeNull();
+      expect(await screen.findByText("Fine.")).toBeTruthy();
+      expect(entries).toEqual([]);
     });
 
-    it("notifies about an answer that finishes while the tab is hidden", async () => {
-      const { shown } = stubNotification("granted");
+    it("records a notification linking to the conversation when the tab is hidden", async () => {
+      stubNotification("granted");
       vi.spyOn(document, "hidden", "get").mockReturnValue(true);
       streamChat.mockImplementation(completeStream("Fine."));
       await renderConversation();
       await ask("Question?");
 
       expect(await screen.findByText("Fine.")).toBeTruthy();
-      expect(shown).toEqual(["Q3"]);
-      vi.restoreAllMocks();
+      expect(entries).toMatchObject([
+        {
+          category: "answers",
+          body: "Q3",
+          link: expect.stringMatching(/^\/m\/chat\/c\d+$/),
+          tag: expect.stringMatching(/^c\d+$/),
+        },
+      ]);
     });
   });
 
