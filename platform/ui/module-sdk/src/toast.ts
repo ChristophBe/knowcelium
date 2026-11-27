@@ -44,7 +44,8 @@ export const toast = {
   info: (message: string, options?: { action?: ToastAction }) =>
     show("info", message, options?.action),
   /** Stays until dismissed. */
-  error: (message: string) => show("error", message),
+  error: (message: string, options?: { action?: ToastAction }) =>
+    show("error", message, options?.action),
 };
 
 export function dismissToast(id: number) {

@@ -26,6 +26,26 @@ Select **Mark all as read** at the top of the panel. The number on the bell goes
 
 Clearing removes every notification, read or not.
 
+## Choose which notifications you get
+
+Select **Settings** at the top of the panel. Each kind of notification, for example **Uploads**, has a choice:
+
+- **In app and browser** (the default): the notification appears in the panel and as a short message. While Knowcelium is in a background tab, your browser also shows a notification.
+- **In app only**: the panel and the short message, but no browser notification.
+- **Off**: nothing at all. The notification isn't added to the panel and no message appears.
+
+Your choices are kept in this browser for your account. Select **Back** to return to your notifications.
+
+## Get browser notifications
+
+A browser notification tells you about finished work while you are in another tab or window. Selecting it brings Knowcelium to the front and opens the page it is about.
+
+Your browser asks for permission once, and only after you ask for it: select **Allow browser notifications** under **Settings**, or **Enable notifications** on the message that offers it when you start something that takes a while. The settings show where things stand:
+
+- **Allowed**: browser notifications appear while Knowcelium is in a background tab.
+- **Blocked**: you declined, so your browser won't ask again. To get them, allow notifications for this site in your browser's settings.
+- **Not supported**: your browser can't show them. You still get notifications in the panel and as messages.
+
 ## How long they are kept
 
 Knowcelium keeps your 50 most recent notifications in this browser, so they are still there after you reload the page or come back later. Older ones make room for new ones. They belong to your account: someone else who signs in on the same browser doesn't see them, and you don't see them in another browser.
