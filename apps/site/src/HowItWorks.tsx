@@ -44,7 +44,7 @@ const STEPS: { icon: LucideIcon; title: string; text: string; sources?: Source[]
   {
     icon: MessageSquare,
     title: "Ask and search",
-    text: "Search by meaning or exact words, or ask in plain language; every answer comes with its sources.",
+    text: "Search by meaning or exact words, or ask in plain language, follow-ups included. The chat works out what to look up, shows what it searched, and every answer comes with its sources.",
   },
 ];
 

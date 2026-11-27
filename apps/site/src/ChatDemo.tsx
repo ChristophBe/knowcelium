@@ -36,6 +36,12 @@ export const SOURCES: Source[] = [
   },
 ];
 
+/** What the model searches for before it answers, worded as in the app's step list. */
+export const SEARCH_STEPS = [
+  { source: "showcase-engineering", query: "torque sensor v2 status", found: "1 result" },
+  { source: "showcase-logistics", query: "torque sensor stock Hamburg", found: "1 result" },
+];
+
 /** What the first scene adds: an uploaded file and two connected systems. */
 const FILES = [
   { name: "handbook.pdf", icon: FileText },
@@ -61,9 +67,11 @@ const FILE_STAGGER_MS = 900;
 const FILE_PROCESS_MS = 1500;
 const UPLOAD_END_MS = FILE_STAGGER_MS * (FILES.length - 1) + FILE_PROCESS_MS + 900 + 1800;
 
-/** Retrieval scene: when the answer starts, how long each word takes, how long it stays. */
+/** Retrieval scene: when each search step shows, when the answer starts, how long each word takes, how long it stays. */
+const STEP_MS = 800;
+const STEP_START_MS = 600;
 const WORD_MS = 55;
-const ANSWER_START_MS = 900;
+const ANSWER_START_MS = STEP_START_MS + STEP_MS * SEARCH_STEPS.length + 500;
 const HOLD_MS = 4200;
 const FADE_MS = 500;
 const TICK_MS = 50;
@@ -264,6 +272,23 @@ function AskScene({ t, playing }: { t: number; playing: boolean }) {
           {QUESTION}
         </p>
       </div>
+
+      <ul aria-label="Search steps" className="space-y-1 text-xs text-fg-muted">
+        {SEARCH_STEPS.map((step, i) => (
+          <li
+            key={step.source}
+            className={cn(
+              "flex items-center gap-2 transition-opacity duration-300",
+              t < STEP_START_MS + STEP_MS * i && "opacity-0",
+            )}
+          >
+            <Search className="size-3.5 shrink-0 text-accent" aria-hidden="true" />
+            <span className="min-w-0">
+              Searched {step.source} for “{step.query}”: found {step.found}
+            </span>
+          </li>
+        ))}
+      </ul>
 
       <div className="@container rounded-card border border-border bg-surface px-3 py-2.5 text-sm">
         <div className="grid gap-x-6 gap-y-4 @2xl:grid-cols-[minmax(0,1fr)_12rem]">

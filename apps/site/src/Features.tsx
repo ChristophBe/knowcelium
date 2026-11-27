@@ -20,7 +20,7 @@ const FEATURES: Feature[] = [
   {
     icon: MessageSquare,
     title: "Answers you can check",
-    text: "Every answer cites the passages it is based on, picked from the best matches by a second ranking pass. Point at a number to see its source; select it to open the document right at that passage.",
+    text: "The chat decides for itself what to look up: it searches your documents or a connected system, more than once when a question needs it, and skips the search for small talk. You see every search above the answer. Each answer cites the passages it is based on; point at a number to see its source, select it to open the document right at that passage.",
     demo: (
       <p className="text-sm">
         Up to 30 days a year
