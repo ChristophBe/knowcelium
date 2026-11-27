@@ -83,6 +83,8 @@ messages = Table(
     Column("status", SmallInteger, nullable=False, server_default="1"),
     # Names of the live sources (connectors) that did not answer for this answer.
     Column("unavailable_sources", JSONB, nullable=False, server_default="[]"),
+    # What was searched for this answer (fields of knowcel.chat.v1.RetrievalSource).
+    Column("search_steps", JSONB, nullable=False, server_default="[]"),
 )
 
 
@@ -337,6 +339,7 @@ class SqlRepository:
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
         unavailable_sources: Sequence[str] = (),
+        search_steps: Sequence[dict[str, Any]] = (),
     ) -> MessageRow:
         async with self._engine.begin() as conn:
             result = await conn.execute(
@@ -349,6 +352,7 @@ class SqlRepository:
                     citations=citations,
                     status=status,
                     unavailable_sources=list(unavailable_sources),
+                    search_steps=list(search_steps),
                 )
                 .returning(messages)
             )

@@ -106,7 +106,7 @@ class Citation(_message.Message):
     def __init__(self, document_id: _Optional[str] = ..., document_title: _Optional[str] = ..., chunk_index: _Optional[int] = ..., snippet: _Optional[str] = ..., score: _Optional[float] = ..., manual_page: _Optional[str] = ..., manual_section: _Optional[str] = ..., connector: _Optional[str] = ..., source_url: _Optional[str] = ...) -> None: ...
 
 class ChatMessage(_message.Message):
-    __slots__ = ("id", "role", "content", "citations", "create_time", "status", "unavailable_sources")
+    __slots__ = ("id", "role", "content", "citations", "create_time", "status", "unavailable_sources", "search_steps")
     ID_FIELD_NUMBER: _ClassVar[int]
     ROLE_FIELD_NUMBER: _ClassVar[int]
     CONTENT_FIELD_NUMBER: _ClassVar[int]
@@ -114,6 +114,7 @@ class ChatMessage(_message.Message):
     CREATE_TIME_FIELD_NUMBER: _ClassVar[int]
     STATUS_FIELD_NUMBER: _ClassVar[int]
     UNAVAILABLE_SOURCES_FIELD_NUMBER: _ClassVar[int]
+    SEARCH_STEPS_FIELD_NUMBER: _ClassVar[int]
     id: str
     role: MessageRole
     content: str
@@ -121,7 +122,8 @@ class ChatMessage(_message.Message):
     create_time: _timestamp_pb2.Timestamp
     status: MessageStatus
     unavailable_sources: _containers.RepeatedScalarFieldContainer[str]
-    def __init__(self, id: _Optional[str] = ..., role: _Optional[_Union[MessageRole, str]] = ..., content: _Optional[str] = ..., citations: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., create_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., status: _Optional[_Union[MessageStatus, str]] = ..., unavailable_sources: _Optional[_Iterable[str]] = ...) -> None: ...
+    search_steps: _containers.RepeatedCompositeFieldContainer[RetrievalSource]
+    def __init__(self, id: _Optional[str] = ..., role: _Optional[_Union[MessageRole, str]] = ..., content: _Optional[str] = ..., citations: _Optional[_Iterable[_Union[Citation, _Mapping]]] = ..., create_time: _Optional[_Union[datetime.datetime, _timestamp_pb2.Timestamp, _Mapping]] = ..., status: _Optional[_Union[MessageStatus, str]] = ..., unavailable_sources: _Optional[_Iterable[str]] = ..., search_steps: _Optional[_Iterable[_Union[RetrievalSource, _Mapping]]] = ...) -> None: ...
 
 class Conversation(_message.Message):
     __slots__ = ("id", "title", "create_time", "update_time", "document_ids", "last_message_time", "last_message_preview", "owner_id", "team_ids", "generating", "completed_unseen", "system_prompt")
@@ -306,16 +308,18 @@ class Retrieval(_message.Message):
     def __init__(self, sources: _Optional[_Iterable[_Union[RetrievalSource, _Mapping]]] = ...) -> None: ...
 
 class RetrievalSource(_message.Message):
-    __slots__ = ("kind", "connector", "state", "results")
+    __slots__ = ("kind", "connector", "state", "results", "query")
     KIND_FIELD_NUMBER: _ClassVar[int]
     CONNECTOR_FIELD_NUMBER: _ClassVar[int]
     STATE_FIELD_NUMBER: _ClassVar[int]
     RESULTS_FIELD_NUMBER: _ClassVar[int]
+    QUERY_FIELD_NUMBER: _ClassVar[int]
     kind: RetrievalSourceKind
     connector: str
     state: RetrievalState
     results: int
-    def __init__(self, kind: _Optional[_Union[RetrievalSourceKind, str]] = ..., connector: _Optional[str] = ..., state: _Optional[_Union[RetrievalState, str]] = ..., results: _Optional[int] = ...) -> None: ...
+    query: str
+    def __init__(self, kind: _Optional[_Union[RetrievalSourceKind, str]] = ..., connector: _Optional[str] = ..., state: _Optional[_Union[RetrievalState, str]] = ..., results: _Optional[int] = ..., query: _Optional[str] = ...) -> None: ...
 
 class ChatError(_message.Message):
     __slots__ = ("code", "message")

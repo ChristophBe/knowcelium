@@ -253,6 +253,8 @@ class Chat:
         answer: list[str] = []
         citations: list[chat_pb2.Citation] = []
         unavailable: list[str] = []
+        # What the model searched for; stays empty when the question is searched as it is.
+        steps: list[chat_pb2.RetrievalSource] = []
         status = chat_pb2.MESSAGE_STATUS_COMPLETE
         # With tools, the model decides what to search; otherwise the question
         # is searched once, as it is. Without the knowledge base nothing is searched.
@@ -295,6 +297,8 @@ class Chat:
                         elif isinstance(event, SourcesFound):
                             citations = event.citations
                             unavailable[:] = event.unavailable
+                        elif isinstance(event, RetrievalChanged):
+                            steps = list(event.sources)
                         yield event
                 if not writing:
                     yield ProgressChanged.of(chat_pb2.PROGRESS_STAGE_WRITING, citations)
@@ -368,12 +372,14 @@ class Chat:
             # the generator stream has cancelled the generation. Keep the text so
             # far; shielded, so a repeated cancel can't lose it halfway.
             await asyncio.shield(
-                self._save(conv.id, answer, citations, chat_pb2.MESSAGE_STATUS_STOPPED, unavailable)
+                self._save(
+                    conv.id, answer, citations, chat_pb2.MESSAGE_STATUS_STOPPED, unavailable, steps
+                )
             )
             raise
 
         yield AnswerSaved(
-            await asyncio.shield(self._save(conv.id, answer, citations, status, unavailable))
+            await asyncio.shield(self._save(conv.id, answer, citations, status, unavailable, steps))
         )
 
     async def _prompts(self, conv: ConversationRow) -> "_Prompts":
@@ -398,9 +404,12 @@ class Chat:
         citations: list[chat_pb2.Citation],
         status: chat_pb2.MessageStatus,
         unavailable: Sequence[str] = (),
+        steps: Sequence[chat_pb2.RetrievalSource] = (),
     ) -> MessageRow:
         # Only the sources the text refers to are kept, numbered as it uses them.
         text, used = used_sources("".join(answer), citations)
+        # Steps are for the queries the model chose; the fixed pipeline's have none.
+        kept = [s for s in steps if s.query and s.state != chat_pb2.RETRIEVAL_STATE_SEARCHING]
         return await self._repo.add_message(
             conversation_id,
             chat_pb2.MESSAGE_ROLE_ASSISTANT,
@@ -408,7 +417,19 @@ class Chat:
             [_citation_to_dict(c) for c in used],
             status,
             list(dict.fromkeys(unavailable)),
+            # A search that had not ended when the answer did (it was stopped) is not kept.
+            [_step_to_dict(s) for s in kept],
         )
+
+
+def _step_to_dict(step: chat_pb2.RetrievalSource) -> dict[str, Any]:
+    return {
+        "kind": step.kind,
+        "connector": step.connector,
+        "state": step.state,
+        "results": step.results,
+        "query": step.query,
+    }
 
 
 def _copy(source: chat_pb2.RetrievalSource) -> chat_pb2.RetrievalSource:

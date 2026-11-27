@@ -199,6 +199,7 @@ class MemoryRepo:
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
         unavailable_sources: Sequence[str] = (),
+        search_steps: Sequence[dict[str, Any]] = (),
     ):
         msg = MessageRow(
             uuid.uuid4(),
@@ -209,6 +210,7 @@ class MemoryRepo:
             citations,
             status,
             list(unavailable_sources),
+            list(search_steps),
         )
         self.messages.append(msg)
         conv = self.conversations[conversation_id]
@@ -1239,3 +1241,22 @@ async def test_stream_chat_reports_the_state_of_the_documents_search(env: Env) -
         chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS,
         chat_pb2.RETRIEVAL_STATE_DONE,
     )
+
+
+async def test_a_saved_answer_returns_what_was_searched(served: Served) -> None:
+    connect, repo, *_ = served
+    stub = connect(ALICE)
+    conv = (await stub.CreateConversation(chat_pb2.CreateConversationRequest())).conversation
+    step = {"kind": 2, "connector": "Orders", "state": 2, "results": 3, "query": "late"}
+    await repo.add_message(
+        uuid.UUID(conv.id), chat_pb2.MESSAGE_ROLE_ASSISTANT, "x", [], search_steps=[step]
+    )
+    await repo.add_message(uuid.UUID(conv.id), chat_pb2.MESSAGE_ROLE_ASSISTANT, "y", [])
+
+    got = await stub.GetConversation(chat_pb2.GetConversationRequest(id=conv.id))
+
+    searched, plain = got.messages
+    assert [(s.connector, s.query, s.state, s.results) for s in searched.search_steps] == [
+        ("Orders", "late", chat_pb2.RETRIEVAL_STATE_DONE, 3)
+    ]
+    assert not plain.search_steps

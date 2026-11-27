@@ -112,6 +112,10 @@ message ChatMessage {
   // answer in time or failed, by name, so their content is missing from it.
   // Only on assistant messages.
   repeated string unavailable_sources = 7;
+  // What was searched while writing the answer, in order, each step with its
+  // query and how it ended. Only on assistant messages whose model chose its
+  // searches; empty otherwise.
+  repeated RetrievalSource search_steps = 8;
 }
 
 message Conversation {
@@ -293,6 +297,9 @@ message RetrievalSource {
   RetrievalState state = 3;
   // The passages or snippets found; set when the state is DONE.
   int32 results = 4;
+  // What the model searched for; set when it chose the query itself (an agentic
+  // answer), empty when the question was searched as it is.
+  string query = 5;
 }
 
 enum RetrievalSourceKind {

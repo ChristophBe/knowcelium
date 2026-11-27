@@ -398,7 +398,7 @@ describe("Conversation", () => {
         await next();
         const steps = screen.getByRole("status", { name: "Sources searched" });
         expect(Array.from(steps.querySelectorAll("li"), (li) => li.textContent)).toEqual([
-          "Your documents: found 2 results",
+          "Your documents: found 2 passages",
           "orders: found 3 results",
           "crm: unavailable",
         ]);
@@ -426,6 +426,127 @@ describe("Conversation", () => {
         await next();
         await next();
         expect(screen.getByText("From documents.")).toBeTruthy();
+        expect(screen.queryByRole("status", { name: "Sources searched" })).toBeNull();
+      });
+    });
+
+    describe("search steps", () => {
+      const step = (
+        query: string,
+        state: RetrievalState,
+        extra: { kind?: RetrievalSourceKind; connector?: string; results?: number } = {},
+      ) =>
+        create(RetrievalSourceSchema, {
+          kind: RetrievalSourceKind.DOCUMENTS,
+          query,
+          state,
+          ...extra,
+        });
+      const trail = (...steps: ReturnType<typeof step>[]): StreamChatResponse["event"] => ({
+        case: "retrieval",
+        value: create(RetrievalSchema, { sources: steps }),
+      });
+      const orders = { kind: RetrievalSourceKind.CONNECTOR, connector: "Orders system" };
+
+      it("shows each search with its query, then collapses them into a summary", async () => {
+        const done = create(ChatMessageSchema, {
+          id: "m-agent",
+          role: MessageRole.ASSISTANT,
+          content: "Two orders are late.",
+          searchSteps: [
+            step("delayed shipments", RetrievalState.DONE, { ...orders, results: 2 }),
+            step("late orders policy", RetrievalState.DONE, { results: 3 }),
+          ],
+        });
+        const { stream, next } = steppedStream([
+          trail(step("delayed shipments", RetrievalState.SEARCHING, orders)),
+          trail(step("delayed shipments", RetrievalState.DONE, { ...orders, results: 2 })),
+          { case: "delta", value: "Two orders are late." },
+          { case: "message", value: done },
+        ]);
+        streamChat.mockImplementation(stream);
+        await renderConversation();
+        await ask("Which orders are late?");
+
+        await next();
+        const live = screen.getByRole("status", { name: "Sources searched" });
+        expect(live.textContent).toBe("Searching Orders system for “delayed shipments”…");
+
+        await next();
+        expect(screen.getByRole("status", { name: "Sources searched" }).textContent).toBe(
+          "Searched Orders system for “delayed shipments”: found 2 results",
+        );
+
+        await next();
+        saved.push(done);
+        await next();
+        const summary = await screen.findByText(/^Searched for/, { selector: "summary" });
+        expect(summary.textContent).toBe("Searched for “delayed shipments”, “late orders policy”");
+        expect(screen.queryByRole("status", { name: "Sources searched" })).toBeNull();
+      });
+
+      it("shows the saved steps after a reload, collapsed until opened", async () => {
+        saved = [
+          message(MessageRole.USER, "Which orders are late?"),
+          create(ChatMessageSchema, {
+            id: "m-saved",
+            role: MessageRole.ASSISTANT,
+            content: "Two orders are late.",
+            searchSteps: [
+              step("delayed shipments", RetrievalState.DONE, { ...orders, results: 2 }),
+              step("late orders policy", RetrievalState.UNAVAILABLE),
+            ],
+          }),
+        ];
+        await renderConversation();
+
+        const summary = await screen.findByText(/^Searched for/, { selector: "summary" });
+        const details = summary.closest("details") as HTMLDetailsElement;
+        expect(details.open).toBe(false);
+        // The summary is the control: a native disclosure, operable by keyboard.
+        expect(summary.tagName).toBe("SUMMARY");
+        fireEvent.click(summary);
+        expect(details.open).toBe(true);
+        const items = within(screen.getByRole("list", { name: "Searches" })).getAllByRole(
+          "listitem",
+        );
+        expect(items.map((li) => li.textContent)).toEqual([
+          "Searched Orders system for “delayed shipments”: found 2 results",
+          "Searched Your documents for “late orders policy”: unavailable",
+        ]);
+      });
+
+      it("names at most three queries in the summary and lists them all when opened", async () => {
+        saved = [
+          message(MessageRole.USER, "Everything?"),
+          create(ChatMessageSchema, {
+            id: "m-many",
+            role: MessageRole.ASSISTANT,
+            content: "Done.",
+            searchSteps: ["a", "b", "c", "d", "e"].map((q) =>
+              step(q, RetrievalState.DONE, { results: 1 }),
+            ),
+          }),
+        ];
+        await renderConversation();
+
+        const summary = await screen.findByText(/^Searched for/, { selector: "summary" });
+        expect(summary.textContent).toBe("Searched for “a”, “b”, “c” and 2 more");
+        fireEvent.click(summary);
+        expect(
+          within(screen.getByRole("list", { name: "Searches" })).getAllByRole("listitem"),
+        ).toHaveLength(5);
+      });
+
+      it("shows no step section for an answer without searches", async () => {
+        saved = [
+          message(MessageRole.USER, "Thanks"),
+          message(MessageRole.ASSISTANT, "You're welcome."),
+        ];
+        await renderConversation();
+
+        expect(await screen.findByText("You're welcome.")).toBeTruthy();
+        expect(screen.queryByText(/Searched for/)).toBeNull();
         expect(screen.queryByRole("status", { name: "Sources searched" })).toBeNull();
       });
     });

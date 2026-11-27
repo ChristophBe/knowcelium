@@ -8,6 +8,7 @@ import {
   ProgressStage,
   type RetrievalSource,
   RetrievalSourceKind,
+  RetrievalState,
 } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
 import {
   Code,
@@ -36,7 +37,7 @@ import { ACTIVITY_KEY } from "./badge.ts";
 import { ConversationHeader } from "./ConversationHeader.tsx";
 import { ModelPicker, useModelChoice } from "./model.tsx";
 import { notifyAnswerReady, offerNotifications } from "./notify.ts";
-import { messageAnchor, RetrievalSteps } from "./retrieval.tsx";
+import { hasQueries, messageAnchor, RetrievalSteps, SearchedSummary } from "./retrieval.tsx";
 import type { StartState } from "./StartChat.tsx";
 import { ScopeChips, SourcesControl } from "./scope.tsx";
 
@@ -97,7 +98,8 @@ function ProgressLine({ stage }: { stage: Stage }) {
         <Spinner />
         {stageLabel(stage)}
       </div>
-      {stage.sources.some((s) => s.kind === RetrievalSourceKind.CONNECTOR) && (
+      {(hasQueries(stage.sources) ||
+        stage.sources.some((s) => s.kind === RetrievalSourceKind.CONNECTOR)) && (
         <RetrievalSteps sources={stage.sources} />
       )}
     </div>
@@ -342,6 +344,7 @@ export function Conversation() {
               content={m.content}
               citations={m.citations}
               unavailableSources={m.unavailableSources}
+              searchSteps={m.searchSteps}
               conversationId={id}
               failure={m.status === MessageStatus.FAILED ? (failures[m.id] ?? "") : undefined}
               stopped={m.status === MessageStatus.STOPPED}
@@ -358,6 +361,7 @@ export function Conversation() {
                 content={stopped.answer}
                 citations={stopped.citations}
                 unavailableSources={stopped.unavailable}
+                searchSteps={stopped.stage.sources}
                 stopped
                 streaming
               />
@@ -372,6 +376,7 @@ export function Conversation() {
                   content={pending.answer}
                   citations={pending.citations}
                   unavailableSources={pending.unavailable}
+                  searchSteps={pending.stage.sources}
                   failure={pending.failure}
                   streaming
                 />
@@ -471,6 +476,7 @@ function Bubble({
   content,
   citations,
   unavailableSources,
+  searchSteps = [],
   conversationId,
   failure,
   stopped = false,
@@ -483,6 +489,8 @@ function Bubble({
   id?: string;
   /** Connectors that were asked live and did not answer, by name. */
   unavailableSources?: string[];
+  /** What was searched for the answer, when the model chose its queries. */
+  searchSteps?: RetrievalSource[];
   /** The conversation the answer is in, for what other modules add to its sources. */
   conversationId?: string;
   /** Set when the answer failed: the reason, or "" when it isn't known. */
@@ -511,6 +519,15 @@ function Bubble({
       id={id}
       className="flex flex-col gap-2 scroll-mt-24 rounded-card border border-border bg-surface px-4 py-2 text-base @container"
     >
+      {hasQueries(searchSteps) &&
+        (streaming && !stopped ? (
+          <RetrievalSteps sources={searchSteps} />
+        ) : (
+          // A search still running when the answer was stopped has no result to show.
+          <SearchedSummary
+            steps={searchSteps.filter((s) => s.state !== RetrievalState.SEARCHING)}
+          />
+        ))}
       {content && (
         <Answer
           content={content}
