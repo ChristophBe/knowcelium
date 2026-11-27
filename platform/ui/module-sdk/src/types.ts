@@ -2,6 +2,7 @@ import type { DescService } from "@bufbuild/protobuf";
 import type { Client } from "@connectrpc/connect";
 import type { ComponentType } from "react";
 import type { RouteObject } from "react-router";
+import type { NotificationCategory } from "./notifications.ts";
 
 export interface NavItem {
   /** Path relative to the module root, e.g. "" or "settings". */
@@ -121,6 +122,8 @@ export interface ModuleManifest {
   search?: SearchProvider;
   /** What the module adds to slots of other modules' pages. */
   slots?: SlotContribution[];
+  /** The notification categories the module sends, from `defineNotifications(...).categories`. */
+  notifications?: readonly NotificationCategory[];
 }
 
 /**

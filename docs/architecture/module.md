@@ -150,6 +150,14 @@ Relative TypeScript imports may go up at most two levels, so they stay inside th
 - Data access: `useClient(<Service>)` with `useQuery` / `useMutation` from `@knowcel/module-sdk`, using the module's own `@knowcel/<id>-api` package or a declared peer's. No hand-rolled `fetch`, no transport setup.
 - Components and styling come from `@knowcel/ui` and the design tokens ([UX standards](../ux-standards.md)). A module UI never imports another module's UI package; cross-module links are plain routes (`/m/document/<id>`).
 
+## Notifying users
+
+`toast` confirms an action the user just took ("Document deleted") and disappears after a few seconds. Use `notify` (from `@knowcel/module-sdk`) when background work finishes and the user may be elsewhere or away: it records an entry that stays until the user clears it, and shows a toast too while the tab is visible. Entries live in the browser; there is no server-side inbox.
+
+- Declare the categories the module sends in `src/manifest.ts` with `defineNotifications([{ id: "uploads", label: "Uploads" }])`, put `notifications: n.categories` in the manifest, and export the returned `notify`. It accepts only the declared ids, so an undeclared category fails to compile; the generic `notify` throws for one at run time.
+- `notify({ category, title, body?, kind, link?, action?, tag? })`: `kind` is `success`, `info` or `error`; `link` is an absolute app path that opens what the notification is about; `action` is shown on the toast only. A newer notification with the same `tag` replaces the older entry, so repeated progress for one thing leaves one line.
+- It is a plain function and works outside render, like `toast`. Keep titles short and in the user's words; never make a notification the only route to an action.
+
 ## Known deviations
 
 Gaps between the existing modules and this document, each tracked as an issue under the module's epic:
