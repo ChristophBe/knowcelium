@@ -25,9 +25,10 @@ import {
   Trash2,
   Upload,
 } from "@knowcel/ui";
-import { useRef, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link } from "react-router";
 import { DeleteDocumentDialog, useDownloadDocument } from "./documentActions.tsx";
+import { useReprocessingNotifications } from "./notifications.ts";
 import { SharedWith } from "./SharedWith.tsx";
 import { statusLabel } from "./status.ts";
 
@@ -68,7 +69,8 @@ export function DocumentList() {
   });
   // With pages left, "no match" only speaks for the documents loaded so far.
   const more = docs.hasNextPage ? "loaded " : "";
-  const loaded = docs.data?.pages.flatMap((p) => p.documents) ?? [];
+  const loaded = useMemo(() => docs.data?.pages.flatMap((p) => p.documents) ?? [], [docs.data]);
+  useReprocessingNotifications(docs.data && loaded);
   const user = useCurrentUser();
   // Only the documents of others; the list holds the user's own, public ones and those of their teams.
   const [sharedOnly, setSharedOnly] = useState(false);
