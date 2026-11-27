@@ -32,7 +32,7 @@ Several files can be processed at the same time, so more than one row may show *
 
 Under **Uploads**, the name of a file or web page whose processing has started links to its document, and the row shows who can read it (**Public**, or **Team:** and the team names). The link stays after you reload the page.
 
-When a file is ready, a notification says "*file* added"; when it fails, it says "Couldn't process *file*". The document also appears under [Documents](documents.md), where its status follows the same steps and the same words.
+When a file is ready, a notification says "*file* added"; when it fails, it says "Couldn't process *file*". The message appears for a few seconds and stays in the [notifications panel](notifications.md), where selecting it opens the document. While you are on this page, a screen reader also announces the result. If Knowcelium is in a background tab, your browser can show the notification too; you choose that under **Uploads** in the panel's settings, where you can also turn these notifications off. The document also appears under [Documents](documents.md), where its status follows the same steps and the same words.
 
 A [new version of a document](documents.md#replace-a-document-with-a-new-version) is uploaded from the document's page. Under **Uploads** it takes over the document's row, with the new file's name, and goes through the same statuses.
 

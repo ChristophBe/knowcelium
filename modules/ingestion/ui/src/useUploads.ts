@@ -53,8 +53,8 @@ export interface UploadEvents {
   onJob(job: Job): void;
   /** Something worth telling screen-reader users; `urgent` for failures. */
   announce(message: string, urgent?: boolean): void;
-  /** A finished job, reported after the page was left. */
-  notify(message: string, failed: boolean): void;
+  /** A finished job, for the notification center; also while the page is open. */
+  notify(message: string, failed: boolean, job: { id: string; documentId: string }): void;
   /** A request that failed outside an upload row, e.g. reprocessing a job. */
   error(message: string): void;
 }
@@ -106,11 +106,13 @@ export function useUploads(client: UploadClient, put: Put, events: UploadEvents,
     const { client, events } = latest.current;
     let status: JobStatus | undefined;
     let error = "";
+    let documentId = "";
     for await (const update of client.watchJob({ id: jobId })) {
       if (!update.job) continue;
       events.onJob(update.job);
       status = update.job.status;
       error = update.job.error;
+      documentId = update.job.documentId;
     }
     const failed = status === JobStatus.FAILED;
     if (status !== JobStatus.DONE && !failed) return;
@@ -119,9 +121,11 @@ export function useUploads(client: UploadClient, put: Put, events: UploadEvents,
         failed ? `Processing ${filename} failed: ${error}` : `${filename} is ready`,
         failed,
       );
-    } else {
-      events.notify(failed ? `Couldn't process ${filename}` : `${filename} added`, failed);
     }
+    events.notify(failed ? `Couldn't process ${filename}` : `${filename} added`, failed, {
+      id: jobId,
+      documentId,
+    });
   }, []);
 
   const run = useCallback(
