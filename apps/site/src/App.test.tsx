@@ -2,7 +2,7 @@ import { expectNoAxeViolations } from "@knowcel/ui/testing";
 import { render, screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { App } from "./App.tsx";
-import { SOURCES } from "./ChatDemo.tsx";
+import { SEARCH_STEPS, SOURCES } from "./ChatDemo.tsx";
 import { render as renderStatic } from "./entry-server.tsx";
 import { REPO } from "./links.ts";
 
@@ -53,5 +53,14 @@ describe("marketing site", () => {
     expect(first?.detail).toContain("showcase-engineering");
     expect(second?.detail).toContain("showcase-logistics");
     expect(SOURCES).toHaveLength(2);
+  });
+
+  it("shows the searches the chat made before the answer", () => {
+    const html = renderStatic();
+    expect(SEARCH_STEPS.length).toBeGreaterThanOrEqual(2);
+    expect(html).toContain("Search steps");
+    for (const step of SEARCH_STEPS) expect(html).toContain(step.query);
+    expect(html.indexOf("Search steps")).toBeLessThan(html.indexOf("Sources"));
+    expect(html).toContain("decides for itself what to look up");
   });
 });
