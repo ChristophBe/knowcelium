@@ -2,6 +2,7 @@ import {
   clearNotifications,
   defineNotifications,
   dismissToast,
+  restoreNotificationPreferences,
   restoreNotifications,
 } from "@knowcel/module-sdk";
 import { expectNoAxeViolations } from "@knowcel/ui/testing";
@@ -13,7 +14,10 @@ import { NotificationCenter } from "./NotificationCenter.tsx";
 
 polyfillDialog();
 
-const n = defineNotifications([{ id: "uploads", label: "Uploads" }]);
+const n = defineNotifications([
+  { id: "uploads", label: "Uploads" },
+  { id: "answers", label: "Answers" },
+]);
 
 function Where() {
   return <p data-testid="where">{useLocation().pathname}</p>;
@@ -38,7 +42,11 @@ describe("NotificationCenter", () => {
   });
   afterEach(() => {
     cleanup();
-    act(() => clearNotifications());
+    act(() => {
+      clearNotifications();
+      restoreNotificationPreferences({});
+    });
+    vi.unstubAllGlobals();
     for (let id = 1; id < 100; id++) dismissToast(id);
     vi.restoreAllMocks();
   });
@@ -157,5 +165,84 @@ describe("NotificationCenter", () => {
     await expectNoAxeViolations(container);
     fireEvent.click(screen.getByRole("button", { name: "1 unread notification" }));
     await expectNoAxeViolations(document.body);
+  });
+
+  describe("settings", () => {
+    const openSettings = () => {
+      renderCenter();
+      fireEvent.click(screen.getByRole("button", { name: "Notifications" }));
+      fireEvent.click(screen.getByRole("button", { name: "Settings" }));
+      return screen.getByRole("dialog", { name: "Notifications" });
+    };
+
+    it("sets a preference per category, defaulting to in app and browser", () => {
+      vi.stubGlobal("Notification", { permission: "granted" });
+      const dialog = openSettings();
+      const select = within(dialog).getByRole("combobox", { name: "Uploads" }) as HTMLSelectElement;
+      expect(select.value).toBe("all");
+      expect([...select.options].map((o) => o.textContent)).toEqual([
+        "In app and browser",
+        "In app only",
+        "Off",
+      ]);
+      fireEvent.change(select, { target: { value: "off" } });
+      expect(
+        (within(dialog).getByRole("combobox", { name: "Uploads" }) as HTMLSelectElement).value,
+      ).toBe("off");
+      expect(
+        (within(dialog).getByRole("combobox", { name: "Answers" }) as HTMLSelectElement).value,
+      ).toBe("all");
+      add("suppressed");
+      expect(screen.queryByRole("button", { name: /unread/ })).toBeNull();
+      fireEvent.click(within(dialog).getByRole("button", { name: "Back" }));
+      expect(within(dialog).getByText("Finished uploads and answers show up here.")).toBeTruthy();
+    });
+
+    it("asks for the permission after a click, once", async () => {
+      const requestPermission = vi.fn(async () => {
+        N.permission = "granted";
+        return "granted";
+      });
+      const N = Object.assign(function N() {}, { permission: "default", requestPermission });
+      vi.stubGlobal("Notification", N);
+      const dialog = openSettings();
+      expect(requestPermission).not.toHaveBeenCalled();
+      await act(async () => {
+        fireEvent.click(
+          within(dialog).getByRole("button", { name: "Allow browser notifications" }),
+        );
+      });
+      expect(requestPermission).toHaveBeenCalledTimes(1);
+      expect(
+        within(dialog).queryByRole("button", { name: "Allow browser notifications" }),
+      ).toBeNull();
+      expect(within(dialog).getByText(/Browser notifications are allowed/)).toBeTruthy();
+    });
+
+    it("explains a denied permission and a missing support", () => {
+      vi.stubGlobal("Notification", { permission: "denied" });
+      const dialog = openSettings();
+      expect(within(dialog).getByText(/blocked for this site/)).toBeTruthy();
+      expect(within(dialog).queryByRole("button", { name: /Allow browser/ })).toBeNull();
+      cleanup();
+      vi.stubGlobal("Notification", undefined);
+      const again = openSettings();
+      expect(within(again).getByText(/can't show notifications/)).toBeTruthy();
+    });
+
+    it("keeps Tab inside the panel across the selects", () => {
+      vi.stubGlobal("Notification", { permission: "granted" });
+      const dialog = openSettings();
+      const last = within(dialog).getByRole("combobox", { name: "Answers" });
+      last.focus();
+      fireEvent.keyDown(dialog, { key: "Tab" });
+      expect(document.activeElement).toBe(within(dialog).getAllByRole("button")[0]);
+    });
+
+    it("has no axe violations", async () => {
+      vi.stubGlobal("Notification", { permission: "default", requestPermission: vi.fn() });
+      openSettings();
+      await expectNoAxeViolations(document.body);
+    });
   });
 });

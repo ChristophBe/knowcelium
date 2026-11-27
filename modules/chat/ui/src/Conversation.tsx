@@ -13,6 +13,7 @@ import {
 import {
   Code,
   ConnectError,
+  offerBrowserNotifications,
   toast,
   useClient,
   useQuery,
@@ -36,7 +37,7 @@ import { Answer } from "./Answer.tsx";
 import { ACTIVITY_KEY } from "./badge.ts";
 import { ConversationHeader } from "./ConversationHeader.tsx";
 import { ModelPicker, useModelChoice } from "./model.tsx";
-import { notifyAnswerReady, offerNotifications } from "./notify.ts";
+import { notifyAnswerReady } from "./notify.ts";
 import { hasQueries, messageAnchor, RetrievalSteps, SearchedSummary } from "./retrieval.tsx";
 import type { StartState } from "./StartChat.tsx";
 import { ScopeChips, SourcesControl } from "./scope.tsx";
@@ -212,7 +213,7 @@ export function Conversation() {
     const controller = new AbortController();
     abort.current = controller;
     stopping.current = false;
-    offerNotifications();
+    offerBrowserNotifications();
     const savedCount = (conversation.data?.messages.length ?? 0) + 2;
     try {
       const stream = client.streamChat(
@@ -258,7 +259,7 @@ export function Conversation() {
         }
         if (event.case === "message" && document.hidden) {
           const title = conversation.data?.conversation?.title ?? "";
-          notifyAnswerReady(title, () => window.focus());
+          notifyAnswerReady(id, title);
         }
         setPending(state);
       }

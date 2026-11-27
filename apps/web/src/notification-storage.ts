@@ -1,6 +1,9 @@
 import {
   type NotificationEntry,
+  type NotificationPreference,
+  onNotificationPreferencesChange,
   onNotificationsChange,
+  restoreNotificationPreferences,
   restoreNotifications,
   useCurrentUser,
 } from "@knowcel/module-sdk";
@@ -8,6 +11,7 @@ import { useEffect, useRef } from "react";
 import { useSession } from "./auth/AuthGate.tsx";
 
 const KEY_PREFIX = "knowcel.notifications.";
+const PREFERENCES_PREFIX = "knowcel.notification-preferences.";
 const KINDS = ["success", "info", "error"];
 
 /** Reads a user's saved entries; anything unreadable counts as none. */
@@ -40,6 +44,29 @@ export function saveNotifications(key: string, entries: readonly NotificationEnt
   }
 }
 
+/** Reads a user's saved preferences by category; anything unreadable counts as none. */
+export function loadNotificationPreferences(key: string): Record<string, NotificationPreference> {
+  try {
+    const saved: unknown = JSON.parse(localStorage.getItem(PREFERENCES_PREFIX + key) ?? "{}");
+    if (typeof saved !== "object" || saved === null || Array.isArray(saved)) return {};
+    return saved as Record<string, NotificationPreference>;
+  } catch {
+    return {};
+  }
+}
+
+/** Saves a user's preferences; storage may be full or blocked. */
+export function saveNotificationPreferences(
+  key: string,
+  preferences: Readonly<Record<string, NotificationPreference>>,
+) {
+  try {
+    localStorage.setItem(PREFERENCES_PREFIX + key, JSON.stringify(preferences));
+  } catch {
+    // The preferences then hold for this page only.
+  }
+}
+
 /**
  * Whose notifications these are: the signed-in user's id, "anonymous" when the
  * shell runs without sign-in, and null while the user is not known (or could
@@ -54,7 +81,7 @@ function useStorageKey(): string | null {
 }
 
 /**
- * Keeps the notification center's entries in this browser, one list per user.
+ * Keeps the notification center's entries and preferences in this browser, one set per user.
  * Mount it once, in the shell.
  */
 export function useNotificationStorage() {
@@ -67,6 +94,14 @@ export function useNotificationStorage() {
     // Entries recorded before the user was known are theirs; after a change of user they are not.
     restoreNotifications(loadNotifications(key), { keepCurrent: first.current });
     first.current = false;
-    return stop;
+    // Unknown values are dropped on restore; the saved list is rewritten with the next change.
+    restoreNotificationPreferences(loadNotificationPreferences(key));
+    const stopPreferences = onNotificationPreferencesChange((p) =>
+      saveNotificationPreferences(key, p),
+    );
+    return () => {
+      stop();
+      stopPreferences();
+    };
   }, [key]);
 }

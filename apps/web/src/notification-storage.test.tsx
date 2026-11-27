@@ -3,12 +3,16 @@ import {
   clearNotifications,
   defineNotifications,
   type NotificationEntry,
+  restoreNotificationPreferences,
+  setNotificationPreference,
+  useNotificationPreferences,
   useNotifications,
 } from "@knowcel/module-sdk";
 import { act, cleanup, render, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
+  loadNotificationPreferences,
   loadNotifications,
   saveNotifications,
   useNotificationStorage,
@@ -22,11 +26,14 @@ const n = defineNotifications([{ id: "uploads", label: "Uploads" }]);
 function Probe() {
   useNotificationStorage();
   return (
-    <p data-testid="titles">
-      {useNotifications()
-        .map((e) => e.title)
-        .join(",")}
-    </p>
+    <>
+      <p data-testid="titles">
+        {useNotifications()
+          .map((e) => e.title)
+          .join(",")}
+      </p>
+      <p data-testid="prefs">{JSON.stringify(useNotificationPreferences())}</p>
+    </>
   );
 }
 
@@ -52,7 +59,10 @@ describe("notification storage", () => {
   afterEach(() => {
     session.current = null;
     cleanup();
-    act(() => clearNotifications());
+    act(() => {
+      clearNotifications();
+      restoreNotificationPreferences({});
+    });
     localStorage.clear();
     vi.restoreAllMocks();
   });
@@ -72,6 +82,27 @@ describe("notification storage", () => {
 
     renderAs("ann");
     expect(screen.getByTestId("titles").textContent).toBe("ann's");
+  });
+
+  it("keeps preferences per user and ignores damaged ones", () => {
+    const ann = renderAs("ann");
+    act(() => setNotificationPreference("uploads", "off"));
+    expect(loadNotificationPreferences("ann")).toEqual({ uploads: "off" });
+    ann.unmount();
+    renderAs("bob");
+    expect(screen.getByTestId("prefs").textContent).toBe("{}");
+    cleanup();
+    renderAs("ann");
+    expect(screen.getByTestId("prefs").textContent).toBe('{"uploads":"off"}');
+
+    localStorage.setItem("knowcel.notification-preferences.ann", "{not json");
+    expect(loadNotificationPreferences("ann")).toEqual({});
+    localStorage.setItem("knowcel.notification-preferences.ann", "[1]");
+    expect(loadNotificationPreferences("ann")).toEqual({});
+    vi.spyOn(Storage.prototype, "setItem").mockImplementation(() => {
+      throw new Error("full");
+    });
+    expect(() => act(() => setNotificationPreference("uploads", "app"))).not.toThrow();
   });
 
   it("neither reads nor writes while a signed-in user is unknown", () => {

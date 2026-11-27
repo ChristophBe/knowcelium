@@ -1,8 +1,16 @@
 import {
   clearNotifications,
+  DEFAULT_NOTIFICATION_PREFERENCE,
   markAllNotificationsRead,
   markNotificationRead,
   type NotificationEntry,
+  type NotificationPreference,
+  onOpenNotificationLink,
+  requestBrowserNotifications,
+  setNotificationPreference,
+  useBrowserNotificationState,
+  useNotificationCategories,
+  useNotificationPreferences,
   useNotifications,
 } from "@knowcel/module-sdk";
 import {
@@ -19,6 +27,12 @@ import {
 import { type KeyboardEvent, useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { useNavigate } from "react-router";
+
+const PREFERENCE_LABELS: Record<NotificationPreference, string> = {
+  all: "In app and browser",
+  app: "In app only",
+  off: "Off",
+};
 
 const icons = { success: CheckCircle2, info: Info, error: AlertTriangle };
 
@@ -40,12 +54,17 @@ export function NotificationCenter() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
   const [confirming, setConfirming] = useState(false);
+  const [settings, setSettings] = useState(false);
   const bell = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (open) panel.current?.focus();
+    else setSettings(false);
   }, [open]);
+
+  // A browser notification's link opens in the app without a reload.
+  useEffect(() => onOpenNotificationLink((link) => void navigate(link)), [navigate]);
 
   useEffect(() => {
     if (!open || confirming) return;
@@ -68,7 +87,7 @@ export function NotificationCenter() {
       return;
     }
     if (e.key !== "Tab" || !panel.current) return;
-    const items = [...panel.current.querySelectorAll<HTMLElement>("button")].filter(
+    const items = [...panel.current.querySelectorAll<HTMLElement>("button, select")].filter(
       (el) => !el.hasAttribute("disabled"),
     );
     const first = items[0];
@@ -120,25 +139,39 @@ export function NotificationCenter() {
               className="glass-strong pointer-events-auto flex max-h-full w-full flex-col overflow-hidden rounded-card outline-none"
             >
               <div className="flex flex-wrap items-center justify-between gap-x-2 border-border border-b px-4 py-2">
-                <h2 className="font-medium text-sm">Notifications</h2>
+                <h2 className="font-medium text-sm">{settings ? "Settings" : "Notifications"}</h2>
                 <div className="flex items-center gap-1">
+                  {!settings && (
+                    <>
+                      <Button
+                        variant="ghost"
+                        disabled={unread === 0}
+                        onClick={markAllNotificationsRead}
+                      >
+                        Mark all as read
+                      </Button>
+                      <Button
+                        variant="danger"
+                        disabled={entries.length === 0}
+                        onClick={() => setConfirming(true)}
+                      >
+                        Clear all
+                      </Button>
+                    </>
+                  )}
                   <Button
                     variant="ghost"
-                    disabled={unread === 0}
-                    onClick={markAllNotificationsRead}
+                    aria-expanded={settings}
+                    aria-controls="notification-settings"
+                    onClick={() => setSettings(!settings)}
                   >
-                    Mark all as read
-                  </Button>
-                  <Button
-                    variant="danger"
-                    disabled={entries.length === 0}
-                    onClick={() => setConfirming(true)}
-                  >
-                    Clear all
+                    {settings ? "Back" : "Settings"}
                   </Button>
                 </div>
               </div>
-              {entries.length === 0 ? (
+              {settings ? (
+                <NotificationSettings />
+              ) : entries.length === 0 ? (
                 <p className="px-4 py-6 text-center text-fg-muted text-sm">
                   Finished uploads and answers show up here.
                 </p>
@@ -199,5 +232,61 @@ function EntryRow({ entry, onSelect }: { entry: NotificationEntry; onSelect: () 
         </>
       )}
     </button>
+  );
+}
+
+/** The text under the permission: why browser notifications do or don't work. */
+function permissionNote(state: ReturnType<typeof useBrowserNotificationState>) {
+  switch (state) {
+    case "unsupported":
+      return "This browser can't show notifications here. You still get them here and as messages in the app.";
+    case "denied":
+      return "Browser notifications are blocked for this site. To get them, allow notifications for this site in your browser's settings.";
+    case "granted":
+      return "Browser notifications are allowed. They appear while this app is in a background tab.";
+    default:
+      return "Allow browser notifications to hear about finished work while this app is in a background tab.";
+  }
+}
+
+/** The choice per category and the browser permission, inside the panel. */
+function NotificationSettings() {
+  const categories = useNotificationCategories();
+  const preferences = useNotificationPreferences();
+  const permission = useBrowserNotificationState();
+  return (
+    <div id="notification-settings" className="min-h-0 flex-1 space-y-4 overflow-y-auto px-4 py-3">
+      <div className="space-y-2">
+        <p className="text-fg-muted text-sm">{permissionNote(permission)}</p>
+        {permission === "default" && (
+          <Button onClick={() => void requestBrowserNotifications()}>
+            Allow browser notifications
+          </Button>
+        )}
+      </div>
+      {categories.length > 0 && (
+        <ul className="space-y-3">
+          {categories.map((category) => (
+            <li key={category.id} className="flex items-center justify-between gap-3 text-sm">
+              <label htmlFor={`notification-pref-${category.id}`}>{category.label}</label>
+              <select
+                id={`notification-pref-${category.id}`}
+                value={preferences[category.id] ?? DEFAULT_NOTIFICATION_PREFERENCE}
+                onChange={(e) =>
+                  setNotificationPreference(category.id, e.target.value as NotificationPreference)
+                }
+                className="rounded-control border border-border-strong bg-surface px-2 py-1.5 text-sm hover:border-fg-muted"
+              >
+                {(Object.keys(PREFERENCE_LABELS) as NotificationPreference[]).map((value) => (
+                  <option key={value} value={value}>
+                    {PREFERENCE_LABELS[value]}
+                  </option>
+                ))}
+              </select>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
