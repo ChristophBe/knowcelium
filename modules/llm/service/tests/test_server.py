@@ -272,6 +272,15 @@ async def test_several_triggers_are_called_one_after_the_other(
     assert "".join(r.delta for r in last) == "(fake answer) The tool returned: sunny windy"
 
 
+async def test_trigger_arguments_may_contain_brackets(stub: llm_pb2_grpc.LlmServiceStub) -> None:
+    arguments = '{"query": "a}]b", "ids": [{"a": 1}]}'
+    ask = llm_pb2.Message(role=llm_pb2.ROLE_USER, content=f"[tool:weather {arguments}]")
+    responses = [
+        r async for r in stub.Generate(llm_pb2.GenerateRequest(messages=[ask], tools=[_WEATHER]))
+    ]
+    assert responses[-1].tool_calls[0].arguments_json == arguments
+
+
 async def test_tool_trigger_needs_the_tool_in_the_request(
     stub: llm_pb2_grpc.LlmServiceStub,
 ) -> None:

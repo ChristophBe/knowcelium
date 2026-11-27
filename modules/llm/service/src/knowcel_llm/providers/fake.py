@@ -22,7 +22,28 @@ from .base import (
 # A user message containing `[tool:NAME]` or `[tool:NAME {"arg": 1}]` makes the
 # fake model call the tool NAME (when the request offers it) with those arguments;
 # several triggers are called one after the other, in the order they are written.
-_TOOL_TRIGGER = re.compile(r"\[tool:([\w.-]+)(?: (\{.*?\}))?\]")
+_TOOL_TRIGGER = re.compile(r"\[tool:([\w.-]+)")
+
+
+def _triggers(text: str) -> list[tuple[str, str]]:
+    """The (tool, arguments JSON) of each `[tool:NAME]` or `[tool:NAME {json}]` in `text`.
+    The arguments are decoded as JSON, so they can hold any text, also `}]`; a
+    trigger whose arguments are not valid JSON calls the tool without any."""
+    found = []
+    for match in _TOOL_TRIGGER.finditer(text):
+        rest = text[match.end() :]
+        arguments = "{}"
+        if rest.startswith(" "):
+            try:
+                _, end = json.JSONDecoder().raw_decode(rest, 1)
+            except ValueError:
+                end = 0
+            if rest[end : end + 1] == "]":
+                arguments = rest[1:end]
+        elif not rest.startswith("]"):
+            continue
+        found.append((match[1], arguments))
+    return found
 
 
 def _words(text: str) -> set[str]:
@@ -97,19 +118,14 @@ class FakeProvider:
         if not tools or user is None:
             return None
         offered = {t.name for t in tools}
-        triggers = [t for t in _TOOL_TRIGGER.finditer(user.content) if t[1] in offered]
+        triggers = [t for t in _triggers(user.content) if t[0] in offered]
         answered = sum(m.role is Role.TOOL for m in cls._since_user(history))
         if answered >= len(triggers):
             return None
-        trigger = triggers[answered]
-        arguments = trigger[2] or "{}"
-        try:
-            json.loads(arguments)
-        except ValueError:
-            arguments = "{}"
+        name, arguments = triggers[answered]
         return ToolCall(
-            id=f"call-{trigger[1]}-{sum(m.role is Role.TOOL for m in history)}",
-            name=trigger[1],
+            id=f"call-{name}-{sum(m.role is Role.TOOL for m in history)}",
+            name=name,
             arguments_json=arguments,
         )
 

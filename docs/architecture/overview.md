@@ -158,9 +158,7 @@ sequenceDiagram
         loop at most KNOWCEL_MAX_TOOL_STEPS tool calls
             C->>L: Generate(system prompt, tools) (stream)
             L-->>C: tool call: search_knowledge_base, search_connectors or read_document
-            C->>L: Embed(query)
-            C->>D: SearchChunks(embedding, query)
-            C->>I: SearchConnectors(query) (live connectors)
+            Note over C,I: search_knowledge_base: Embed, SearchChunks, Rerank when enabled<br/>search_connectors: SearchConnectors<br/>read_document: GetDocument, ListChunks
             C-->>U: retrieval step: query, state, result count
             Note over C: results get [n] numbers, kept across calls
         end

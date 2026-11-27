@@ -56,7 +56,7 @@ as unavailable while the answer still arrives from documents.
 
 ### Let the model pick the searches
 
-With a chat model that supports tool calling (the model list shows which), chat does not search the question as typed: the model first searches the documents and then, for what only the live system knows, asks the logistics connector. Ask the second question again and watch the step list:
+With a chat model that supports tool calling (the model list shows which), chat does not search the question as typed: the model first searches the documents and then, for what only the live system knows, asks the logistics connector. Ask the second question again and watch the step list; a model picks its own queries, so expect steps like these, not exactly these:
 
 > Which open change requests affect parts whose supplier has a delayed shipment?
 

@@ -48,7 +48,7 @@ You only get what your administrator allows you to see in a connected system, as
 
 While the answer is prepared and a connected system is searched, a list under the status line shows each source with its state in words: **Your documents: found 2 passages**, **orders: searching…**, **orders: found 3 results**. The list disappears when the first words of the answer appear. A system that did not answer shows as **unavailable**, and the answer still arrives. While the connected systems are asked, their names are not yet known and one entry reads **Connectors: searching…**.
 
-How the steps appear is described in [Searches the model chooses](#searches-the-model-chooses).
+Each entry names a source and its state. When the language model chooses what to search for, each step also names the question, see [Searches the model chooses](#searches-the-model-chooses).
 
 **Sources in this chat** in the conversation's header lists every connected system the conversation has used so far, with the number of snippets taken from it. Select a name to jump to the first answer that used it. Without any, it says **No connectors used yet**. The list is built from the saved answers, so it is the same when you reopen the conversation.
 
