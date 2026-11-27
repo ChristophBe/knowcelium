@@ -6,6 +6,15 @@ export {
   useQuery,
   useQueryClient,
 } from "@tanstack/react-query";
+export {
+  clearNotifications,
+  defineNotifications,
+  type NotificationCategory,
+  type NotificationEntry,
+  type NotificationInput,
+  notify,
+  useNotifications,
+} from "./notifications.ts";
 export { useModuleRoutes } from "./routes.tsx";
 export {
   authInterceptor,
