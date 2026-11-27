@@ -17,6 +17,7 @@ services:
       # Soft dependency: no depends_on on ingestion-service; while it is down, answers use documents only.
       KNOWCEL_INGESTION_ADDR: ingestion-service:9002
       KNOWCEL_RAG_MIN_SCORE: ${KNOWCEL_RAG_MIN_SCORE:-0.5}
+      KNOWCEL_AGENTIC: ${KNOWCEL_AGENTIC:-true}
     # gRPC and Prometheus /metrics (docs/metrics.md).
     ports: ["9003:9003", "9103:9103"]
     # Infrastructure only: other modules are soft dependencies (docs/architecture/module.md).

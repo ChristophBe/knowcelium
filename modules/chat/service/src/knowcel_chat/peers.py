@@ -3,6 +3,7 @@ gRPC statuses end here: callers only see PeerError."""
 
 import asyncio
 import contextlib
+import json
 import logging
 import uuid
 from collections.abc import AsyncGenerator, Callable, Collection, Iterator, Sequence
@@ -11,12 +12,21 @@ from typing import Any
 
 import grpc
 from knowcel.chat.v1 import chat_pb2
+from knowcel.common.v1 import common_pb2
 from knowcel.curation.v1 import curation_pb2, curation_pb2_grpc
 from knowcel.document.v1 import document_pb2, document_pb2_grpc
 from knowcel.ingestion.v1 import ingestion_pb2, ingestion_pb2_grpc
 from knowcel.llm.v1 import llm_pb2, llm_pb2_grpc
 
-from .chat import Peer, PeerError, PeerUnavailableError, PromptMessage, PromptRole
+from .chat import (
+    Peer,
+    PeerError,
+    PeerUnavailableError,
+    PromptMessage,
+    PromptRole,
+    ToolCall,
+    ToolSpec,
+)
 from .manual import Manual, merge_sources
 
 log = logging.getLogger("knowcel_chat")
@@ -28,6 +38,7 @@ _LLM_ROLES = {
     PromptRole.SYSTEM: llm_pb2.ROLE_SYSTEM,
     PromptRole.USER: llm_pb2.ROLE_USER,
     PromptRole.ASSISTANT: llm_pb2.ROLE_ASSISTANT,
+    PromptRole.TOOL: llm_pb2.ROLE_TOOL,
 }
 
 
@@ -150,12 +161,21 @@ class PeerConnectors:
         self._score = score
         self._timeout = timeout
 
-    async def search(self, query: str, limit: int, team_ids: Sequence[uuid.UUID]) -> LiveSources:
+    async def search(
+        self,
+        query: str,
+        limit: int,
+        team_ids: Sequence[uuid.UUID],
+        connector_ids: Sequence[str] = (),
+    ) -> LiveSources:
         try:
             with _peer_errors(Peer.INGESTION):
                 found = await self._ingestion.SearchConnectors(
                     ingestion_pb2.SearchConnectorsRequest(
-                        query=query, limit=limit, team_ids=[str(i) for i in team_ids]
+                        query=query,
+                        limit=limit,
+                        team_ids=[str(i) for i in team_ids],
+                        connector_ids=list(connector_ids),
                     ),
                     timeout=self._timeout,
                 )
@@ -284,7 +304,7 @@ class PeerRetriever:
             live.add_done_callback(connectors_answered)
         report()
         try:
-            found = await self._retrieve_documents(query, limit, document_ids, team_ids, on_rating)
+            found = await self.search_documents(query, limit, document_ids, team_ids, on_rating)
             documents_state.state = chat_pb2.RETRIEVAL_STATE_DONE
             documents_state.results = len(found)
             report()
@@ -296,14 +316,15 @@ class PeerRetriever:
             on_unavailable(sources.unavailable)
         return merge_sources(found, sources.citations)
 
-    async def _retrieve_documents(
+    async def search_documents(
         self,
         query: str,
         limit: int,
         document_ids: Sequence[uuid.UUID],
         team_ids: Sequence[uuid.UUID],
-        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None,
+        on_rating: Callable[[Sequence[chat_pb2.Citation]], None] | None = None,
     ) -> list[chat_pb2.Citation]:
+        """The passages of the documents, and the manual sections, that match `query`."""
         (embedding,) = await self._embedder.embed([query])
         fetch = max(limit, self._candidates) if self._reranker else limit
         if self._curation:
@@ -398,16 +419,113 @@ class PeerGenerator:
         self._llm = llm
 
     async def generate(self, model: str, prompt: list[PromptMessage]) -> AsyncGenerator[str]:
-        messages = [llm_pb2.Message(role=_LLM_ROLES[m.role], content=m.content) for m in prompt]
+        async with contextlib.aclosing(self.turn(model, prompt, ())) as items:
+            async for item in items:
+                if isinstance(item, str):
+                    yield item
+
+    async def turn(
+        self, model: str, prompt: list[PromptMessage], tools: Sequence[ToolSpec]
+    ) -> AsyncGenerator[str | ToolCall]:
+        """One generation: the text in deltas, then the tools the model called."""
+        request = llm_pb2.GenerateRequest(
+            model=model,
+            messages=[_llm_message(m) for m in prompt],
+            tools=[
+                llm_pb2.ToolSpec(
+                    name=t.name,
+                    description=t.description,
+                    parameters_json_schema=json.dumps(t.parameters),
+                )
+                for t in tools
+            ],
+            caller_module="chat",
+        )
         with _peer_errors(Peer.LLM):
-            call = self._llm.Generate(
-                llm_pb2.GenerateRequest(model=model, messages=messages, caller_module="chat")
-            )
+            call = self._llm.Generate(request)
             try:
                 async for chunk in call:
                     if chunk.delta:
                         yield chunk.delta
+                    for c in chunk.tool_calls:
+                        yield ToolCall(c.id, c.name, c.arguments_json)
             finally:
                 # Closed early (the answer was stopped): the llm stops generating.
                 # A no-op once the call has finished.
                 call.cancel()
+
+    async def supports_tools(self, model: str) -> bool:
+        """Whether the chat model (the llm module's default for an empty name)
+        can call tools. When that can't be found out, it can't: the answer is
+        then written without them."""
+        try:
+            with _peer_errors(Peer.LLM):
+                if not model:
+                    status = await self._llm.GetProviderStatus(llm_pb2.GetProviderStatusRequest())
+                    model = status.default_chat_model
+                listed = await self._llm.ListModels(llm_pb2.ListModelsRequest())
+        except PeerError as err:
+            log.warning("tool support of the model is unknown, answering without tools: %s", err)
+            return False
+        return any(
+            m.id == model and m.kind == llm_pb2.MODEL_KIND_CHAT and m.supports_tools
+            for m in listed.models
+        )
+
+
+def _llm_message(m: PromptMessage) -> llm_pb2.Message:
+    return llm_pb2.Message(
+        role=_LLM_ROLES[m.role],
+        content=m.content,
+        tool_calls=[
+            llm_pb2.ToolCall(id=c.id, name=c.name, arguments_json=c.arguments) for c in m.tool_calls
+        ],
+        tool_call_id=m.tool_call_id,
+    )
+
+
+# Chunks of a document the model reads at once.
+READ_CHUNKS = 4
+
+
+class PeerDocuments:
+    """Reads documents through the document module, for the caller's access."""
+
+    def __init__(self, documents: document_pb2_grpc.DocumentServiceStub) -> None:
+        self._documents = documents
+
+    async def read(
+        self, document_id: uuid.UUID, section: int, team_ids: Sequence[uuid.UUID] = ()
+    ) -> chat_pb2.Citation | None:
+        """The `section` (from 1) of a document, `READ_CHUNKS` chunks of it, as
+        one source; None past its end, and when `team_ids` are given and the
+        document is attached to none of them, as a search is limited to them."""
+        with _peer_errors(Peer.DOCUMENT):
+            document = (
+                await self._documents.GetDocument(
+                    document_pb2.GetDocumentRequest(id=str(document_id))
+                )
+            ).document
+            if team_ids and not {str(t) for t in team_ids} & set(document.team_ids):
+                return None
+            token = ""
+            chunks: list[Any] = []
+            for _ in range(section):
+                if chunks and not token:
+                    return None  # the document ended before this section
+                page = await self._documents.ListChunks(
+                    document_pb2.ListChunksRequest(
+                        document_id=str(document_id),
+                        page=common_pb2.PageRequest(page_size=READ_CHUNKS, page_token=token),
+                    )
+                )
+                chunks, token = list(page.chunks), page.page.next_page_token
+        if not chunks:
+            return None
+        return chat_pb2.Citation(
+            document_id=str(document_id),
+            document_title=document.title,
+            chunk_index=chunks[0].index,
+            snippet="\n\n".join(c.text for c in chunks),
+            score=1.0,
+        )

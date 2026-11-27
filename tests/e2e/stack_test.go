@@ -13,7 +13,7 @@
 // KNOWCEL_E2E_GATEWAY instead points the tests at a stack that is already running,
 // such as a Helm release (the `helm` CI job): no compose project is started,
 // and KNOWCEL_E2E_ISSUER (default <gateway>/dex) is the Dex issuer. That stack must
-// run the fake LLM provider with KNOWCEL_RAG_MIN_SCORE=-1, as the compose one does.
+// run the fake LLM provider with KNOWCEL_RAG_MIN_SCORE=-1 and KNOWCEL_AGENTIC=false, as the compose one does.
 package e2e
 
 import (
@@ -119,6 +119,8 @@ func newStack() (*stack, error) {
 			// Hash embeddings score like noise (cosine similarity, -1 to 1); keep
 			// every retrieved chunk.
 			"KNOWCEL_RAG_MIN_SCORE=-1",
+			// The fake model supports tool calling but never searches on its own.
+			"KNOWCEL_AGENTIC=false",
 			"KNOWCEL_GATEWAY_PORT="+gatewayPort,
 			"KNOWCEL_E2E_S3_PORT="+s3Port,
 			"KNOWCEL_WEB_PORT="+webPort,

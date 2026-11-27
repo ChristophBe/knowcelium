@@ -263,6 +263,8 @@ tasks:
       KNOWCEL_LLM_PROVIDER: fake
       # Hash embeddings score like noise; keep every retrieved chunk.
       KNOWCEL_RAG_MIN_SCORE: "-1"
+      # The fake model supports tool calling but never searches on its own: use the fixed pipeline.
+      KNOWCEL_AGENTIC: "false"
       KNOWCEL_GATEWAY_PORT: "{{.GATEWAY_PORT}}"
       KNOWCEL_E2E_S3_PORT: "{{.S3_PORT}}"
       KNOWCEL_WEB_PORT: "{{.WEB_PORT}}"

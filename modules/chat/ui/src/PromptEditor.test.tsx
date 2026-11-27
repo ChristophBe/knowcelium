@@ -34,6 +34,7 @@ function templates(system = "Default system.") {
       systemPrompt: one(system, "Default system."),
       sourcesTemplate: one("Sources:\n{sources}", "Sources:\n{sources}"),
       noSourcesTemplate: one("No sources.", "No sources."),
+      toolsTemplate: one("Search.", "Search."),
       variables: ["sources", "history"],
     }),
   };

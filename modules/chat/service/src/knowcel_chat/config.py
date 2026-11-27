@@ -49,6 +49,13 @@ class Settings(PlatformSettings):
     # connector's own search found it relevant, so it ranks above the passages
     # of weak similarity and the prompt only drops it when it is out of room.
     connectors_score: float = 0.8
+    # Let the chat model decide when and what to search by calling tools
+    # (documents, connectors), when it supports tool calling. Off, or for a
+    # model without tool support, every question is searched once as it is.
+    agentic: bool = True
+    # Tool calls the model may make while writing one answer; after them it
+    # must answer with what it found.
+    max_tool_steps: int = 4
     # Number of chunks retrieved for grounding an answer.
     rag_top_k: int = 5
     # Cosine similarity (-1 to 1) a chunk needs to count as related to the
@@ -97,6 +104,7 @@ class Settings(PlatformSettings):
         problems.between("curation_weight", self.curation_weight, 0, 1)
         if not self.curation_timeout > 0:
             problems.add("curation_timeout", f"must be positive, got {self.curation_timeout}")
+        problems.at_least("max_tool_steps", self.max_tool_steps, 1)
         problems.at_least("rag_top_k", self.rag_top_k, 1)
         problems.at_least("rerank_candidates", self.rerank_candidates, self.rag_top_k)
         problems.between("rag_min_score", self.rag_min_score, -1, 1)

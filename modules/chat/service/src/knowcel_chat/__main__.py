@@ -14,6 +14,7 @@ from knowcel_platform.metrics import start_metrics_server
 from knowcel_platform.telemetry import setup_tracing
 from sqlalchemy.ext.asyncio import create_async_engine
 
+from .agent import ChatAgent
 from .callers import resolver
 from .chat import Chat
 from .config import Settings
@@ -22,6 +23,7 @@ from .manual import Manual, load_sections
 from .peers import (
     PeerConnectors,
     PeerCuration,
+    PeerDocuments,
     PeerEmbedder,
     PeerGenerator,
     PeerReranker,
@@ -91,7 +93,9 @@ async def run() -> None:
                 connectors,
                 settings.connectors_top_k,
             )
-            chat = Chat(settings, repo, retriever, PeerGenerator(llm))
+            generator = PeerGenerator(llm)
+            agent = ChatAgent(settings, generator, retriever, PeerDocuments(documents), connectors)
+            chat = Chat(settings, repo, retriever, generator, agent=agent)
             servicer = ChatServicer(repo, chat)
             try:
                 await serve(

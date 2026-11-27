@@ -18,6 +18,16 @@ NO_SOURCES_PROMPT = (
     "Nothing in the knowledge base is related to this question. Say so before "
     "answering from general knowledge, and don't cite sources."
 )
+TOOLS_PROMPT = (
+    "You can search the knowledge base with the tools provided. Search when the question "
+    "needs information from the user's documents or connected systems; don't search for "
+    "greetings, thanks or questions the conversation already answers. Search several times "
+    "with different queries when that helps, for example once per part of a question, and "
+    "use read_document to read more of a document a search found. The results are numbered "
+    "sources: cite them like [1], and use the same number when you cite a source again. "
+    "Sources from the user manual explain how to use this knowledge base tool. If a source "
+    "was unavailable, say so. If the sources do not contain the answer, say so."
+)
 
 # The variables a template can use, with what they stand for.
 VARIABLES = {
@@ -32,12 +42,14 @@ class TemplateName(StrEnum):
     SYSTEM = "system"
     SOURCES = "sources"
     NO_SOURCES = "no_sources"
+    TOOLS = "tools"
 
 
 DEFAULTS = {
     TemplateName.SYSTEM: SYSTEM_PROMPT,
     TemplateName.SOURCES: RAG_PROMPT,
     TemplateName.NO_SOURCES: NO_SOURCES_PROMPT,
+    TemplateName.TOOLS: TOOLS_PROMPT,
 }
 
 
