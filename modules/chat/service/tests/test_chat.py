@@ -67,6 +67,7 @@ class FakeRepo:
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = COMPLETE,
         unavailable_sources: Sequence[str] = (),
+        search_steps: Sequence[dict[str, Any]] = (),
     ) -> MessageRow:
         msg = MessageRow(
             uuid.uuid4(),
@@ -77,6 +78,7 @@ class FakeRepo:
             citations,
             status,
             list(unavailable_sources),
+            list(search_steps),
         )
         self.messages.append(msg)
         return msg
@@ -814,6 +816,12 @@ async def test_no_source_is_searched_without_the_knowledge_base() -> None:
     assert not any(isinstance(e, RetrievalChanged) for e in events)
 
 
+def _step(query: str, state: chat_pb2.RetrievalState, results: int = 0) -> chat_pb2.RetrievalSource:
+    return chat_pb2.RetrievalSource(
+        kind=chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS, state=state, results=results, query=query
+    )
+
+
 class FakeAgent:
     """Streams what it is told to, like an agent that searched and then wrote."""
 
@@ -833,6 +841,7 @@ class FakeAgent:
         self.runs.append((model, prompt, scope))
         try:
             yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
+            yield RetrievalChanged([_step("capital", chat_pb2.RETRIEVAL_STATE_DONE, 2)])
             yield SourcesFound(
                 [
                     chat_pb2.Citation(document_id="d1", document_title="geo.md", snippet="Paris"),
@@ -842,6 +851,12 @@ class FakeAgent:
             )
             yield AnswerDelta("Euro [2]")
             if self.hang:
+                yield RetrievalChanged(
+                    [
+                        _step("capital", chat_pb2.RETRIEVAL_STATE_DONE, 2),
+                        _step("euro", chat_pb2.RETRIEVAL_STATE_SEARCHING),
+                    ]
+                )
                 self.waiting.set()
                 await asyncio.Event().wait()
             yield AnswerDelta(" and Paris [1]")
@@ -872,15 +887,16 @@ async def test_with_tools_the_agent_writes_the_answer_and_the_question_is_not_se
     assert prompt[-1] == PromptMessage(PromptRole.USER, "Capital?")
     assert [type(e).__name__ for e in events] == [
         "ProgressChanged",  # searching
+        "RetrievalChanged",
         "SourcesFound",
         "ProgressChanged",  # writing, before the first delta
         "AnswerDelta",
         "AnswerDelta",
         "AnswerSaved",
     ]
-    assert events[2] == ProgressChanged.of(
+    assert events[3] == ProgressChanged.of(
         chat_pb2.PROGRESS_STAGE_WRITING,
-        events[1].citations,  # type: ignore[union-attr]
+        events[2].citations,  # type: ignore[union-attr]
     )
     saved = events[-1]
     assert isinstance(saved, AnswerSaved)
@@ -888,6 +904,15 @@ async def test_with_tools_the_agent_writes_the_answer_and_the_question_is_not_se
     assert saved.message.content == "Euro [1] and Paris [2]"
     assert [c["document_title"] for c in saved.message.citations] == ["eco.md", "geo.md"]
     assert saved.message.unavailable_sources == ["Orders"]
+    assert saved.message.search_steps == [
+        {
+            "kind": chat_pb2.RETRIEVAL_SOURCE_KIND_DOCUMENTS,
+            "connector": "",
+            "state": chat_pb2.RETRIEVAL_STATE_DONE,
+            "results": 2,
+            "query": "capital",
+        }
+    ]
 
 
 async def test_the_agent_gets_the_conversations_documents_and_current_teams() -> None:
@@ -914,6 +939,7 @@ async def test_without_tools_the_fixed_pipeline_answers(
     events = await collect(chat, repo, use_kb)
 
     assert agent.runs == []
+    assert repo.messages[-1].search_steps == []
     assert len(generator.calls) == 1
     assert len(retriever.calls) == (1 if use_kb else 0)
     assert isinstance(events[-1], AnswerSaved)
@@ -935,6 +961,8 @@ async def test_stopping_during_a_tool_saves_the_partial_answer_as_stopped() -> N
     ]
     assert repo.messages[1].citations[0]["document_title"] == "eco.md"
     assert repo.messages[1].unavailable_sources == ["Orders"]
+    # The search that was still running when the answer was stopped is not kept.
+    assert [s["query"] for s in repo.messages[1].search_steps] == ["capital"]
 
 
 async def test_a_peer_failing_in_the_agent_saves_the_answer_so_far_as_failed() -> None:

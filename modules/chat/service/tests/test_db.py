@@ -345,3 +345,15 @@ async def test_the_sources_that_did_not_answer_are_kept_with_the_message(
     assert plain.unavailable_sources == []
     assert live.unavailable_sources == ["crm", "wiki"]
     assert live.citations[0]["connector"] == "stock"
+
+
+async def test_the_search_steps_are_kept_with_the_message(repo: SqlRepository) -> None:
+    conv = await repo.create_conversation(ALICE, "", [])
+    await repo.add_message(conv.id, chat_pb2.MESSAGE_ROLE_ASSISTANT, "old", [])
+    step = {"kind": 2, "connector": "Orders", "state": 2, "results": 3, "query": "late"}
+    await repo.add_message(conv.id, chat_pb2.MESSAGE_ROLE_ASSISTANT, "new", [], search_steps=[step])
+
+    old, new = await repo.list_messages(conv.id)
+
+    assert old.search_steps == []
+    assert new.search_steps == [step]

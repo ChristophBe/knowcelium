@@ -38,6 +38,8 @@ NO_ROOM = "There is no room left for more results; answer with what you have."
 SEARCH_KNOWLEDGE_BASE = "search_knowledge_base"
 SEARCH_CONNECTORS = "search_connectors"
 READ_DOCUMENT = "read_document"
+# The tools whose calls show up as searches; reading a section is part of the answer.
+_SEARCHES = (SEARCH_KNOWLEDGE_BASE, SEARCH_CONNECTORS)
 
 
 class Model(Protocol):
@@ -219,6 +221,7 @@ class ChatAgent:
         budget = self._settings.context_tokens - self._settings.answer_reserve_tokens
         steps = 0
         searching = False
+        trail: list[chat_pb2.RetrievalSource] = []
         wrote = False
         while True:
             last = steps >= self._settings.max_tool_steps
@@ -254,7 +257,12 @@ class ChatAgent:
                 if not searching:
                     searching = True
                     yield ProgressChanged(chat_pb2.PROGRESS_STAGE_SEARCHING)
-                yield RetrievalChanged([_searching(call.name)])
+                # The trail of searches so far goes out as a whole, each with its query.
+                searched = call.name in _SEARCHES
+                first = len(trail)
+                if searched:
+                    trail.append(_searching(call.name, _query(call)))
+                    yield RetrievalChanged(_snapshot(trail))
                 result = await self._call(
                     call, scope, use_connectors, sources, unavailable, budget - spent
                 )
@@ -262,7 +270,9 @@ class ChatAgent:
                     result.text += "\n\n" + _NO_MORE_STEPS
                 spent += self._tokens(result.text)
                 messages.append(PromptMessage(PromptRole.TOOL, result.text, tool_call_id=call.id))
-                yield RetrievalChanged(result.retrieval)
+                if searched:
+                    trail[first:] = [_asked(s, _query(call)) for s in result.retrieval]
+                    yield RetrievalChanged(_snapshot(trail))
                 yield SourcesFound(list(sources.citations), list(unavailable))
 
     def _tokens(self, text: str) -> int:
@@ -417,8 +427,31 @@ def _connector_states(live: LiveResult) -> list[chat_pb2.RetrievalSource]:
     ]
 
 
-def _searching(tool: str) -> chat_pb2.RetrievalSource:
-    return _state(tool, chat_pb2.RETRIEVAL_STATE_SEARCHING)
+def _searching(tool: str, query: str = "") -> chat_pb2.RetrievalSource:
+    return _asked(_state(tool, chat_pb2.RETRIEVAL_STATE_SEARCHING), query)
+
+
+def _asked(source: chat_pb2.RetrievalSource, query: str) -> chat_pb2.RetrievalSource:
+    source.query = query
+    return source
+
+
+def _snapshot(trail: Sequence[chat_pb2.RetrievalSource]) -> list[chat_pb2.RetrievalSource]:
+    """A copy, as the trail goes on changing."""
+    copies = [chat_pb2.RetrievalSource() for _ in trail]
+    for copy, step in zip(copies, trail, strict=True):
+        copy.CopyFrom(step)
+    return copies
+
+
+def _query(call: ToolCall) -> str:
+    """The query the model searched for; empty when its arguments have none."""
+    try:
+        args = json.loads(call.arguments or "{}")
+    except ValueError:
+        return ""
+    query = args.get("query") if isinstance(args, dict) else None
+    return query.strip() if isinstance(query, str) else ""
 
 
 def _state(tool: str, state: chat_pb2.RetrievalState, results: int = 0) -> chat_pb2.RetrievalSource:

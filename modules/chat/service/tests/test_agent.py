@@ -232,6 +232,43 @@ async def test_each_tool_call_reports_searching_then_the_result() -> None:
     assert [(s.state, s.results) for s in done.sources] == [(chat_pb2.RETRIEVAL_STATE_DONE, 2)]
 
 
+async def test_the_steps_so_far_are_sent_whole_each_with_its_query() -> None:
+    documents = FakeDocuments(a=[cite("geo.md")], b=[])
+    model = ScriptedModel(
+        [call("search_knowledge_base", query=" a ")],
+        [call("read_document", document_id=str(uuid.uuid4()))],
+        [call("search_knowledge_base", query="b")],
+        "ok",
+    )
+    events = await run(agent(model, documents))
+
+    trails = [
+        [(s.query, s.state, s.results) for s in e.sources]
+        for e in events
+        if isinstance(e, RetrievalChanged)
+    ]
+    searching, done = chat_pb2.RETRIEVAL_STATE_SEARCHING, chat_pb2.RETRIEVAL_STATE_DONE
+    # Reading a section is no search step; the earlier steps stay in each snapshot.
+    assert trails == [
+        [("a", searching, 0)],
+        [("a", done, 1)],
+        [("a", done, 1), ("b", searching, 0)],
+        [("a", done, 1), ("b", done, 0)],
+    ]
+
+
+async def test_a_connector_step_has_one_entry_per_connector_with_the_query() -> None:
+    connectors = FakeConnectors(LiveSources([], ["Orders"], ["Orders", "Wiki"]))
+    model = ScriptedModel([call("search_connectors", query="late")], "x")
+    events = await run(agent(model, connectors=connectors))
+
+    last = [e for e in events if isinstance(e, RetrievalChanged)][-1]
+    assert [(s.connector, s.query) for s in last.sources] == [
+        ("Orders", "late"),
+        ("Wiki", "late"),
+    ]
+
+
 async def test_a_failing_connector_is_reported_to_the_model_and_the_answer() -> None:
     connectors = FakeConnectors(
         LiveSources([], ["Orders"], ["Orders", "Wiki"]),

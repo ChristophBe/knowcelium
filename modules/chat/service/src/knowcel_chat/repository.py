@@ -57,6 +57,8 @@ class MessageRow:
     status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE
     # The live sources (connectors) that did not answer while this was written.
     unavailable_sources: list[str] = field(default_factory=list)
+    # What was searched, as dicts of the fields of chat_pb2.RetrievalSource.
+    search_steps: list[dict[str, Any]] = field(default_factory=list)
 
 
 class Repository(Protocol):
@@ -116,6 +118,7 @@ class Repository(Protocol):
         citations: list[dict[str, Any]],
         status: chat_pb2.MessageStatus = chat_pb2.MESSAGE_STATUS_COMPLETE,
         unavailable_sources: Sequence[str] = (),
+        search_steps: Sequence[dict[str, Any]] = (),
     ) -> MessageRow: ...
 
     async def get_prompt_templates(self) -> dict[str, str]:

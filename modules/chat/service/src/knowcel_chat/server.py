@@ -426,6 +426,7 @@ def _message(m: MessageRow) -> chat_pb2.ChatMessage:
         create_time=_ts(m.created_at),
         status=m.status,
         unavailable_sources=m.unavailable_sources,
+        search_steps=[chat_pb2.RetrievalSource(**s) for s in m.search_steps],
     )
 
 
