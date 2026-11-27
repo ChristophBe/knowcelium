@@ -3,7 +3,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import {
   clearNotifications,
   defineNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
   notify,
+  onNotificationsChange,
+  restoreNotifications,
   useNotifications,
 } from "./notifications.ts";
 import { dismissToast, useToasts } from "./toast.ts";
@@ -87,5 +91,70 @@ describe("notify", () => {
     );
     // @ts-expect-error "nope" is not one of this module's categories
     expect(() => n.notify({ category: "nope", title: "x", kind: "info" })).toThrow();
+  });
+});
+
+describe("read state and restoring", () => {
+  beforeEach(() => setVisibility("hidden"));
+  afterEach(() => {
+    vi.restoreAllMocks();
+    act(() => clearNotifications());
+  });
+
+  const add = (title: string) => n.notify({ category: "uploads", title, kind: "info" });
+
+  it("marks one entry or all entries as read", () => {
+    const entries = renderHook(() => useNotifications());
+    act(() => {
+      add("a");
+      add("b");
+      add("c");
+    });
+    const [a] = entries.result.current;
+    act(() => markNotificationRead(a?.id ?? 0));
+    expect(entries.result.current.map((e) => e.read)).toEqual([true, false, false]);
+    act(() => markAllNotificationsRead());
+    expect(entries.result.current.every((e) => e.read)).toBe(true);
+  });
+
+  it("does not notify when nothing changes", () => {
+    act(() => add("a"));
+    act(() => markAllNotificationsRead());
+    const listener = vi.fn();
+    const stop = onNotificationsChange(listener);
+    markAllNotificationsRead();
+    markNotificationRead(12345);
+    stop();
+    expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("restores saved entries, optionally keeping the current ones, and caps them", () => {
+    const entries = renderHook(() => useNotifications());
+    act(() => add("now"));
+    const saved = Array.from({ length: 50 }, (_, i) => ({
+      id: i,
+      createdAt: i,
+      read: true,
+      category: "uploads",
+      title: `s${i}`,
+      kind: "info" as const,
+    }));
+    act(() => restoreNotifications(saved.slice(0, 2), { keepCurrent: true }));
+    expect(entries.result.current.map((e) => e.title)).toEqual(["s0", "s1", "now"]);
+    expect(new Set(entries.result.current.map((e) => e.id)).size).toBe(3);
+    act(() => restoreNotifications(saved));
+    expect(entries.result.current).toHaveLength(50);
+    act(() => restoreNotifications([], { keepCurrent: false }));
+    expect(entries.result.current).toEqual([]);
+  });
+
+  it("reports changes until stopped", () => {
+    const listener = vi.fn();
+    const stop = onNotificationsChange(listener);
+    act(() => add("a"));
+    expect(listener).toHaveBeenLastCalledWith([expect.objectContaining({ title: "a" })]);
+    stop();
+    act(() => add("b"));
+    expect(listener).toHaveBeenCalledTimes(1);
   });
 });
