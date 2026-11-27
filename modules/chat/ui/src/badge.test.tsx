@@ -3,11 +3,12 @@ import {
   ConversationSchema,
   ListConversationsResponseSchema,
 } from "@knowcel/chat-api/knowcel/chat/v1/chat_pb";
-import { KbRuntimeProvider } from "@knowcel/module-sdk";
+import { clearNotifications, KbRuntimeProvider, useNotifications } from "@knowcel/module-sdk";
 import { act, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { useUnseenAnswers } from "./badge.ts";
+import "./notify.ts";
 
 const listConversations = vi.fn();
 
@@ -25,7 +26,13 @@ function respond(...conversations: Parameters<typeof create<typeof ConversationS
 }
 
 function Badge() {
-  return <p>unseen: {useUnseenAnswers()}</p>;
+  const entries = useNotifications();
+  return (
+    <>
+      <p>unseen: {useUnseenAnswers()}</p>
+      <p>entries: {entries.map((e) => `${e.category}|${e.body}|${e.link}`).join(",")}</p>
+    </>
+  );
 }
 
 function renderBadge() {
@@ -38,23 +45,10 @@ function renderBadge() {
   );
 }
 
-function stubNotification(permission: NotificationPermission) {
-  const shown: string[] = [];
-  class Fake {
-    static permission = permission;
-    onclick: (() => void) | null = null;
-    constructor(title: string) {
-      shown.push(title);
-    }
-    close() {}
-  }
-  vi.stubGlobal("Notification", Fake);
-  return shown;
-}
-
 describe("useUnseenAnswers", () => {
   beforeEach(() => {
     listConversations.mockReset();
+    clearNotifications();
   });
   afterEach(() => vi.unstubAllGlobals());
 
@@ -76,9 +70,8 @@ describe("useUnseenAnswers", () => {
     vi.useRealTimers();
   });
 
-  it("looks again while an answer is written and notifies when it finishes", async () => {
+  it("looks again while an answer is written and records a notification when it finishes", async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true });
-    const shown = stubNotification("granted");
     respond({ id: "a", title: "Budget", generating: true });
     renderBadge();
     expect(await screen.findByText("unseen: 0")).toBeTruthy();
@@ -89,15 +82,14 @@ describe("useUnseenAnswers", () => {
     });
 
     expect(await screen.findByText("unseen: 1")).toBeTruthy();
-    expect(shown).toEqual(["Budget"]);
+    expect(screen.getByText("entries: answers|Budget|/m/chat/a")).toBeTruthy();
     vi.useRealTimers();
   });
 
   it("does not notify about what was already waiting when the app opened", async () => {
-    const shown = stubNotification("granted");
     respond({ id: "a", title: "Old", completedUnseen: true });
     renderBadge();
     expect(await screen.findByText("unseen: 1")).toBeTruthy();
-    expect(shown).toEqual([]);
+    expect(screen.getByText("entries:")).toBeTruthy();
   });
 });
