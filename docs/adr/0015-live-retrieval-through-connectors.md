@@ -1,6 +1,6 @@
 # 0015. Search connectors live at question time, from chat through ingestion
 
-- Status: Accepted
+- Status: Accepted; the service-to-worker hop over NATS is superseded by [0017](0017-connectors-are-services.md)
 - Date: 2026-11-23
 
 ## Context
