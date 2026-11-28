@@ -13,6 +13,7 @@ import {
 } from "lucide-react";
 import type { ReactNode } from "react";
 import { DotGrid } from "./Graphics.tsx";
+import { CONNECTORS_URL } from "./Nav.tsx";
 
 type Feature = { icon: LucideIcon; title: string; text: string; demo: ReactNode };
 
@@ -163,6 +164,11 @@ function Pillars() {
             </div>
             <h3 className="text-xl font-semibold tracking-tight">{p.title}</h3>
             <p className="text-base text-fg-muted">{p.text}</p>
+            {p.title === "Absorb" && (
+              <a href={CONNECTORS_URL} className="text-sm text-accent underline">
+                How connectors add live data
+              </a>
+            )}
           </Card>
         </li>
       ))}
