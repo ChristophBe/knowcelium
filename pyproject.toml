@@ -6,6 +6,7 @@ requires-python = ">=3.13"
 
 [dependency-groups]
 dev = [
+    "datamodel-code-generator==0.96.0", # generates connector-api/python from the OpenAPI contract
     "grpcio-tools==1.85.1", # pins generated Python code (tools/protoc-gen-kbpy)
     "import-linter>=2.1",
     "pyright>=1.1.400",
@@ -24,6 +25,7 @@ members = [
     "platform/python",
     "examples/showcase",
     "platform/api/python",
+    "connector-api/python",
     "modules/*/api/python",
     "modules/chat/service",
     "modules/curation/service",
@@ -34,7 +36,7 @@ members = [
 [tool.ruff]
 line-length = 100
 target-version = "py313"
-extend-exclude = ["**/api/python/src", "tools/modgen/testdata/boundaries"]
+extend-exclude = ["**/api/python/src", "connector-api/python/src", "connector-api/python/src", "tools/modgen/testdata/boundaries"]
 
 [tool.ruff.lint]
 select = [

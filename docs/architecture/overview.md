@@ -56,6 +56,10 @@ flowchart TB
         dex["dex :5556<br/>dev OIDC provider"]
     end
 
+    subgraph connectors["Connector services (deployed independently, any language)"]
+        connsvc["connector service<br/>HTTP/JSON, connector-api/openapi.yaml"]
+    end
+
     ollama["ollama :11434<br/>profile: ollama"]
 
     browser -- "HTTP: app + config.json" --> web
@@ -78,6 +82,9 @@ flowchart TB
     ingworker -- "connectors: CreateUpload, ReplaceUpload, CompleteUpload" --> ingsvc
     ingworker -- "connectors: UpdateDocument, DeleteDocument" --> docsvc
     ingworker -- "connectors: ResolveCaller" --> iamsvc
+    connsvc -. "register, heartbeat (HTTP, registration token)" .-> ingsvc
+    ingsvc -- "search (HTTP, bearer)" --> connsvc
+    ingworker -- "sync: changes, content (HTTP, bearer)" --> connsvc
     chatsvc -- "SearchChunks" --> docsvc
     chatsvc -- "Generate, Embed, Rerank" --> llmsvc
     docsvc -- "Embed (SearchDocuments)" --> llmsvc
@@ -96,6 +103,8 @@ flowchart TB
     cursvc -- "schema curation" --> pg
     docsvc -- "bucket: raw files, presigning" --> s3
 ```
+
+Connector services are the systems' side of [ADR 0017](../adr/0017-connectors-are-services.md): small web services, deployed apart from the stack, that speak the [connector contract](../../connector-api/openapi.yaml). Knowcelium calls them with a per-service secret; they register themselves with an administrator's token or an administrator adds them by URL. The runtime follows the ADR in the work items of epic #446; until then connectors still run inside `ingestion-worker` and live search goes over NATS ([ADR 0015](../adr/0015-live-retrieval-through-connectors.md)).
 
 | Container | Module | Owns | Calls (gRPC) | Events |
 |---|---|---|---|---|

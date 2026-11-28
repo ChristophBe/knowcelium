@@ -1,0 +1,15 @@
+[project]
+name = "knowcel-connector-api"
+version = "0.1.0"
+description = "Generated pydantic models of the Knowcelium connector contract (connector-api/openapi.yaml)"
+requires-python = ">=3.13"
+dependencies = [
+    "pydantic>=2.11",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/knowcel_connector_api"]
