@@ -1,0 +1,7 @@
+# Run by `task gen:connector-api` (see Taskfile.yml). Types only: the services speak the contract with their own HTTP code.
+package: connectorapi
+output: connector-api/go/connectorapi/types.gen.go
+generate:
+  models: true
+output-options:
+  skip-prune: true
