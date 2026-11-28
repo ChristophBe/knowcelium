@@ -5,6 +5,7 @@ import { App } from "./App.tsx";
 import { SEARCH_STEPS, SOURCES } from "./ChatDemo.tsx";
 import { render as renderStatic } from "./entry-server.tsx";
 import { REPO } from "./links.ts";
+import { ERP, PLM } from "./systems.ts";
 
 describe("marketing site", () => {
   it("has one title and a section for every nav link", async () => {
@@ -33,8 +34,7 @@ describe("marketing site", () => {
     expect(html).toContain("Everything your organization knows");
     for (const pillar of ["Absorb", "Connect", "Renew"]) expect(html).toContain(pillar);
     expect(html).toContain("On the roadmap");
-    expect(html).toContain("showcase-logistics");
-    expect(html).toContain("from showcase-engineering");
+    expect(html).toContain(ERP);
     expect(html).toContain("task up:release");
   });
 
@@ -48,19 +48,41 @@ describe("marketing site", () => {
     expect(screen.getByRole("heading", { name: "Bring in your knowledge" })).not.toBeNull();
   });
 
-  it("answers the demo question from two connected systems", () => {
-    const [first, second] = SOURCES;
-    expect(first?.detail).toContain("showcase-engineering");
-    expect(second?.detail).toContain("showcase-logistics");
-    expect(SOURCES).toHaveLength(2);
+  it("shows uploads in the first scene, apart from connected systems", () => {
+    render(<App />);
+    const uploads = screen.getByRole("region", { name: "Uploaded files" });
+    expect(uploads.textContent).toContain("handbook.pdf");
+    expect(uploads.textContent).not.toContain(PLM);
+    expect(screen.queryByRole("region", { name: "Connected systems" })).toBeNull();
+    expect(screen.getAllByRole("link", { name: /connectors/i }).length).toBeGreaterThan(0);
+  });
+
+  it("names the connected systems like real ones and says they are examples", () => {
+    const html = renderStatic();
+    expect(html).toContain("Connectors");
+    expect(html).toContain(PLM);
+    expect(html).not.toContain("showcase-");
+    expect(html).toContain("not features of Knowcelium");
+  });
+
+  it("answers the demo question from synced documents and a live system", () => {
+    expect(SOURCES).toHaveLength(3);
+    expect(SOURCES.map((s) => s.detail)).toEqual([
+      `synced from ${PLM}`,
+      `synced from ${ERP}`,
+      `live from ${ERP}`,
+    ]);
+    const html = renderStatic();
+    expect(html).toContain("Connector sources");
+    expect(html).toContain("Live");
   });
 
   it("shows the searches the chat made before the answer", () => {
     const html = renderStatic();
     expect(SEARCH_STEPS.length).toBeGreaterThanOrEqual(2);
-    expect(html).toContain("Search steps");
+    expect(html).toContain("Sources searched");
     for (const step of SEARCH_STEPS) expect(html).toContain(step.query);
-    expect(html.indexOf("Search steps")).toBeLessThan(html.indexOf("Sources"));
+    expect(html.indexOf("Sources searched")).toBeLessThan(html.indexOf('aria-label="Sources"'));
     expect(html).toContain("decides for itself what to look up");
   });
 });

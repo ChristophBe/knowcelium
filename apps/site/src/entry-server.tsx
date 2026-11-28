@@ -1,12 +1,13 @@
 import { StrictMode } from "react";
 import { renderToString } from "react-dom/server";
 import { App } from "./App.tsx";
+import { ConnectorsPage } from "./ConnectorsPage.tsx";
 
-/** The page as static HTML, for prerender.ts. */
-export function render() {
+export type PageName = "home" | "connectors";
+
+/** A page as static HTML, for prerender.ts. */
+export function render(page: PageName = "home") {
   return renderToString(
-    <StrictMode>
-      <App />
-    </StrictMode>,
+    <StrictMode>{page === "connectors" ? <ConnectorsPage /> : <App />}</StrictMode>,
   );
 }

@@ -3,6 +3,7 @@ import { ArrowRight, ShieldCheck } from "lucide-react";
 import { ChatDemo } from "./ChatDemo.tsx";
 import { GithubMark } from "./GithubMark.tsx";
 import { delay, REPO } from "./links.ts";
+import { CONNECTORS_URL } from "./Nav.tsx";
 
 /** Headline, pitch and the two calls to action beside a recording of the product at work. */
 export function Hero() {
@@ -30,6 +31,17 @@ export function Hero() {
             watched folder to your own tools through the connector SDK. It answers your people and
             your tools in plain language, looking things up on its own and showing the passages to
             prove it. Open source, modular, and on your own infrastructure.
+          </p>
+          <p
+            className="mt-4 max-w-xl animate-rise text-sm text-pretty text-fg-muted"
+            style={delay(200)}
+          >
+            In the recording, Foundry PLM and Stockwise ERP are two mock systems connected through
+            the connector SDK, so answers can use live data next to your documents. They are
+            examples, not features of Knowcelium.{" "}
+            <a href={CONNECTORS_URL} className="text-accent underline">
+              How connectors add live data
+            </a>
           </p>
           <div className="mt-8 flex animate-rise flex-wrap gap-3" style={delay(240)}>
             <a href="#quick-start" className={buttonClass("primary", "px-6 py-3 text-base")}>

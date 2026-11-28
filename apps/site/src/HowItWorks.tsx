@@ -12,8 +12,9 @@ import {
   WifiOff,
 } from "lucide-react";
 import { SectionTitle } from "./Features.tsx";
+import { CONNECTORS_URL } from "./Nav.tsx";
 
-type Source = { icon: LucideIcon; title: string; text: string };
+type Source = { icon: LucideIcon; title: string; text: string; href?: string };
 
 /** Uploads and connectors are equal ways in; both end up as documents. */
 const SOURCES: Source[] = [
@@ -25,7 +26,8 @@ const SOURCES: Source[] = [
   {
     icon: Plug,
     title: "Connect systems",
-    text: "A connector syncs what your systems hold, or looks it up live when you ask.",
+    text: "A connector looks things up in your systems live when you ask, or syncs what they hold, so answers combine your documents with current data.",
+    href: CONNECTORS_URL,
   },
 ];
 
@@ -141,6 +143,11 @@ function Step({
                   <div>
                     <p className="text-sm font-medium">{src.title}</p>
                     <p className="text-sm text-fg-muted">{src.text}</p>
+                    {src.href && (
+                      <a href={src.href} className="text-sm text-accent underline">
+                        How live data works
+                      </a>
+                    )}
                   </div>
                 </li>
               ))}

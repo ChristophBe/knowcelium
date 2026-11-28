@@ -3,12 +3,13 @@ import { ArrowDown, Blocks, Braces, type LucideIcon, Plug, Workflow } from "luci
 import { SectionTitle } from "./Features.tsx";
 import { DotGrid } from "./Graphics.tsx";
 import { repoPath } from "./links.ts";
+import { CONNECTORS_URL } from "./Nav.tsx";
 
 const POINTS: {
   icon: LucideIcon;
   title: string;
   text: string;
-  link?: { label: string; href: string };
+  links?: { label: string; href: string }[];
 }[] = [
   {
     icon: Blocks,
@@ -29,7 +30,10 @@ const POINTS: {
     icon: Plug,
     title: "Connectors in a few lines",
     text: "Subclass one Python class and implement list_changes to sync a system, or search to query it live. A scaffold and a contract test come with it.",
-    link: { label: "Read the connector SDK guide", href: repoPath("docs/connectors.md") },
+    links: [
+      { label: "Read the connector SDK guide", href: repoPath("docs/connectors.md") },
+      { label: "See the connector examples", href: CONNECTORS_URL },
+    ],
   },
 ];
 
@@ -70,14 +74,15 @@ export function Developers() {
                 <div>
                   <p className="text-lg font-semibold">{p.title}</p>
                   <p className="mt-1 text-base text-fg-muted">{p.text}</p>
-                  {p.link && (
+                  {p.links?.map((l) => (
                     <a
-                      href={p.link.href}
-                      className="mt-1 inline-block text-sm text-accent underline"
+                      key={l.href}
+                      href={l.href}
+                      className="mt-1 mr-4 inline-block text-sm text-accent underline"
                     >
-                      {p.link.label}
+                      {l.label}
                     </a>
-                  )}
+                  ))}
                 </div>
               </li>
             ))}
