@@ -32,6 +32,7 @@ import { Link, useSearchParams } from "react-router";
 import { accessText, JobAccess } from "./access.tsx";
 import { SUPPORTED_FORMATS } from "./files.ts";
 import { useLeaveGuard } from "./leaveGuard.tsx";
+import { notify } from "./notifications.ts";
 import { active, ProgressBar, stageLabel } from "./progress.tsx";
 import { putWithProgress } from "./put.ts";
 import { Stepper } from "./Stepper.tsx";
@@ -118,8 +119,14 @@ export function Upload() {
           old ? { ...old, jobs: [job, ...old.jobs.filter((j) => j.id !== job.id)] } : old,
         ),
       announce,
-      notify: (message: string, failed: boolean) =>
-        failed ? toast.error(message) : toast.success(message),
+      notify: (message: string, failed: boolean, job: { id: string; documentId: string }) =>
+        notify({
+          category: "uploads",
+          title: message,
+          kind: failed ? "error" : "success",
+          link: job.documentId ? `/m/document/${job.documentId}` : undefined,
+          tag: job.id,
+        }),
       error: (message: string) => toast.error(message),
     }),
     [queryClient, announce],

@@ -32,6 +32,16 @@ A document is either **public**, so that every signed-in user can see it, or a *
 
 Only **Ready** documents show up in search results and chat answers.
 
+### Get told when documents are ready again
+
+A document that was ready can be processed again, for example after the embedding model changed or after you uploaded a [new version](#replace-a-document-with-a-new-version). While you have **Documents** or such a document's page open and see it processed again, Knowcelium notifies you under the category **Documents** once everything you saw has finished:
+
+- When the last of several documents is done, one notification says "*n* documents are ready" and opens the list.
+- When it is a single document, the notification says "*title* is ready" and opens that document.
+- A document that fails gets its own notification, "Couldn't process *title*", which opens the document so you can see the reason.
+
+Documents you didn't see being processed again don't notify you, and neither do first uploads (the upload page tells you about those). Knowcelium only notices while the page is open: if you are elsewhere in Knowcelium while processing finishes, there is no notification. You can turn the category off or limit it to the app in the [notification settings](notifications.md#choose-which-notifications-you-get).
+
 ## Set the approval state of a document
 
 A document can be marked as **Draft**, **In review**, **Approved**, **Deprecated** or **Archived**, so that everyone sees which documents to trust. A document shows its state as a label next to its status in the list and next to its actions on its page. A document that was never given a state shows none.

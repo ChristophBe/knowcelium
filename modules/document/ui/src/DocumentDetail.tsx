@@ -26,13 +26,14 @@ import {
   SkeletonRows,
   Trash2,
 } from "@knowcel/ui";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation, useNavigate, useParams } from "react-router";
 import { AccessEditor } from "./AccessEditor.tsx";
 import { ChunkList } from "./ChunkList.tsx";
 import { ConnectorNotice, ConnectorSource, connectorOf } from "./ConnectorNotice.tsx";
 import { DeleteDocumentDialog, useDownloadDocument } from "./documentActions.tsx";
 import { MetadataEditor } from "./MetadataEditor.tsx";
+import { useReprocessingNotifications } from "./notifications.ts";
 import { OwnerName } from "./OwnerName.tsx";
 import { SharedWith } from "./SharedWith.tsx";
 import { ShareEditor } from "./ShareEditor.tsx";
@@ -78,6 +79,8 @@ export function DocumentDetail() {
       return d && inProgress(d) ? PROCESSING_REFRESH_MS : false;
     },
   });
+  const shown = doc.data?.document;
+  useReprocessingNotifications(useMemo(() => (shown ? [shown] : undefined), [shown]));
   // A new version brings new chunks.
   const version = doc.data?.document?.version;
   const shownVersion = useRef(version);
